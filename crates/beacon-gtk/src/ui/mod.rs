@@ -1,8 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+pub mod add_page;
 pub mod content;
+pub mod covers;
 pub mod details_pane;
 pub mod dialogs;
+pub mod episode_list;
+pub mod errors;
+pub mod format;
 pub mod labels;
+pub mod models;
+pub mod new_view;
 pub mod player_bar;
+pub mod show_hero;
+pub mod show_page;
+pub mod shows_grid;
 pub mod sidebar;
+pub mod widgets;

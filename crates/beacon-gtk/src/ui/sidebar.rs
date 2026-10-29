@@ -26,7 +26,6 @@ pub struct Counts {
 pub enum SidebarInput {
     /// Reflect the current location without emitting anything.
     Select(Location),
-    #[expect(dead_code, reason = "fed from the library in M3")]
     SetCounts(Counts),
 }
 

@@ -2,3 +2,43 @@
 
 /* Loaded automatically by AdwApplication from /com/theoforger/Beacon/style.css.
  * Use libadwaita named colours and style classes only; never hard-coded hex. */
+
+/* Cover art: rounded, with a neutral tile when a show has none. */
+.cover {
+  border-radius: 8px;
+}
+
+.cover-placeholder {
+  background-color: var(--card-bg-color);
+}
+
+/* The number of new episodes on a Shows tile. */
+.new-badge {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background-color: var(--accent-bg-color);
+  color: var(--accent-fg-color);
+  font-weight: bold;
+}
+
+/* The blue dot on a new episode. */
+.new-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  background-color: var(--accent-bg-color);
+}
+
+/* The Add Podcast tile at the end of the Shows grid. */
+.add-tile {
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+/* Lists and the Shows grid sit on the window background, as in the mockup,
+ * rather than on their own view background. */
+.flat-view {
+  background: none;
+}

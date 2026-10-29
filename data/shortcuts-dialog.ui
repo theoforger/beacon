@@ -25,6 +25,12 @@
         </child>
         <child>
           <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Refresh Feeds</property>
+            <property name="action-name">win.refresh</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
             <property name="title" translatable="yes">Close Window</property>
             <property name="action-name">window.close</property>
           </object>

@@ -14,5 +14,14 @@
       <default>false</default>
       <summary>Window maximized state</summary>
     </key>
+    <key name="new-filter" type="s">
+      <choices>
+        <choice value="all"/>
+        <choice value="unplayed"/>
+      </choices>
+      <default>'all'</default>
+      <summary>Episodes shown in New</summary>
+      <description>Whether New shows all recent episodes or only unplayed ones.</description>
+    </key>
   </schema>
 </schemalist>

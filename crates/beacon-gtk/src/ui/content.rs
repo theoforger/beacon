@@ -2,20 +2,30 @@
 
 //! The centre pane, an `AdwNavigationView`. Its root page shows the current
 //! section: header (Refresh in Shows and New, title, Search, details
-//! toggle), the search bar, and one page per section. Deeper pages slide in
-//! from the right over whatever section is showing; the view owns that
-//! stack and its Back, two-finger swipe, mouse back button and Alt+Left.
-//! Until the views land (M3 onwards) every page is its empty state.
+//! toggle), the search bar, and one page per section. Deeper pages (Add, a
+//! podcast page) slide in from the right over whatever section is showing;
+//! the view owns that stack and its Back, two-finger swipe, mouse back
+//! button and Alt+Left. The pane routes data from the window to its views
+//! and their actions back.
 
+use beacon_core::browse::RecencyGroup;
+use beacon_core::model::{EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
+use relm4::{
+    Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
+};
+use url::Url;
 
 use crate::navigation::Location;
+use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
 use crate::ui::labels;
+use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
+use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
+use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
+use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 
 const ROOT_TAG: &str = "root";
-const ADD_TAG: &str = "add";
 
 #[derive(Debug)]
 pub enum ContentInput {
@@ -23,17 +33,46 @@ pub enum ContentInput {
     ShowSection(Location),
     /// Slide the Add page in over the current section.
     OpenAdd,
+    /// Slide a podcast page in, or refresh it if it is already open.
+    OpenShow(Box<ShowPageData>),
+    /// Refresh the podcast page if it is open; never opens it.
+    UpdateShow(Box<ShowPageData>),
+    /// The show is gone: leave its page.
+    CloseShow,
+    SetShows(Vec<ShowCard>),
+    SetNew {
+        items: Vec<(RecencyGroup, EpisodeItem)>,
+        filter: EpisodeFilter,
+        has_shows: bool,
+    },
+    /// The Add page's subscription finished, either way.
+    SubscribeDone,
+}
+
+#[derive(Debug)]
+pub enum ContentOutput {
+    Action(EpisodeId, RowAction),
+    OpenShow(ShowId),
+    NewFilterChanged(EpisodeFilter),
+    ShowPrefsChanged(ShowId, ShowPrefs),
+    MarkAllPlayed(ShowId),
+    Unsubscribe(ShowId),
+    FeedAddressCopied,
+    Subscribe(Url),
 }
 
 pub struct Content {
-    add_page: adw::NavigationPage,
+    shows: Controller<ShowsGrid>,
+    new: Controller<NewView>,
+    show_page: Controller<ShowPage>,
+    add_page: Controller<AddPage>,
 }
 
 #[relm4::component(pub)]
 impl Component for Content {
     type Init = ();
     type Input = ContentInput;
-    type Output = ();
+    type Output = ContentOutput;
     type CommandOutput = ();
 
     view! {
@@ -58,7 +97,6 @@ impl Component for Content {
                 set_child = &adw::ToolbarView {
                     add_top_bar = &adw::HeaderBar {
                         // Only in Shows and New, where new episodes appear.
-                        // Enabled once feeds can be refreshed (M3).
                         #[name = "refresh"]
                         pack_start = &gtk::Button {
                             set_icon_name: "view-refresh-symbolic",
@@ -68,7 +106,7 @@ impl Component for Content {
                         },
 
                         #[name = "details_toggle"]
-                        pack_end = &details_toggle() -> gtk::ToggleButton {},
+                        pack_end = &new_details_toggle() -> gtk::ToggleButton {},
 
                         #[name = "search_toggle"]
                         pack_end = &gtk::ToggleButton {
@@ -107,25 +145,68 @@ impl Component for Content {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let add_toggle = details_toggle();
+        let output = sender.output_sender().clone();
+        let input = sender.input_sender().clone();
+        let shows = ShowsGrid::builder().launch(()).connect_receiver({
+            let output = output.clone();
+            move |_, message| match message {
+                ShowsGridOutput::OpenShow(id) => {
+                    let _ = output.send(ContentOutput::OpenShow(id));
+                }
+                ShowsGridOutput::AddPodcast => input.emit(ContentInput::OpenAdd),
+            }
+        });
+        let new = NewView::builder()
+            .launch(())
+            .forward(&output, |message| match message {
+                NewViewOutput::Action(id, action) => ContentOutput::Action(id, action),
+                NewViewOutput::FilterChanged(filter) => ContentOutput::NewFilterChanged(filter),
+            });
+        let show_page = ShowPage::builder()
+            .launch(())
+            .forward(&output, |message| match message {
+                ShowPageOutput::Action(id, action) => ContentOutput::Action(id, action),
+                ShowPageOutput::PrefsChanged(id, prefs) => {
+                    ContentOutput::ShowPrefsChanged(id, prefs)
+                }
+                ShowPageOutput::MarkAllPlayed(id) => ContentOutput::MarkAllPlayed(id),
+                ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
+                ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
+            });
+        let add_page = AddPage::builder()
+            .launch(())
+            .forward(&output, |AddPageOutput::Subscribe(url)| {
+                ContentOutput::Subscribe(url)
+            });
+
         let model = Content {
-            add_page: add_page(&add_toggle),
+            shows,
+            new,
+            show_page,
+            add_page,
         };
         let widgets = view_output!();
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
-        widgets
-            .details_toggle
-            .bind_property("active", &add_toggle, "active")
-            .bidirectional()
-            .sync_create()
-            .build();
-        widgets
-            .details_toggle
-            .bind_property("visible", &add_toggle, "visible")
-            .sync_create()
-            .build();
+        for header in [
+            model.add_page.widgets().header().clone(),
+            model.show_page.widgets().header().clone(),
+        ] {
+            let toggle = new_details_toggle();
+            header.pack_end(&toggle);
+            widgets
+                .details_toggle
+                .bind_property("active", &toggle, "active")
+                .bidirectional()
+                .sync_create()
+                .build();
+            widgets
+                .details_toggle
+                .bind_property("visible", &toggle, "visible")
+                .sync_create()
+                .build();
+        }
 
         widgets
             .search_toggle
@@ -136,10 +217,12 @@ impl Component for Content {
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
         for location in Location::ALL {
-            widgets.stack.add_named(
-                &section_empty_state(location, &sender),
-                Some(section_id(location)),
-            );
+            let page: gtk::Widget = match location {
+                Location::Shows => model.shows.widget().clone().upcast(),
+                Location::New => model.new.widget().clone().upcast(),
+                other => empty_state(other).upcast(),
+            };
+            widgets.stack.add_named(&page, Some(section_id(location)));
         }
 
         ComponentParts { model, widgets }
@@ -164,14 +247,49 @@ impl Component for Content {
                     navigation.replace(std::slice::from_ref(&widgets.root_page));
                 }
             }
-            ContentInput::OpenAdd => match navigation.find_page(ADD_TAG) {
-                None => navigation.push(&self.add_page),
-                Some(page) if navigation.visible_page().as_ref() != Some(&page) => {
-                    navigation.pop_to_page(&page);
+            ContentInput::OpenAdd => {
+                self.add_page.widgets().clear();
+                bring_forward(navigation, self.add_page.widget(), ADD_TAG);
+            }
+            ContentInput::OpenShow(data) => {
+                self.show_page.emit(ShowPageInput::Set(data));
+                bring_forward(navigation, self.show_page.widget(), SHOW_TAG);
+            }
+            ContentInput::UpdateShow(data) => {
+                if navigation.find_page(SHOW_TAG).is_some() {
+                    self.show_page.emit(ShowPageInput::Set(data));
                 }
-                Some(_) => {}
-            },
+            }
+            ContentInput::CloseShow => {
+                if navigation.find_page(SHOW_TAG).is_some() {
+                    navigation.replace(std::slice::from_ref(&widgets.root_page));
+                }
+            }
+            ContentInput::SetShows(cards) => self.shows.emit(ShowsGridInput::SetCards(cards)),
+            ContentInput::SetNew {
+                items,
+                filter,
+                has_shows,
+            } => self.new.emit(NewViewInput::Set {
+                items,
+                filter,
+                has_shows,
+            }),
+            ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
         }
+    }
+}
+
+/// Show `page`: push it, or go back to it if it is already further down.
+fn bring_forward(navigation: &adw::NavigationView, page: &adw::NavigationPage, tag: &str) {
+    if navigation.visible_page_tag().as_deref() == Some(tag) {
+        return;
+    }
+    match navigation.find_page(tag) {
+        Some(existing) => {
+            navigation.pop_to_page(&existing);
+        }
+        None => navigation.push(page),
     }
 }
 
@@ -203,7 +321,7 @@ impl ContentWidgets {
     }
 }
 
-fn details_toggle() -> gtk::ToggleButton {
+fn new_details_toggle() -> gtk::ToggleButton {
     let toggle = gtk::ToggleButton::builder()
         .icon_name("sidebar-show-right-symbolic")
         .tooltip_text(gettext("Episode Details"))
@@ -224,36 +342,9 @@ fn section_id(location: Location) -> &'static str {
     }
 }
 
-/// The Add page. Its header gets Back from the navigation view; the search
-/// field and results arrive in M6.
-fn add_page(details_toggle: &gtk::ToggleButton) -> adw::NavigationPage {
-    let header = adw::HeaderBar::new();
-    header.pack_end(details_toggle);
-    let toolbar = adw::ToolbarView::new();
-    toolbar.add_top_bar(&header);
-    toolbar.set_content(Some(&empty_state_page(
-        "system-search-symbolic",
-        gettext("Search for Podcasts"),
-        gettext("Find a show by name, or paste the address of its feed"),
-    )));
-
-    adw::NavigationPage::builder()
-        .tag(ADD_TAG)
-        .title(gettext("Add Podcast"))
-        .child(&toolbar)
-        .build()
-}
-
-fn section_empty_state(location: Location, sender: &ComponentSender<Content>) -> adw::StatusPage {
+/// Sections whose views arrive later (M5) show their empty state.
+fn empty_state(location: Location) -> adw::StatusPage {
     let (title, description) = match location {
-        Location::Shows => (
-            gettext("No Podcasts"),
-            gettext("Add a podcast by searching for it or pasting its feed address"),
-        ),
-        Location::New => (
-            gettext("No Episodes"),
-            gettext("Subscribe to a podcast to see its episodes here"),
-        ),
         Location::Queue => (
             gettext("Queue Is Empty"),
             gettext("Add episodes to the queue to play them next"),
@@ -266,27 +357,10 @@ fn section_empty_state(location: Location, sender: &ComponentSender<Content>) ->
             gettext("No Downloads"),
             gettext("Download an episode to listen offline"),
         ),
+        Location::Shows | Location::New => unreachable!("Shows and New have their own views"),
     };
-    let page = empty_state_page(labels::icon(location), title, description);
-
-    if location == Location::Shows {
-        let add = gtk::Button::builder()
-            .label(gettext("Add Podcast"))
-            .halign(gtk::Align::Center)
-            .css_classes(["pill", "suggested-action"])
-            .build();
-        let sender = sender.clone();
-        add.connect_clicked(move |_| {
-            sender.input(ContentInput::OpenAdd);
-        });
-        page.set_child(Some(&add));
-    }
-    page
-}
-
-fn empty_state_page(icon: &str, title: String, description: String) -> adw::StatusPage {
     adw::StatusPage::builder()
-        .icon_name(icon)
+        .icon_name(labels::icon(location))
         .title(title)
         .description(description)
         .build()

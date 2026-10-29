@@ -99,11 +99,13 @@ name = "beacon-gtk"
 version = "0.1.0"
 dependencies = [
  "beacon-core",
+ "chrono",
  "gettext-rs",
  "glib-build-tools",
  "relm4",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]

@@ -9,5 +9,6 @@ pub mod error;
 pub mod model;
 pub mod services;
 pub mod store;
+pub mod text;
 
 pub use error::{CoverError, FeedError, LibraryError, StoreError};

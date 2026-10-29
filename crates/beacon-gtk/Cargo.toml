@@ -15,10 +15,12 @@ path = "src/main.rs"
 
 [dependencies]
 beacon-core = { path = "../beacon-core" }
+chrono = "0.4.45"
 gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
 relm4 = { version = "0.11.0", features = ["libadwaita", "gnome_50"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+url = "2.5.8"
 
 [build-dependencies]
 glib-build-tools = "0.22.8"
