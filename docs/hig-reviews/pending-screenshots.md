@@ -4,6 +4,3 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-10-28 | M0, `app.rs` | Main menu popover: items, access keys, header capitalization | All four views | Click the main menu button, or press F10 |
-| 2026-10-28 | M0, `ui/dialogs/about.rs` | About dialog: name, icon, version, licence, credits | 1440×900 light and dark; 360×640 (dialog becomes a bottom sheet) | Main menu → About Beacon |
-| 2026-10-28 | M0, `data/shortcuts-dialog.ui` | Shortcuts dialog: section title, three shortcuts with their keys | 1440×900 light; 360×640 dark | Ctrl+? or Main menu → Keyboard Shortcuts |

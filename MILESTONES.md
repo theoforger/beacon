@@ -1,12 +1,14 @@
 # Beacon milestones
 
-The checklist for building Beacon. Design details are in `docs/`. Tick an item only when it is merged and verified. Every milestone also has to pass the **exit gate**:
+The checklist for building Beacon. Design details are in `docs/`. Tick an item only when it is merged and verified.
 
-- [ ] HIG gate clean (`docs/hig-checklist.md`, HIG pages quoted), full screenshot set at 1440×900 and 360×640 in light and dark, and `docs/hig-reviews/pending-screenshots.md` empty
-- [ ] Accessibility and translation checks pass (gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text)
-- [ ] Unit tests for all new logic, plus an integration test of each new feature's main scenario
-- [ ] CI green; `docs/decisions.md` and `docs/architecture.md` up to date
-- [ ] Human review of the running app
+A milestone is finished when its deliverables are done and its own **exit gate** is ticked:
+
+- **HIG:** gate clean (`docs/hig-checklist.md`, HIG pages quoted); full screenshot set at 1440×900 and 360×640 in light and dark; `docs/hig-reviews/pending-screenshots.md` empty
+- **Accessibility and translation:** gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text
+- **Tests:** unit tests for all new logic, plus an integration test of each new feature's main scenario
+- **CI and docs:** CI green; `docs/decisions.md` and `docs/architecture.md` up to date
+- **Human review** of the running app
 
 ---
 
@@ -32,7 +34,7 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [x] `cargo deny check` passes locally
 - [x] Flathub manifest lint: clean except `appid-url-not-reachable` (https://theoforger.com timed out with 522; must be reachable before submitting)
 - [x] CI workflow: rustfmt, clippy `-D warnings`, tests, desktop/metainfo/schema validation, cargo-deny, and a Flatpak build
-- [ ] CI green on the first push (needs a GitHub remote; the homepage URL `github.com/theoforger/beacon` is a placeholder until then)
+- [x] CI green on the first push (github.com/theoforger/Beacon, run 40807922368 on `7a252f7`: all four jobs passed)
 - [x] `LICENSE` (GPL-3.0-or-later) and SPDX headers in every source file
 - [x] `CLAUDE.md` with commands, architecture, rules, requirements and the HIG gate
 - [x] `docs/decisions.md`, `docs/architecture.md` and `docs/hig-checklist.md`
@@ -40,13 +42,16 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [x] `/hig-review` skill written (`.claude/skills/hig-review/`) and `build-aux/screenshots.sh` for the four screenshots
 - [x] Headless screenshots verified at 1440×900 and 360×640, light and dark
 - [x] HIG gate for the M0 window: pass (see `docs/hig-reviews/m0.md`)
-- [ ] Pending screenshot checks for M0 cleared (main menu, About and Shortcuts dialogs; see `docs/hig-reviews/pending-screenshots.md`)
+- [x] Pending screenshot checks for M0 cleared (main menu, About and Shortcuts dialogs; results in `docs/hig-reviews/m0.md`)
 - [x] First commit (`8ea4a3e`)
 
-## Watch: GNOME 51
+### Exit gate
 
-- [ ] relm4 ships a `gnome_51` feature (checked weekly by `.github/workflows/relm4-gnome-51.yml`)
-- [ ] Migrate: runtime and Sdk to 51, rust-stable to `//26.08`, relm4 feature, CI images, docs
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m0.md`)
+- [ ] Accessibility and translation: gettext, labels and tooltips, and Ctrl+Q, Ctrl+W, F10 and menu arrow keys verified headless; Orca and large-text walk-through still needed (human)
+- [x] Tests: no logic in M0; `cargo test` and the Meson validation tests run in CI
+- [x] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
 
 ## M1 Data and feeds
 
@@ -71,6 +76,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [ ] Unit: feed parsing, season grouping, GUID matching
 - [ ] Integration: subscribe from an RSS URL, episodes stored; refresh adds only new ones; migrations run on an empty and an existing database
 
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
 ## M2 Window shell
 
 **Done when:** it matches the mockup at 1440px and 360px wide, in light and dark.
@@ -93,6 +106,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 
 - [ ] Unit: navigation history and the `App` component's `update` (Back visibility, view switching)
 
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
 ## M3 Library views
 
 **Done when:** real data can be browsed end to end.
@@ -114,6 +135,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [ ] Unit: recency grouping, sort, played and "new" state rules
 - [ ] Integration: subscribe, see episodes, open a show page, use the All and Unplayed toggle
 
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
 ## M4 Playback
 
 **Done when:** you can play, pause, close, reopen and resume at the same spot, and media keys work.
@@ -132,6 +161,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 
 - [ ] Unit: position and resume rules, skip, speed, chapter lookup
 - [ ] Integration (short local audio file, silent sink): play, pause, close, reopen and resume at the same position
+
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
 
 ## M5 Queue and lists
 
@@ -153,6 +190,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 
 - [ ] Unit: queue order, auto-continue, auto-delete rules (with an injected clock)
 - [ ] Integration: queue order and auto-continue; marking played leaves the queue alone; download with resume; auto-delete removes an old download
+
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
 
 ## M6 Search and Add
 
@@ -177,6 +222,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [ ] Unit: query building, URL detection, the rate limiter
 - [ ] Integration (canned iTunes responses): search in This Show and Everywhere scope, the no-results page, Search Online, subscribe from iTunes results
 
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
 ## M7 OPML
 
 **Done when:** a file from another app imports, and an export re-imports with no loss.
@@ -199,6 +252,14 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [ ] Unit: OPML mapping, normalisation, de-duplication
 - [ ] Integration: import a fixture file, export, re-import with no loss; bad XML handled
 
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
 ## M8 Polish
 
 **Done when:** the app passes the review checklist in the Flathub guidelines.
@@ -215,3 +276,18 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 ### Tests
 
 - [ ] All scenario tests from M1 to M7 green in CI
+
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
+---
+
+## Watch: GNOME 51
+
+- [ ] relm4 ships a `gnome_51` feature (checked weekly by `.github/workflows/relm4-gnome-51.yml`)
+- [ ] Migrate: runtime and Sdk to 51, rust-stable to `//26.08`, relm4 feature, CI images, docs
