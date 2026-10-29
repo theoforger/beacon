@@ -115,7 +115,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m2.md`)
 - [x] Translation and labels checked (all strings in gettext, new files in `POTFILES.in`, labels and tooltips on icon-only buttons); accessibility walk-throughs logged in `pending-accessibility.md`
 - [x] Tests: unit tests for the navigation rules; no feature scenario yet (the views get data in M3)
-- [ ] CI and docs: CI green; docs up to date
+- [x] CI and docs: CI green (run 40814712761 on `a84f682`); docs up to date
 - [ ] Human review of the running app
 
 ## M3 Library views
