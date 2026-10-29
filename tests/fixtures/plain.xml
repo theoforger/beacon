@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Fixture: a show without seasons. plain-updated.xml is the same feed a week later. -->
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Small Hours</title>
+    <link>https://example.com/small-hours</link>
+    <description>Conversations for people who are awake too late.</description>
+    <itunes:author>Odile Brandt</itunes:author>
+    <itunes:image href="{{BASE}}/covers/small-hours.png"/>
+    <item>
+      <title>The night shift</title>
+      <guid>small-hours-2</guid>
+      <pubDate>Wed, 21 Oct 2026 23:00:00 +0200</pubDate>
+      <itunes:duration>38:10</itunes:duration>
+      <enclosure url="{{BASE}}/audio/sh2.mp3" type="audio/mpeg" length="36000000"/>
+    </item>
+    <item>
+      <title>Insomnia, briefly</title>
+      <guid>small-hours-1</guid>
+      <pubDate>Wed, 14 Oct 2026 23:00:00 +0200</pubDate>
+      <itunes:duration>41:00</itunes:duration>
+      <enclosure url="{{BASE}}/audio/sh1.mp3" type="audio/mpeg" length="39000000"/>
+    </item>
+  </channel>
+</rss>

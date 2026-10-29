@@ -61,28 +61,28 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Domain types in `beacon-core/src/model`: `Show`, `Episode`, `Season`, `QueueItem`, plus typed errors
-- [ ] SQLite store (`rusqlite`): schema, migrations in `store/migrations/`, FTS5 table for search, in-memory mode for tests
-- [ ] Played state, position, favourite, download and "new" flags in the schema from the start
-- [ ] `FeedService`: fetch with `reqwest` (rustls, tokio), parse with `feed-rs`; confirm whether `feed-rs` exposes iTunes season, episode and chapters, and add a `roxmltree` pass if it does not
-- [ ] Refresh: insert only new episodes (stable GUID matching, with a fallback for feeds without GUIDs), update show metadata
-- [ ] Cover cache on disk, keyed by URL
-- [ ] Fixture feeds in `tests/fixtures/`: with seasons, without seasons, with chapters, malformed
+- [x] Domain types in `beacon-core/src/model`: `Show`, `Episode`, `Season`, `QueueItem`, plus typed errors
+- [x] SQLite store (`rusqlite`): schema, migrations in `store/migrations/`, FTS5 table for search, in-memory mode for tests
+- [x] Played state, position, favourite, download and "new" flags in the schema from the start ("new" is the `seen` flag behind the blue dot)
+- [x] Feed service: fetch with `reqwest` (rustls, tokio), parse with `rss`. `feed-rs` was tried and dropped: it loses item-level iTunes tags and rejects `MM:SS` durations (see `docs/decisions.md`)
+- [x] Refresh: insert only new episodes (stable GUID matching, with a fallback for feeds without GUIDs), update show metadata
+- [x] Cover cache on disk, keyed by URL
+- [x] Fixture feeds in `tests/fixtures/`: with seasons, without seasons, with chapters, malformed, plus no GUIDs and a web page (hand-written, fictional shows)
 - [ ] Decide which real podcasts provide the fixtures (open question 3)
-- [ ] Local HTTP test server serving the fixtures
-- [ ] Flatpak: add `--share=network` and record it in `docs/decisions.md`
-- [ ] `docs/decisions.md` entries for every new crate
+- [x] Local HTTP test server serving the fixtures (`httpmock`)
+- [x] Flatpak: add `--share=network` and record it in `docs/decisions.md`
+- [x] `docs/decisions.md` entries for every new crate
 
 ### Tests
 
-- [ ] Unit: feed parsing, season grouping, GUID matching
-- [ ] Integration: subscribe from an RSS URL, episodes stored; refresh adds only new ones; migrations run on an empty and an existing database
+- [x] Unit: feed parsing, durations and dates, GUID matching, store sync, FTS, chapters (season grouping for display moves to M3, where it is used)
+- [x] Integration: subscribe from an RSS URL, episodes stored; refresh adds only new ones; migrations run on an empty and an existing database; bad feeds, duplicates and a missing cover
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Accessibility and translation checks pass
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] HIG: no UI changes in M1; pending list still empty
+- [x] Accessibility and translation: no user-visible strings or UI in M1 (`beacon-core` has none by design)
+- [x] Tests: 15 unit tests, 9 integration tests (`crates/beacon-core/tests/library.rs`)
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
@@ -111,7 +111,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Exit gate
 
 - [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Accessibility and translation checks pass
+- [ ] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
@@ -140,7 +140,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Exit gate
 
 - [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Accessibility and translation checks pass
+- [ ] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app

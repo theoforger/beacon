@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Fixture: a show with seasons (iTunes and Podcasting 2.0 tags). -->
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>The Long Signal</title>
+    <link>https://example.com/long-signal</link>
+    <description>Stories from the edges of radio astronomy.</description>
+    <itunes:author>Dr. Imani Okafor</itunes:author>
+    <itunes:image href="{{BASE}}/covers/long-signal.png"/>
+    <itunes:category text="Science"/>
+    <item>
+      <title>A dish in the desert: listening to the quietest place on Earth</title>
+      <guid isPermaLink="false">long-signal-s3e2</guid>
+      <pubDate>Tue, 27 Oct 2026 08:00:00 GMT</pubDate>
+      <description>A ring of antennas listens for signals fainter than a whisper.</description>
+      <itunes:duration>52:00</itunes:duration>
+      <itunes:season>3</itunes:season>
+      <podcast:season name="Deserts">3</podcast:season>
+      <itunes:episode>2</itunes:episode>
+      <enclosure url="{{BASE}}/audio/s3e2.mp3" type="audio/mpeg" length="49920000"/>
+    </item>
+    <item>
+      <title>Salt flats</title>
+      <guid isPermaLink="false">long-signal-s3e1</guid>
+      <pubDate>Tue, 20 Oct 2026 08:00:00 GMT</pubDate>
+      <itunes:duration>00:47:30</itunes:duration>
+      <itunes:season>3</itunes:season>
+      <podcast:season name="Deserts">3</podcast:season>
+      <itunes:episode>1</itunes:episode>
+      <enclosure url="{{BASE}}/audio/s3e1.mp3" type="audio/mpeg" length="45600000"/>
+    </item>
+    <item>
+      <title>The first echo</title>
+      <guid isPermaLink="false">long-signal-s1e1</guid>
+      <pubDate>Mon, 05 Jan 2026 08:00:00 GMT</pubDate>
+      <itunes:duration>2400</itunes:duration>
+      <itunes:season>1</itunes:season>
+      <itunes:episode>1</itunes:episode>
+      <enclosure url="{{BASE}}/audio/s1e1.mp3" type="audio/mpeg" length="38400000"/>
+    </item>
+  </channel>
+</rss>

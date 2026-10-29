@@ -65,7 +65,7 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 
 ### Crates
 
-- `beacon-core`: empty at M0.
+- `beacon-core`: model, store and feed services (M1). Not yet used by the app; M2 and M3 connect it.
 - `beacon-gtk`: the app (binary `beacon`). Depends on `beacon-core`, never the reverse.
 
 ### M0
@@ -75,3 +75,13 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - `ui/dialogs/about.rs`: `AdwAboutDialog`.
 - `data/shortcuts-dialog.ui`: loaded automatically by `AdwApplication`, which also provides `app.shortcuts` (Ctrl+?).
 - `data/style.css`: loaded automatically from the resource base path `/com/theoforger/Beacon/`.
+
+### M1
+
+- `model/`: `Show` and `Episode` (database identity plus the listener's state) wrap `ShowInfo` and `EpisodeInfo` (what the feed says). Also `Season`, `Enclosure`, `Chapter`, `QueueItem`, `ParsedFeed`.
+- `store/`: `Store` over SQLite. Migrations in `store/migrations/` (rusqlite_migration). Tables `shows`, `episodes` (unique on show and GUID, with the listener's state columns), `chapters`, `queue`, plus FTS5 tables `shows_fts` and `episodes_fts` kept in sync by triggers. `sync_episodes` inserts new episodes and updates metadata of known ones in one transaction, never touching state.
+- `services/feeds/`: `FeedClient` fetches; `parse_feed` reads RSS 2.0 with the iTunes, Podcasting 2.0 and Podlove Simple Chapters namespaces (`rss` crate). `time.rs` parses durations and loose `<pubDate>` values.
+- `services/covers.rs`: `CoverCache` keyed by the SHA-256 of the image URL; writes through a `.part` file.
+- `services/library.rs`: `Library` ties them together. `subscribe` and `refresh` fetch without holding the store lock, then write. Time comes from an injected `Clock`.
+- Errors: `FeedError`, `StoreError`, `CoverError`, `LibraryError` (`error.rs`).
+

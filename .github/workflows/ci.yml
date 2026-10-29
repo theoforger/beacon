@@ -34,7 +34,7 @@ jobs:
       - name: Install build dependencies
         run: >
           dnf install -y --setopt=install_weak_deps=False
-          gcc git gettext gettext-devel glib2-devel gtk4-devel libadwaita-devel
+          gcc git gettext gettext-devel glib2-devel gtk4-devel libadwaita-devel sqlite-devel
           desktop-file-utils appstream meson ninja-build
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Fixture: broken XML (unclosed elements). -->
+<rss version="2.0">
+  <channel>
+    <title>Broken
+    <item><title>Never closed</title>

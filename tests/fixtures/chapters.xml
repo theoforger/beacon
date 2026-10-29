@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Fixture: inline Podlove chapters and a Podcasting 2.0 chapters URL, with an unusual prefix. -->
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:psc="http://podlove.org/simple-chapters"
+     xmlns:pc="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>Paper Trails</title>
+    <link>https://example.com/paper-trails</link>
+    <description>Archives, letters and the people who keep them.</description>
+    <itunes:author>Dr. Nadia Rosen</itunes:author>
+    <item>
+      <title>The lost ledger</title>
+      <guid>paper-trails-2</guid>
+      <pubDate>Mon, 26 Oct 2026 06:00:00 GMT</pubDate>
+      <psc:chapters version="1.2">
+        <psc:chapter start="00:00:00" title="Cold open"/>
+        <psc:chapter start="00:03:12" title="Why quiet is hard to protect"/>
+        <psc:chapter start="00:21:40.500" title="The ledger" href="https://example.com/ledger"/>
+      </psc:chapters>
+      <enclosure url="{{BASE}}/audio/pt2.mp3" type="audio/mpeg" length="30000000"/>
+    </item>
+    <item>
+      <title>Letters home</title>
+      <guid>paper-trails-1</guid>
+      <pubDate>Mon, 19 Oct 2026 06:00:00 GMT</pubDate>
+      <pc:chapters url="{{BASE}}/chapters/pt1.json" type="application/json+chapters"/>
+      <enclosure url="{{BASE}}/audio/pt1.mp3" type="audio/mpeg" length="28000000"/>
+    </item>
+  </channel>
+</rss>

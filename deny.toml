@@ -13,11 +13,15 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    # Data licence of webpki-root-certs (Mozilla's CA bundle, via reqwest's TLS).
+    "CDLA-Permissive-2.0",
     "GPL-3.0-or-later",
     "ISC",
     "MIT",
     "MPL-2.0",
     "Unicode-3.0",
+    # foldhash (via hashbrown, used by rusqlite and reqwest).
+    "Zlib",
 ]
 confidence-threshold = 0.9
 

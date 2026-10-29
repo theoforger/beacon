@@ -11,6 +11,23 @@ Every crate and every custom widget gets an entry here, with the reason. Before 
 | `tracing` | Logging | 0.1.44 | 2025-12-18 | 984M / 242M | tokio-rs/tracing, 905 open, pushed 2026-10-09 | MIT | De facto standard; works with tokio, which relm4 commands use. The open count is high but the project is very active |
 | `tracing-subscriber` (feature `env-filter`) | Log output | 0.3.23 | 2026-03-13 | 702M / 175M | tokio-rs/tracing | MIT | Companion to `tracing`; `RUST_LOG` filtering |
 | `glib-build-tools` (build dependency) | Compile the GResource in `build.rs` | 0.22.8 | 2026-06-29 | 543k / 138k | gtk-rs/gtk-rs-core, 170 open, pushed 2026-10-28 | MIT | Lets a plain `cargo build` embed resources, so clippy and tests run without Meson |
+| `rss` (no default features) | Feed parsing (M1) | 2.1.2 | 2026-09-10 | 5.1M / 605k | rust-syndication/rss, 12 open, pushed 2026-09-30 | MIT/Apache-2.0 | Exposes every iTunes item field and keeps other namespaces (`podcast:`, `psc:`) in an extension map, so one parse covers seasons, episode numbers, durations and chapters. RSS only; podcasts are RSS 2.0. Chosen over `feed-rs`, see below |
+| `reqwest` (default features + `stream`) | HTTP (M1) | 0.13.5 | 2026-09-08 | 850M / 236M | seanmonstar/reqwest, 487 open, pushed 2026-10-19 | MIT OR Apache-2.0 | Standard async HTTP client. Default TLS is rustls with the platform verifier, so it uses the runtime's CA store and needs no OpenSSL |
+| `tokio` (`fs`) | Async runtime (M1) | 1.54.1 | 2026-10-21 | 1.12B / 278M | tokio-rs/tokio, 441 open, pushed 2026-10-29 | MIT | Required by reqwest; relm4 commands run on it. Core uses only `tokio::fs` |
+| `rusqlite` (`chrono`, `url`) | Storage (M1) | 0.40.2 (0.41.1 exists) | 2026-10-28 for 0.41.1 | 138M / 51M | rusqlite/rusqlite, 172 open, pushed 2026-10-28 | MIT | Links the runtime's SQLite 3.50.4, which has FTS5 (checked in `org.gnome.Platform//50`). Held at 0.40 because `rusqlite_migration` 2.6 requires it; move both together |
+| `rusqlite_migration` | Schema migrations (M1) | 2.6.0 | 2026-05-28 | 4.8M / 1.1M | cljoly/rusqlite_migration, 8 open, pushed 2026-10-26 | Apache-2.0 | Versioned migrations through SQLite's `user_version`; SQL lives in `store/migrations/` |
+| `thiserror` | Typed errors (M1) | 2.0.21 | 2026-09-23 | 1.73B / 468M | dtolnay/thiserror, 32 open, pushed 2026-10-16 | MIT OR Apache-2.0 | Standard derive for error enums |
+| `chrono` | Dates (M1) | 0.4.45 | 2026-06-04 | 925M / 217M | chronotope/chrono, 194 open, pushed 2026-09-07 | MIT OR Apache-2.0 | RFC 2822 and RFC 3339 parsing for `<pubDate>`; rusqlite maps it directly |
+| `url` | URLs (M1) | 2.5.8 | 2026-01-05 | 1.0B / 233M | servo/rust-url, 208 open, pushed 2026-07-31 | MIT OR Apache-2.0 | Validated URL type, shared with reqwest and rusqlite |
+| `sha2` | Cover cache keys (M1) | 0.11.1 | 2026-10-12 | 1.13B / 335M | RustCrypto/hashes, 38 open, pushed 2026-10-27 | MIT OR Apache-2.0 | Stable file names from image URLs |
+| `httpmock` (dev) | Local HTTP server for tests (M1) | 0.9.0 | 2026-10-20 | 33M / 6.6M | httpmock/httpmock, 24 open, pushed 2026-10-26 | MIT | Serves fixture feeds in integration tests. Chosen over `wiremock` (no release or commit since 2025-08-24) |
+| `tempfile` (dev) | Temporary files in tests (M1) | 3.27.0 | 2026-03-11 | 936M / 227M | Stebalien/tempfile, 10 open, pushed 2026-10-27 | MIT OR Apache-2.0 | Cover cache and on-disk database tests |
+
+### Rejected
+
+- **`feed-rs` 3.0** (tried in M1). Two problems with podcast feeds: it drops an item's iTunes data (duration, season, episode, image) unless the item also has `<itunes:title>` or `<itunes:summary>`, because `MediaObject::is_not_empty` ignores those fields; and it rejects `<itunes:duration>` written as `MM:SS`. It also does not read chapters. Working around that needed a second `roxmltree` parse of every feed, so it was replaced by `rss`. The first problem is worth reporting upstream.
+- **`roxmltree`**: only needed for the `feed-rs` workaround.
+- **`wiremock`**: no release or commit since 2025-08-24; `httpmock` is active.
 
 ## Planned crates
 
@@ -19,10 +36,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 | Job | Candidate | To check before adding |
 | --- | --- | --- |
 | Playback | `gstreamer-play` from gstreamer-rs (high-level player: seek, rate, position and state signals) | Use the release that matches gtk4-rs; GStreamer 1.26 is in the runtime |
-| Feed parsing | `feed-rs` | Whether it exposes iTunes season, episode and chapters. Test with real feeds, and add a small `roxmltree` pass for those tags if not |
 | OPML | `opml` | That it both parses and writes (both listed on docs.rs) |
-| HTTP | `reqwest` with rustls, on tokio (relm4 commands run on tokio) | Standard choice |
-| Storage | `rusqlite`, with FTS5 for search | That the bundled or runtime SQLite has FTS5 enabled |
 | Directory search | iTunes Search API (no key) | Apple's terms and rate limits; see `docs/specs/add-and-itunes.md` |
 | Media keys and MPRIS | An MPRIS server crate, not chosen | Compare candidates on last release, downloads and open issues |
 | Settings | GSettings through `gio` | Already in use |
@@ -38,7 +52,14 @@ One maintained crate per job. Before adding each one, check it and move it to th
 
 - **Cargo builds, Meson installs.** Meson calls Cargo through `build-aux/cargo-build.sh` and installs the desktop file, metainfo, schema and icons. The GResource is compiled by `build.rs`, so Cargo alone can build and test.
 - **Offline Flatpak build.** `build-aux/cargo-sources.json` is generated from `Cargo.lock` by `build-aux/flatpak-cargo-sources.py`, a small local script that writes the same layout as flatpak-builder-tools' generator for crates.io dependencies. It avoids downloading and running the upstream script on every update. Switch to the upstream generator if a git dependency is ever needed.
-- **Sandbox permissions** start minimal (`ipc`, `wayland`, `fallback-x11`, `dri`). Add `--share=network` with M1 (feeds) and `--socket=pulseaudio` with M4 (playback), each with a line here.
+- **Sandbox permissions** start minimal (`ipc`, `wayland`, `fallback-x11`, `dri`).
+  - `--share=network` (M1): fetching feeds and covers.
+  - `--socket=pulseaudio` comes with M4 (playback).
+
+## Behaviour
+
+- **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Unconfirmed product decision; easy to change in `Library::subscribe`.
+- **Episode identity** (M1). The feed's GUID; without one, the enclosure URL, then the item link, then the title. Refreshes match on this, so it must not change between fetches.
 
 ## Custom widgets
 

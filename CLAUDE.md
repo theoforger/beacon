@@ -48,7 +48,7 @@ Cargo workspace. `crates/beacon-core` holds the model, SQLite store and services
 7. Every icon-only button gets `set_tooltip_text` and an accessible `Label` property.
 8. Prefer maintained crates and stock libadwaita widgets. Every new crate (with last release, downloads, repository health, licence) and every custom widget gets an entry in `docs/decisions.md`. Add crates with `cargo add` (latest release, no exact pin); keep relm4, gtk4-rs, libadwaita-rs and gstreamer-rs in step; the GNOME 50 runtime is the ceiling.
 9. SPDX header `GPL-3.0-or-later` in every source file.
-10. Errors are typed in core and shown as toasts or status pages, never panics.
+10. Errors are typed in core and shown as toasts or status pages, never panics. The UI maps each error variant to its own gettext message; an error's `Display` text is for logs only, since core has no translations.
 11. Unit tests ship with every logic change; every feature ships with an integration test of its main scenario. A bug fix starts with a failing test. CI never calls live iTunes or podcast servers.
 12. Sandbox permissions stay as narrow as works; file access goes through portals (`GtkFileDialog`). Record each new permission in `docs/decisions.md`.
 
