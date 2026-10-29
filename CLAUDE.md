@@ -31,7 +31,7 @@ flatpak run com.theoforger.Beacon
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest build-aux/com.theoforger.Beacon.json
 ```
 
-Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`. Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
+Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
 
 ## Architecture
 
@@ -58,7 +58,7 @@ After every UI change, before reporting it done:
 
 1. Go through `docs/hig-checklist.md`.
 2. Fetch the relevant pages from https://developer.gnome.org/hig/ and quote them for each finding. Do not cite the HIG from memory.
-3. Take headless screenshots at 1440×900 and 360×640, light and dark, look at them, and compare with `docs/design/`.
+3. Screenshots, sparingly. Take only the views the change affects (often one size and one scheme), once the change is finished, not while iterating. Every affected view you skip goes in `docs/hig-reviews/pending-screenshots.md`: what to check, which views, and how to reach the state. At the end of each milestone take the full set (1440×900 and 360×640, light and dark), work through every pending row, record the results in `docs/hig-reviews/mN.md` and clear the rows. A milestone cannot close with pending rows.
 4. Run the accessibility and translation checks in the checklist.
 5. Fix and rerun until clean. A human looks at the end of each milestone.
 

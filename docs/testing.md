@@ -14,7 +14,7 @@ Two rules drive everything else:
 
 ## No UI automation
 
-The project does not run end-to-end tests through the real window. What the screen shows is checked by the HIG gate (screenshots, keyboard walk-through, Orca) after every UI change. To keep that gap small, keep logic out of widgets: components only translate messages into core calls and state into widget properties.
+The project does not run end-to-end tests through the real window. What the screen shows is checked by the HIG gate after every UI change (keyboard walk-through, Orca, and screenshots of the affected views; skipped views are logged and checked at milestone end). To keep that gap small, keep logic out of widgets: components only translate messages into core calls and state into widget properties.
 
 ## Scenarios
 

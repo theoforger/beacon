@@ -28,4 +28,5 @@ Rules found while auditing the mockup. Run through them after every UI change, t
 
 ## Screenshots
 
-- [ ] 1440×900 light, 1440×900 dark, 360×640 light, 360×640 dark, compared with the mockup in `docs/design/`.
+- [ ] Per change: the affected views only, once the change is finished. Every affected view skipped is logged in `docs/hig-reviews/pending-screenshots.md`.
+- [ ] Per milestone: 1440×900 light, 1440×900 dark, 360×640 light, 360×640 dark, compared with the mockup in `docs/design/`, and every pending row checked and cleared.

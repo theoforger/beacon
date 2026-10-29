@@ -2,7 +2,7 @@
 
 The checklist for building Beacon. Design details are in `docs/`. Tick an item only when it is merged and verified. Every milestone also has to pass the **exit gate**:
 
-- [ ] HIG gate clean (`docs/hig-checklist.md`, HIG pages quoted, screenshots at 1440×900 and 360×640 in light and dark)
+- [ ] HIG gate clean (`docs/hig-checklist.md`, HIG pages quoted), full screenshot set at 1440×900 and 360×640 in light and dark, and `docs/hig-reviews/pending-screenshots.md` empty
 - [ ] Accessibility and translation checks pass (gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text)
 - [ ] Unit tests for all new logic, plus an integration test of each new feature's main scenario
 - [ ] CI green; `docs/decisions.md` and `docs/architecture.md` up to date
@@ -40,6 +40,7 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [x] `/hig-review` skill written (`.claude/skills/hig-review/`) and `build-aux/screenshots.sh` for the four screenshots
 - [x] Headless screenshots verified at 1440×900 and 360×640, light and dark
 - [x] HIG gate for the M0 window: pass (see `docs/hig-reviews/m0.md`)
+- [ ] Pending screenshot checks for M0 cleared (main menu, About and Shortcuts dialogs; see `docs/hig-reviews/pending-screenshots.md`)
 - [x] First commit (`8ea4a3e`)
 
 ## Watch: GNOME 51
