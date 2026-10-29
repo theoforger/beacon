@@ -68,16 +68,23 @@ impl SimpleComponent for ShowsGrid {
             add_named[Some("grid")] = &gtk::ScrolledWindow {
                 set_hscrollbar_policy: gtk::PolicyType::Never,
 
-                #[name = "grid"]
-                gtk::GridView {
-                    set_max_columns: 12,
-                    set_single_click_activate: true,
-                    add_css_class: "flat-view",
-                    set_margin_top: 12,
-                    set_margin_bottom: 12,
-                    set_margin_start: 12,
-                    set_margin_end: 12,
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Shows"))],
+                // The HIG asks for a maximum width, against long rows.
+                #[wrap(Some)]
+                set_child = &adw::ClampScrollable {
+                    set_maximum_size: 1200,
+
+                    #[wrap(Some)]
+                    #[name = "grid"]
+                    set_child = &gtk::GridView {
+                        set_max_columns: 12,
+                        set_single_click_activate: true,
+                        add_css_class: "flat-view",
+                        set_margin_top: 12,
+                        set_margin_bottom: 12,
+                        set_margin_start: 12,
+                        set_margin_end: 12,
+                        update_property: &[gtk::accessible::Property::Label(&gettext("Shows"))],
+                    },
                 },
             },
         }

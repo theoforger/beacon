@@ -202,7 +202,8 @@ impl App {
         dialog.add_response("cancel", &gettext("_Cancel"));
         dialog.add_response("unsubscribe", &gettext("_Unsubscribe"));
         dialog.set_response_appearance("unsubscribe", adw::ResponseAppearance::Destructive);
-        dialog.set_default_response(Some("cancel"));
+        // No default: the HIG keeps Return off destructive buttons, and
+        // Escape cancels.
         dialog.set_close_response("cancel");
         let sender = sender.clone();
         dialog.connect_response(Some("unsubscribe"), move |_, _| {
