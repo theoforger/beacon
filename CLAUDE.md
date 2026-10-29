@@ -3,7 +3,7 @@
 A podcast app for GNOME. Rust, relm4 0.11, libadwaita 1.9, GNOME 50 runtime, packaged as a Flatpak. App ID `com.theoforger.Beacon`. Licence GPL-3.0-or-later.
 
 - `MILESTONES.md`: milestone checklist; tick items as they land.
-- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add view and iTunes, auto-delete).
+- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add page and iTunes, auto-delete).
 - `docs/decisions.md`: every crate and custom widget, with the reason, plus planned crates. `docs/hig-checklist.md`: the HIG gate. `docs/design/`: the mockup.
 
 ## Commands
@@ -113,7 +113,7 @@ Read the design's files from that link. Match how it looks.
 - **Queue:** three groups. Now Playing. Next in Queue, with count and total time, for episodes added by hand. Next from the list the playing episode came from. The behaviour copies a music app: manual queue first, then the rest of the list. Rows have a drag handle at the start, and Move Up and Move Down in the row menu.
 - **Favorites** and **Downloaded:** episode lists with status pages when empty.
 - **Add:** a page under Shows (with Back to Shows), opened from the + in the sidebar header or the Add Podcast tile. One search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see `docs/specs/add-and-itunes.md`), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
-- **Search:** a header toggle (and Ctrl+F) opens a search bar under the header. On a podcast page a This Show / Everywhere toggle appears, and This Show filters that page in place. Otherwise results show matching shows and episodes. With no results, a suggested Search Online button opens the Add view with the query filled in. The button does not appear in This Show scope.
+- **Search:** a header toggle (and Ctrl+F) opens a search bar under the header. On a podcast page a This Show / Everywhere toggle appears, and This Show filters that page in place. Otherwise results show matching shows and episodes. With no results, a suggested Search Online button opens the Add page with the query filled in. The button does not appear in This Show scope.
 - **Empty states** are status pages with an icon, a title and one line of description.
 
 **Episode rows**
