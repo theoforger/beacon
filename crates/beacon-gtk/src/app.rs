@@ -32,6 +32,7 @@ relm4::new_stateless_action!(SearchAction, WindowActionGroup, "search");
 #[derive(Debug)]
 pub enum AppMsg {
     Navigate(Location),
+    AddPodcast,
     Back,
     CloseDetails,
     ToggleSearch,
@@ -83,7 +84,7 @@ impl Component for App {
                         #[wrap(Some)]
                         #[name = "content_page"]
                         set_content = &adw::NavigationPage {
-                            set_title: &labels::title(model.trail.section()),
+                            set_title: &labels::view_title(model.trail.view()),
                             set_tag: Some("content"),
                             set_child: Some(model.content.widget()),
                         },
@@ -105,14 +106,15 @@ impl Component for App {
     ) -> ComponentParts<Self> {
         let sidebar = Sidebar::builder()
             .launch(())
-            .forward(sender.input_sender(), |SidebarOutput::Activated(l)| {
-                AppMsg::Navigate(l)
+            .forward(sender.input_sender(), |output| match output {
+                SidebarOutput::Activated(location) => AppMsg::Navigate(location),
+                SidebarOutput::AddPodcast => AppMsg::AddPodcast,
             });
         let content = Content::builder()
             .launch(())
             .forward(sender.input_sender(), |output| match output {
                 ContentOutput::Back => AppMsg::Back,
-                ContentOutput::AddPodcast => AppMsg::Navigate(Location::Add),
+                ContentOutput::AddPodcast => AppMsg::AddPodcast,
             });
         let details = DetailsPane::builder()
             .launch(())
@@ -180,6 +182,12 @@ impl Component for App {
                 // In the narrow layout, choosing anything pushes the content.
                 widgets.split_view.set_show_content(true);
             }
+            AppMsg::AddPodcast => {
+                if self.trail.open_add() {
+                    self.show_current(widgets, root);
+                }
+                widgets.split_view.set_show_content(true);
+            }
             AppMsg::Back => {
                 if self.trail.back() {
                     self.show_current(widgets, root);
@@ -193,15 +201,16 @@ impl Component for App {
 
 impl App {
     fn show_current(&self, widgets: &AppWidgets, window: &adw::ApplicationWindow) {
-        let location = self.trail.section();
-        widgets.content_page.set_title(&labels::title(location));
+        let view = self.trail.view();
+        widgets.content_page.set_title(&labels::view_title(view));
         self.content
             .widgets()
-            .capture_typing(location.has_search().then_some(window));
-        self.content.emit(ContentInput::Show(location));
+            .capture_typing(view.has_search().then_some(window));
+        self.content.emit(ContentInput::Show(view));
         self.content
             .emit(ContentInput::SetCanGoBack(self.trail.can_go_back()));
-        self.sidebar.emit(SidebarInput::Select(location));
+        self.sidebar
+            .emit(SidebarInput::Select(self.trail.section()));
     }
 
     /// Narrow windows: the sidebar becomes a page with the content pushed on
@@ -240,9 +249,11 @@ impl App {
             "visible",
             Some(&true.to_value()),
         );
-        for sidebar in self.sidebar.widgets().sidebars() {
-            breakpoint.add_setter(sidebar, "mode", Some(&adw::SidebarMode::Page.to_value()));
-        }
+        breakpoint.add_setter(
+            self.sidebar.widgets().library(),
+            "mode",
+            Some(&adw::SidebarMode::Page.to_value()),
+        );
         breakpoint
     }
 

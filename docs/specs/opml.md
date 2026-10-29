@@ -4,7 +4,7 @@ Milestone M7.
 
 ## Import
 
-Offer it from the main menu (Import Subscriptions) and by dropping a file onto the Add view.
+Offer it from the main menu (Import Subscriptions) and by dropping a file onto the Add page.
 
 1. Choose the file with `GtkFileDialog`, which uses the portal inside Flatpak.
 2. Parse with the `opml` crate. Walk nested outlines and flatten them. Read `xmlUrl` (tolerate attribute-case differences), and use `title` or `text` as the name. Skip outlines with no feed URL.

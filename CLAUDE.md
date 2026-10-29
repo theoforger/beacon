@@ -98,21 +98,21 @@ Read the design's files from that link. Match how it looks.
 **Layout and navigation**
 
 - Three columns: a left sidebar, a centre view, and an expandable right details pane. A persistent playback bar sits at the bottom across the full width.
-- The sidebar runs from the top edge of the window and has its own header: Refresh on the left, the app title in the centre, Main Menu on the right. It has no group title.
-- Sidebar items: Shows, New, Queue, Favorites, Downloaded, with Add at the bottom. Shows carries a count of podcasts that have new episodes. New shows the number of new episodes. Queue shows its length.
-- The centre header has Back on the left, the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Back follows the page hierarchy, not history (decided 2026-10-29): it appears only on a deeper page (such as a podcast page under Shows) and returns to its parent. Switching sections never adds a Back. Search is hidden in the Add view.
+- The sidebar runs from the top edge of the window and has its own header: Add Podcast (+) and Refresh on the left, the app title in the centre, Main Menu on the right. It has no group title. (Add moved from the bottom of the sidebar to the header on 2026-10-29, following the HIG's header-bar guidance.)
+- Sidebar items: Shows, New, Queue, Favorites, Downloaded. Shows carries a count of podcasts that have new episodes. New shows the number of new episodes. Queue shows its length.
+- The centre header has Back on the left, the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Back follows the page hierarchy, not history (decided 2026-10-29): it appears only on a deeper page (such as a podcast page under Shows) and returns to its parent. Switching sections never adds a Back. Search is hidden on the Add page.
 - The details pane also runs from the top edge. Its header says Episode Details. The window close button sits in the pane header while the pane is open, and in the centre header when it is closed.
 - On narrow windows the sidebar becomes a full page. Choosing an item pushes the content on top, and Back returns to the sidebar. The details pane becomes a full page with its own Back button, starts closed, and its header toggle is hidden.
 - The app opens on Shows. Dark mode and the accent colour follow the system.
 
 **Views**
 
-- **Shows:** a grid of cover art with a badge for unplayed episodes. The last tile is Add Podcast, which opens the Add view.
+- **Shows:** a grid of cover art with a badge for unplayed episodes. The last tile is Add Podcast, which opens the Add page.
 - **New:** episodes from all subscribed shows grouped by recency (Today, Yesterday, weekday, Last week, Earlier in the month). An All / Unplayed toggle group sits above, and the choice is remembered.
 - **Podcast page:** a hero with cover, category, title, author and description. Subscribe is the accent button, and becomes a neutral Unsubscribe once subscribed. A More Options menu holds Mark All as Played, Download All Episodes and Copy Feed Address. Below sit an All / Unplayed toggle group (remembered per show) and a sort menu with radio items, Newest First and Oldest First. Episodes group into collapsible seasons, with season names, when the feed carries season tags.
 - **Queue:** three groups. Now Playing. Next in Queue, with count and total time, for episodes added by hand. Next from the list the playing episode came from. The behaviour copies a music app: manual queue first, then the rest of the list. Rows have a drag handle at the start, and Move Up and Move Down in the row menu.
 - **Favorites** and **Downloaded:** episode lists with status pages when empty.
-- **Add:** one search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see `docs/specs/add-and-itunes.md`), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
+- **Add:** a page under Shows (with Back to Shows), opened from the + in the sidebar header or the Add Podcast tile. One search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see `docs/specs/add-and-itunes.md`), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
 - **Search:** a header toggle (and Ctrl+F) opens a search bar under the header. On a podcast page a This Show / Everywhere toggle appears, and This Show filters that page in place. Otherwise results show matching shows and episodes. With no results, a suggested Search Online button opens the Add view with the query filled in. The button does not appear in This Show scope.
 - **Empty states** are status pages with an icon, a title and one line of description.
 

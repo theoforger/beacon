@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The centre pane: header (Back, title, Search, details toggle), the search
-//! bar, and one page per location. Until the views land (M3 onwards) every
-//! page is its empty state.
+//! bar, and one page per view. Until the views land (M3 onwards) every page
+//! is its empty state.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
 
-use crate::navigation::Location;
+use crate::navigation::{Location, Subpage, View};
 use crate::ui::labels;
 
 #[derive(Debug)]
 pub enum ContentInput {
-    Show(Location),
+    Show(View),
     /// Whether a deeper page is open, so Back leads to its parent.
     SetCanGoBack(bool),
 }
@@ -25,7 +25,7 @@ pub enum ContentOutput {
 }
 
 pub struct Content {
-    location: Location,
+    view: View,
     can_go_back: bool,
 }
 
@@ -67,7 +67,7 @@ impl SimpleComponent for Content {
                     set_tooltip_text: Some(&gettext("Search")),
                     update_property: &[gtk::accessible::Property::Label(&gettext("Search"))],
                     #[watch]
-                    set_visible: model.location.has_search(),
+                    set_visible: model.view.has_search(),
                 },
             },
 
@@ -99,7 +99,7 @@ impl SimpleComponent for Content {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let model = Content {
-            location: Location::Shows,
+            view: View::Section(Location::Shows),
             can_go_back: false,
         };
         let widgets = view_output!();
@@ -112,27 +112,33 @@ impl SimpleComponent for Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
-        for location in Location::SIDEBAR.into_iter().chain([Location::Add]) {
-            let page = empty_state(location, &sender);
-            widgets.stack.add_named(&page, Some(location.id()));
+        let views = Location::ALL
+            .map(View::Section)
+            .into_iter()
+            .chain([View::Subpage(Subpage::Add)]);
+        for view in views {
+            widgets
+                .stack
+                .add_named(&empty_state(view, &sender), Some(page_id(view)));
         }
-        widgets.stack.set_visible_child_name(model.location.id());
+        widgets.stack.set_visible_child_name(page_id(model.view));
 
         ComponentParts { model, widgets }
     }
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         match message {
-            ContentInput::Show(location) => self.location = location,
+            ContentInput::Show(view) => self.view = view,
             ContentInput::SetCanGoBack(can) => self.can_go_back = can,
         }
     }
 
     fn post_view() {
-        if stack.visible_child_name().as_deref() != Some(model.location.id()) {
-            stack.set_visible_child_name(model.location.id());
+        let id = page_id(model.view);
+        if stack.visible_child_name().as_deref() != Some(id) {
+            stack.set_visible_child_name(id);
         }
-        if !model.location.has_search() {
+        if !model.view.has_search() {
             search_bar.set_search_mode(false);
         }
     }
@@ -158,36 +164,52 @@ impl ContentWidgets {
     }
 }
 
-fn empty_state(location: Location, sender: &ComponentSender<Content>) -> adw::StatusPage {
-    let (title, description) = match location {
-        Location::Shows => (
+/// Stack page names. Podcast pages arrive in M3 with their own widget.
+fn page_id(view: View) -> &'static str {
+    match view {
+        View::Section(Location::Shows) => "shows",
+        View::Section(Location::New) => "new",
+        View::Section(Location::Queue) => "queue",
+        View::Section(Location::Favorites) => "favorites",
+        View::Section(Location::Downloaded) => "downloaded",
+        View::Subpage(Subpage::Add) => "add",
+        View::Subpage(Subpage::Show(_)) => "show",
+    }
+}
+
+fn empty_state(view: View, sender: &ComponentSender<Content>) -> adw::StatusPage {
+    let (title, description) = match view {
+        View::Section(Location::Shows) => (
             gettext("No Podcasts"),
             gettext("Add a podcast by searching for it or pasting its feed address"),
         ),
-        Location::New => (
+        View::Section(Location::New) => (
             gettext("No Episodes"),
             gettext("Subscribe to a podcast to see its episodes here"),
         ),
-        Location::Queue => (
+        View::Section(Location::Queue) => (
             gettext("Queue Is Empty"),
             gettext("Add episodes to the queue to play them next"),
         ),
-        Location::Favorites => (
+        View::Section(Location::Favorites) => (
             gettext("No Favorites"),
             gettext("Mark an episode as a favorite to find it here"),
         ),
-        Location::Downloaded => (
+        View::Section(Location::Downloaded) => (
             gettext("No Downloads"),
             gettext("Download an episode to listen offline"),
         ),
-        Location::Add => (
+        View::Subpage(Subpage::Add) => (
             gettext("Search for Podcasts"),
             gettext("Find a show by name, or paste the address of its feed"),
         ),
+        View::Subpage(Subpage::Show(_)) => {
+            unreachable!("podcast pages have their own widget, not an empty state")
+        }
     };
-    let icon = match location {
-        Location::Add => "system-search-symbolic",
-        other => labels::icon(other),
+    let icon = match view {
+        View::Section(location) => labels::icon(location),
+        View::Subpage(_) => "system-search-symbolic",
     };
     let page = adw::StatusPage::builder()
         .icon_name(icon)
@@ -195,7 +217,7 @@ fn empty_state(location: Location, sender: &ComponentSender<Content>) -> adw::St
         .description(description)
         .build();
 
-    if location == Location::Shows {
+    if view == View::Section(Location::Shows) {
         let add = gtk::Button::builder()
             .label(gettext("Add Podcast"))
             .halign(gtk::Align::Center)

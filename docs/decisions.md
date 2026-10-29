@@ -69,5 +69,5 @@ No custom widgets yet.
 
 - **Queue icon** (`data/icons/scalable/actions/queue-symbolic.svg`, M2). The Adwaita icon theme in GNOME 50 has no queue or playlist icon; this one follows the mockup (three lines and a play triangle).
 - **Shows icon** (M2) reuses Beacon's symbolic app icon, which is the broadcast symbol the mockup uses; the theme has no podcast icon.
-- **Add pinned at the bottom of the sidebar** (M2). `AdwSidebar` cannot pin an item, so Add is a second one-item `AdwSidebar` in the sidebar's bottom bar; selecting in one clears the other.
+- **Add is a page under Shows, opened from the sidebar header** (M2, decided by the user 2026-10-29). The HIG puts add buttons at the start of the header bar ("Buttons for the main user actions, such as _new_, _add_, _open_ and _back_. These are placed at the start of the header bar") and controls that affect the sidebar list above it. So + sits before Refresh in the sidebar header, and Add opens as a deeper page under Shows with Back. This replaces the mockup's Add item at the bottom of the sidebar.
 - **Narrow sidebar style** (M2). Below 760sp both sidebars switch to `AdwSidebarMode::Page` (boxed rows with arrows), libadwaita's pattern for a sidebar collapsed into a page, instead of the mockup's plain rows.

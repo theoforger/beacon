@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The sidebar: its own header (Refresh, title, Main Menu), the library
-//! items with count badges, and Add pinned at the bottom.
+//! The sidebar: its own header (Add Podcast, Refresh, title, Main Menu) and
+//! the library items with count badges.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
@@ -33,6 +33,7 @@ pub enum SidebarInput {
 #[derive(Debug)]
 pub enum SidebarOutput {
     Activated(Location),
+    AddPodcast,
 }
 
 pub struct Sidebar {
@@ -48,9 +49,15 @@ impl Component for Sidebar {
 
     view! {
         adw::ToolbarView {
-            set_bottom_bar_style: adw::ToolbarStyle::RaisedBorder,
-
             add_top_bar = &adw::HeaderBar {
+                pack_start = &gtk::Button {
+                    set_icon_name: "list-add-symbolic",
+                    set_tooltip_text: Some(&gettext("Add Podcast")),
+                    update_property: &[gtk::accessible::Property::Label(&gettext("Add Podcast"))],
+                    connect_clicked[sender] => move |_| {
+                        let _ = sender.output(SidebarOutput::AddPodcast);
+                    },
+                },
                 pack_start = &gtk::Button {
                     set_icon_name: "view-refresh-symbolic",
                     // Enabled once feeds can be refreshed (M3).
@@ -70,9 +77,6 @@ impl Component for Sidebar {
             #[wrap(Some)]
             #[name = "library"]
             set_content = &adw::Sidebar {},
-
-            #[name = "bottom"]
-            add_bottom_bar = &adw::Sidebar {},
         }
     }
 
@@ -85,7 +89,7 @@ impl Component for Sidebar {
 
         let section = adw::SidebarSection::new();
         let mut badges = Vec::new();
-        for location in Location::SIDEBAR {
+        for location in Location::ALL {
             let badge = gtk::Label::builder()
                 .css_classes(["dim-label", "numeric"])
                 .visible(false)
@@ -101,28 +105,10 @@ impl Component for Sidebar {
         }
         widgets.library.append(section);
 
-        let add_section = adw::SidebarSection::new();
-        add_section.append(
-            adw::SidebarItem::builder()
-                .title(labels::title(Location::Add))
-                .icon_name(labels::icon(Location::Add))
-                .build(),
-        );
-        widgets.bottom.append(add_section);
-
-        // The two sidebars act as one list: selecting in one clears the other.
-        let bottom = widgets.bottom.clone();
-        let s = sender.clone();
         widgets.library.connect_activated(move |_, index| {
-            bottom.set_selected(gtk::INVALID_LIST_POSITION);
-            if let Some(&location) = Location::SIDEBAR.get(index as usize) {
-                let _ = s.output(SidebarOutput::Activated(location));
+            if let Some(&location) = Location::ALL.get(index as usize) {
+                let _ = sender.output(SidebarOutput::Activated(location));
             }
-        });
-        let library = widgets.library.clone();
-        widgets.bottom.connect_activated(move |_, _| {
-            library.set_selected(gtk::INVALID_LIST_POSITION);
-            let _ = sender.output(SidebarOutput::Activated(Location::Add));
         });
 
         let model = Sidebar { badges };
@@ -157,22 +143,17 @@ impl Component for Sidebar {
 
 impl Sidebar {
     fn select(&self, widgets: &SidebarWidgets, location: Location) {
-        let index = Location::SIDEBAR.iter().position(|&l| l == location);
+        let index = Location::ALL.iter().position(|&l| l == location);
         widgets
             .library
             .set_selected(index.map_or(gtk::INVALID_LIST_POSITION, |i| i as u32));
-        widgets.bottom.set_selected(if location == Location::Add {
-            0
-        } else {
-            gtk::INVALID_LIST_POSITION
-        });
     }
 }
 
-/// Sidebar widgets that follow the window's narrow layout.
 impl SidebarWidgets {
-    pub fn sidebars(&self) -> [&adw::Sidebar; 2] {
-        [&self.library, &self.bottom]
+    /// Follows the window's narrow layout.
+    pub fn library(&self) -> &adw::Sidebar {
+        &self.library
     }
 }
 
