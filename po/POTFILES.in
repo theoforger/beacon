@@ -1,13 +1,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Files with translatable strings. Keep sorted.
-crates/beacon-gtk/src/app.rs
+crates/beacon-gtk/src/app/library.rs
+crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
+crates/beacon-gtk/src/ui/add_page.rs
 crates/beacon-gtk/src/ui/content.rs
 crates/beacon-gtk/src/ui/details_pane.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
+crates/beacon-gtk/src/ui/errors.rs
+crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs
+crates/beacon-gtk/src/ui/new_view.rs
 crates/beacon-gtk/src/ui/player_bar.rs
+crates/beacon-gtk/src/ui/show_hero.rs
+crates/beacon-gtk/src/ui/show_page.rs
+crates/beacon-gtk/src/ui/shows_grid.rs
 crates/beacon-gtk/src/ui/sidebar.rs
+crates/beacon-gtk/src/ui/widgets/episode_row.rs
 data/com.theoforger.Beacon.desktop.in
 data/com.theoforger.Beacon.gschema.xml
 data/com.theoforger.Beacon.metainfo.xml.in

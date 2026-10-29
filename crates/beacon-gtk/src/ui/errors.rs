@@ -17,7 +17,7 @@ pub fn library(error: &LibraryError) -> String {
 
 pub fn feed(error: &FeedError) -> String {
     match error {
-        FeedError::Network(_) => gettext("Could not reach the feed. Check your connection."),
+        FeedError::Network(_) => gettext("Could not reach the feed"),
         // Translators: the number is an HTTP status code, such as 404.
         FeedError::Status(code) => gettext("The feed's server answered with error {code}")
             .replace("{code}", &code.to_string()),

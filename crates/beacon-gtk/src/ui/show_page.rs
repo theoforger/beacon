@@ -324,7 +324,7 @@ fn factory(hero: Rc<ShowHero>, on_action: OnRowAction) -> gtk::SignalListItemFac
             }
             Entry::Empty => {
                 let label = gtk::Label::builder()
-                    .label(gettext("No unplayed episodes. You are all caught up."))
+                    .label(gettext("No unplayed episodes: you are all caught up"))
                     .wrap(true)
                     .margin_top(24)
                     .css_classes(["dim-label"])

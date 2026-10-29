@@ -196,7 +196,7 @@ impl App {
         let dialog = adw::AlertDialog::new(
             Some(&gettext("Unsubscribe From {show}?").replace("{show}", &title)),
             Some(&gettext(
-                "Its episodes, your progress in them and your favorites from it are removed from your library.",
+                "Its episodes, your progress in them and your favorites from it are removed from your library",
             )),
         );
         dialog.add_response("cancel", &gettext("_Cancel"));

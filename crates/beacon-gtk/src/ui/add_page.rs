@@ -107,7 +107,7 @@ impl Component for AddPage {
                         set_title: &gettext("Search for Podcasts"),
                         #[watch]
                         set_description: Some(&if model.typed {
-                            gettext("Searching by name is not available yet. Paste the address of the podcast's feed instead.")
+                            gettext("Searching by name is not available yet; paste the address of the podcast's feed instead")
                         } else {
                             gettext("Find a show by name, or paste the address of its feed")
                         }),

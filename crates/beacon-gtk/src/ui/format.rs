@@ -32,14 +32,16 @@ pub fn subtitle(episode: &Episode, show_title: &str) -> String {
 fn season_and_episode(episode: &Episode) -> Option<String> {
     let number = episode.info.number.map(number);
     match (&episode.info.season, number) {
-        // Translators: season and episode numbers, as in "S3 E2".
         (Some(season), Some(n)) => Some(
+            // Translators: season and episode numbers, as in "S3 E2".
             gettext("S{season} E{episode}")
                 .replace("{season}", &season.number.to_string())
                 .replace("{episode}", &n),
         ),
-        // Translators: an episode number without a season, as in "E12".
-        (None, Some(n)) => Some(gettext("E{episode}").replace("{episode}", &n)),
+        (None, Some(n)) => Some(
+            // Translators: an episode number without a season, as in "E12".
+            gettext("E{episode}").replace("{episode}", &n),
+        ),
         (Some(season), None) => Some(
             // Translators: a season number without an episode, as in "S3".
             gettext("S{season}").replace("{season}", &season.number.to_string()),
