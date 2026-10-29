@@ -62,13 +62,8 @@ pub struct Parts {
 
 impl EpisodeRow {
     pub fn new(on_action: OnRowAction) -> Self {
-        let root: Self = glib::Object::builder()
-            .property("spacing", 12)
-            .property("margin-top", 6)
-            .property("margin-bottom", 6)
-            .property("margin-start", 6)
-            .property("margin-end", 6)
-            .build();
+        let root: Self = glib::Object::builder().property("spacing", 12).build();
+        root.set_css_classes(&["episode-card"]);
         let cover = Cover::new(COVER_SIZE);
 
         let dot = gtk::Box::builder()
@@ -170,6 +165,18 @@ impl EpisodeRow {
         };
         let _ = root.imp().parts.set(parts);
         root
+    }
+
+    /// Where the row sits in its group, for the boxed-list corners and
+    /// separators.
+    pub fn set_position(&self, first: bool, last: bool) {
+        for (class, on) in [("first", first), ("last", last)] {
+            if on {
+                self.add_css_class(class);
+            } else {
+                self.remove_css_class(class);
+            }
+        }
     }
 
     pub fn bind(&self, item: &EpisodeItem) {

@@ -2,7 +2,7 @@
 
 //! The top of a podcast page: cover, category, title, author, description,
 //! Unsubscribe and More Options, then the All / Unplayed toggle group and the
-//! sort menu. Its menus use the page's `show.*` actions.
+//! sort toggle group. Its menu uses the page's `show.*` actions.
 
 use beacon_core::model::{EpisodeFilter, SortOrder};
 use beacon_core::text;
@@ -25,6 +25,7 @@ pub struct ShowHero {
     description: gtk::Label,
     pub unsubscribe: gtk::Button,
     pub filter: adw::ToggleGroup,
+    pub sort: adw::ToggleGroup,
 }
 
 impl ShowHero {
@@ -84,13 +85,29 @@ impl ShowHero {
         filter
             .upcast_ref::<gtk::Widget>()
             .update_property(&[gtk::accessible::Property::Label(&gettext("Show Episodes"))]);
-        let sort = gtk::MenuButton::builder()
-            .icon_name("view-sort-descending-symbolic")
-            .tooltip_text(gettext("Sort Episodes"))
-            .menu_model(&sort_menu())
-            .css_classes(["flat"])
-            .build();
-        sort.update_property(&[gtk::accessible::Property::Label(&gettext("Sort Episodes"))]);
+        let sort = adw::ToggleGroup::builder().homogeneous(true).build();
+        for (order, icon, label) in [
+            (
+                SortOrder::NewestFirst,
+                "view-sort-descending-symbolic",
+                gettext("Newest First"),
+            ),
+            (
+                SortOrder::OldestFirst,
+                "view-sort-ascending-symbolic",
+                gettext("Oldest First"),
+            ),
+        ] {
+            sort.add(
+                adw::Toggle::builder()
+                    .name(sort_name(order))
+                    .icon_name(icon)
+                    .tooltip(label)
+                    .build(),
+            );
+        }
+        sort.upcast_ref::<gtk::Widget>()
+            .update_property(&[gtk::accessible::Property::Label(&gettext("Sort Episodes"))]);
         let controls = gtk::Box::builder().spacing(6).margin_top(18).build();
         let spacer = gtk::Box::builder().hexpand(true).build();
         controls.append(&filter);
@@ -123,6 +140,7 @@ impl ShowHero {
             description,
             unsubscribe,
             filter,
+            sort,
         }
     }
 
@@ -145,6 +163,10 @@ impl ShowHero {
         if self.filter.active_name().as_deref() != Some(name) {
             self.filter.set_active_name(Some(name));
         }
+        let order = sort_name(data.prefs.order);
+        if self.sort.active_name().as_deref() != Some(order) {
+            self.sort.set_active_name(Some(order));
+        }
     }
 }
 
@@ -166,19 +188,6 @@ fn more_menu() -> gio::Menu {
         Some("show.download-all"),
     );
     menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
-    menu
-}
-
-fn sort_menu() -> gio::Menu {
-    let menu = gio::Menu::new();
-    for (label, order) in [
-        (gettext("_Newest First"), SortOrder::NewestFirst),
-        (gettext("_Oldest First"), SortOrder::OldestFirst),
-    ] {
-        let item = gio::MenuItem::new(Some(&label), None);
-        item.set_action_and_target_value(Some("show.sort"), Some(&sort_name(order).to_variant()));
-        menu.append_item(&item);
-    }
     menu
 }
 

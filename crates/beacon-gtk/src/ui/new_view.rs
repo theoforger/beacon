@@ -131,14 +131,14 @@ impl Component for NewView {
         })));
         widgets
             .list
-            .set_model(Some(&gtk::NoSelection::new(Some(sections))));
+            .set_model(Some(&gtk::NoSelection::new(Some(sections.clone()))));
 
         let on_action: OnRowAction = Rc::new(move |item, action| {
             let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
         });
         widgets
             .list
-            .set_factory(Some(&row_factory(on_action.clone())));
+            .set_factory(Some(&row_factory(on_action.clone(), sections.upcast())));
         widgets.list.set_header_factory(Some(&header_factory()));
         widgets.list.connect_activate(move |list, position| {
             if let Some(item) = list
@@ -214,7 +214,7 @@ fn group_of(object: &glib::Object) -> Option<RecencyGroup> {
     boxed(object).map(|b| b.borrow::<Entry>().0)
 }
 
-fn row_factory(on_action: OnRowAction) -> gtk::SignalListItemFactory {
+fn row_factory(on_action: OnRowAction, model: gio::ListModel) -> gtk::SignalListItemFactory {
     let factory = gtk::SignalListItemFactory::new();
     factory.connect_bind(move |_, item| {
         let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
@@ -223,7 +223,19 @@ fn row_factory(on_action: OnRowAction) -> gtk::SignalListItemFactory {
         let Some(entry) = item.item().as_ref().and_then(boxed) else {
             return;
         };
-        row_of(item, &on_action).bind(&entry.borrow::<Entry>().1);
+        let row = row_of(item, &on_action);
+        row.bind(&entry.borrow::<Entry>().1);
+        // A group's rows form one boxed list: round its first and last.
+        let position = item.position();
+        let group = entry.borrow::<Entry>().0;
+        let neighbour = |offset: i64| {
+            u32::try_from(i64::from(position) + offset)
+                .ok()
+                .and_then(|p| model.item(p))
+                .as_ref()
+                .and_then(group_of)
+        };
+        row.set_position(neighbour(-1) != Some(group), neighbour(1) != Some(group));
     });
     factory
 }

@@ -29,6 +29,32 @@ pub fn subtitle(episode: &Episode, show_title: &str) -> String {
     parts.join(&gettext(" · "))
 }
 
+/// The details pane's subtitle: "Season 3, Episode 2 · Oct 27 · 52 min".
+pub fn long_subtitle(episode: &Episode) -> String {
+    let number = episode.info.number.map(number);
+    let numbers = match (&episode.info.season, number) {
+        (Some(season), Some(n)) => Some(
+            // Translators: as in "Season 3, Episode 2".
+            gettext("Season {season}, Episode {episode}")
+                .replace("{season}", &season.number.to_string())
+                .replace("{episode}", &n),
+        ),
+        (None, Some(n)) => Some(gettext("Episode {episode}").replace("{episode}", &n)),
+        (Some(season), None) => {
+            Some(gettext("Season {number}").replace("{number}", &season.number.to_string()))
+        }
+        (None, None) => None,
+    };
+    let mut parts: Vec<String> = numbers.into_iter().collect();
+    if let Some(published) = episode.info.published {
+        parts.push(date(published));
+    }
+    if let Some(duration) = episode.info.duration {
+        parts.push(length(duration));
+    }
+    parts.join(&gettext(" · "))
+}
+
 fn season_and_episode(episode: &Episode) -> Option<String> {
     let number = episode.info.number.map(number);
     match (&episode.info.season, number) {

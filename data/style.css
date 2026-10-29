@@ -42,3 +42,40 @@
 .flat-view {
   background: none;
 }
+
+/* Episode rows look like a boxed list: one card per group (a recency group
+ * or a season), with separators between rows and rounded ends. The lists
+ * stay list views, so long feeds stay fast. */
+.flat-view > row {
+  padding: 0;
+  background: none;
+}
+
+.episode-card {
+  padding: 8px 12px;
+  background-color: var(--card-bg-color);
+}
+
+.episode-card:not(.last) {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.episode-card.first {
+  margin-top: 6px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.episode-card.last {
+  margin-bottom: 6px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.flat-view > row:hover > .episode-card {
+  background-image: image(alpha(currentColor, 0.03));
+}
+
+.flat-view > row:active > .episode-card {
+  background-image: image(alpha(currentColor, 0.08));
+}

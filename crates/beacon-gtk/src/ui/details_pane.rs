@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The expandable right pane. M3 shows the chosen episode's cover, show,
-//! title, subtitle and description; actions and chapters arrive with M4.
+//! The expandable right pane, laid out as in the mockup: cover, show, title,
+//! subtitle, then About This Episode. The actions between the subtitle and
+//! the description, and the chapters after it, arrive with M4.
 
 use beacon_core::text;
 use gettextrs::gettext;
@@ -13,7 +14,8 @@ use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::models::EpisodeItem;
 
-const COVER_SIZE: i32 = 200;
+/// As in the mockup at 1440px wide.
+const COVER_SIZE: i32 = 176;
 
 #[derive(Debug)]
 pub enum DetailsPaneInput {
@@ -86,6 +88,7 @@ impl SimpleComponent for DetailsPane {
                                 set_xalign: 0.0,
                                 set_wrap: true,
                                 add_css_class: "dim-label",
+                                add_css_class: "caption-heading",
                                 #[watch]
                                 set_label: model.episode.as_ref().map(|e| e.show_title.as_str()).unwrap_or_default(),
                             },
@@ -103,10 +106,18 @@ impl SimpleComponent for DetailsPane {
                                 set_wrap: true,
                                 add_css_class: "dim-label",
                                 #[watch]
-                                set_label: &model.episode.as_ref().map(|e| format::subtitle(&e.episode, "")).unwrap_or_default(),
+                                set_label: &model.episode.as_ref().map(|e| format::long_subtitle(&e.episode)).unwrap_or_default(),
                             },
                             gtk::Label {
-                                set_margin_top: 12,
+                                set_margin_top: 18,
+                                set_xalign: 0.0,
+                                set_label: &gettext("About This Episode"),
+                                add_css_class: "heading",
+                                set_accessible_role: gtk::AccessibleRole::Heading,
+                                #[watch]
+                                set_visible: model.episode.as_ref().is_some_and(|e| e.episode.info.description.is_some()),
+                            },
+                            gtk::Label {
                                 set_xalign: 0.0,
                                 set_wrap: true,
                                 set_wrap_mode: pango::WrapMode::WordChar,

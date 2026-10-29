@@ -19,7 +19,7 @@ use crate::ui::episode_list::{boxed, row_of};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction, SeasonItems, ShowPageData};
 use crate::ui::new_view::filter_from;
-use crate::ui::show_hero::{ShowHero, sort_from, sort_name};
+use crate::ui::show_hero::{ShowHero, sort_from};
 use crate::ui::widgets::episode_row::OnRowAction;
 
 pub const SHOW_TAG: &str = "show";
@@ -56,7 +56,6 @@ pub struct ShowPage {
     data: Option<ShowPageData>,
     hero: Rc<ShowHero>,
     entries: gio::ListStore,
-    sort: gio::SimpleAction,
 }
 
 #[relm4::component(pub)]
@@ -105,28 +104,15 @@ impl Component for ShowPage {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let sort = gio::SimpleAction::new_stateful(
-            "sort",
-            Some(glib::VariantTy::STRING),
-            &"newest".to_variant(),
-        );
         let hero = Rc::new(ShowHero::new());
         let model = ShowPage {
             data: None,
             hero: hero.clone(),
             entries: gio::ListStore::new::<glib::BoxedAnyObject>(),
-            sort: sort.clone(),
         };
         let widgets = view_output!();
 
         let actions = gio::SimpleActionGroup::new();
-        let s = sender.clone();
-        sort.connect_activate(move |_, target| {
-            if let Some(name) = target.and_then(|t| t.get::<String>()) {
-                s.input(ShowPageInput::SetSort(name));
-            }
-        });
-        actions.add_action(&sort);
         let mark_all = gio::SimpleAction::new("mark-all-played", None);
         let s = sender.clone();
         mark_all.connect_activate(move |_, _| s.input(ShowPageInput::MarkAllPlayed));
@@ -146,6 +132,12 @@ impl Component for ShowPage {
                 group.active_name().as_deref(),
             )));
         });
+        let s = sender.clone();
+        hero.sort.connect_active_name_notify(move |group| {
+            if let Some(name) = group.active_name() {
+                s.input(ShowPageInput::SetSort(name.to_string()));
+            }
+        });
 
         let tree = gtk::TreeListModel::new(model.entries.clone(), false, true, |object| {
             let boxed = object.downcast_ref::<glib::BoxedAnyObject>()?;
@@ -162,14 +154,16 @@ impl Component for ShowPage {
         });
         widgets
             .list
-            .set_model(Some(&gtk::NoSelection::new(Some(tree))));
+            .set_model(Some(&gtk::NoSelection::new(Some(tree.clone()))));
 
         let on_action: OnRowAction = Rc::new(move |item, action| {
             let _ = sender.output(ShowPageOutput::Action(Box::new(item.clone()), action));
         });
-        widgets
-            .list
-            .set_factory(Some(&factory(hero.clone(), on_action.clone())));
+        widgets.list.set_factory(Some(&factory(
+            hero.clone(),
+            on_action.clone(),
+            tree.upcast(),
+        )));
         widgets.list.connect_activate(move |list, position| {
             let item = list.model().and_then(|m| m.item(position));
             let episode = item
@@ -198,8 +192,6 @@ impl Component for ShowPage {
             ShowPageInput::Set(data) => {
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
-                self.sort
-                    .set_state(&sort_name(data.prefs.order).to_variant());
                 self.hero.update(&data);
                 self.entries
                     .splice(0, self.entries.n_items(), &entries(&data));
@@ -264,7 +256,11 @@ fn entries(data: &ShowPageData) -> Vec<glib::BoxedAnyObject> {
     entries.into_iter().map(glib::BoxedAnyObject::new).collect()
 }
 
-fn factory(hero: Rc<ShowHero>, on_action: OnRowAction) -> gtk::SignalListItemFactory {
+fn factory(
+    hero: Rc<ShowHero>,
+    on_action: OnRowAction,
+    model: gio::ListModel,
+) -> gtk::SignalListItemFactory {
     let factory = gtk::SignalListItemFactory::new();
     // The one list item holding the hero, so a rebinding elsewhere can take
     // it back first: a widget has only one parent.
@@ -321,7 +317,18 @@ fn factory(hero: Rc<ShowHero>, on_action: OnRowAction) -> gtk::SignalListItemFac
             }
             Entry::Episode(episode) => {
                 item.set_activatable(true);
-                row_of(item, &on_action).bind(episode);
+                let row = row_of(item, &on_action);
+                row.bind(episode);
+                // A season's episodes, or a flat list, form one boxed list.
+                let is_episode = |offset: i64| {
+                    u32::try_from(i64::from(item.position()) + offset)
+                        .ok()
+                        .and_then(|p| model.item(p))
+                        .as_ref()
+                        .and_then(boxed)
+                        .is_some_and(|b| matches!(&*b.borrow::<Entry>(), Entry::Episode(_)))
+                };
+                row.set_position(!is_episode(-1), !is_episode(1));
             }
             Entry::Empty => {
                 let label = gtk::Label::builder()
