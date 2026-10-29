@@ -60,8 +60,14 @@ One maintained crate per job. Before adding each one, check it and move it to th
 
 - **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Approved by the user on 2026-10-28.
 - **Seasons come only from tags** (M1, per the requirements). Some shows put seasons only in titles ("Season 6, Ep 11 - …" in Hello From The Magic Tavern); those do not group into seasons.
+- **History Back in the narrow layout** (M2). The content header's history Back is hidden when the split view is collapsed; the header's own Back returns to the sidebar. Revisit in M3, when show pages add depth inside the content.
 - **Episode identity** (M1). The feed's GUID; without one, the enclosure URL, then the item link, then the title. Refreshes match on this, so it must not change between fetches.
 
-## Custom widgets
+## Custom widgets and icons
 
-None yet.
+No custom widgets yet.
+
+- **Queue icon** (`data/icons/scalable/actions/queue-symbolic.svg`, M2). The Adwaita icon theme in GNOME 50 has no queue or playlist icon; this one follows the mockup (three lines and a play triangle).
+- **Shows icon** (M2) reuses Beacon's symbolic app icon, which is the broadcast symbol the mockup uses; the theme has no podcast icon.
+- **Add pinned at the bottom of the sidebar** (M2). `AdwSidebar` cannot pin an item, so Add is a second one-item `AdwSidebar` in the sidebar's bottom bar; selecting in one clears the other.
+- **Narrow sidebar style** (M2). Below 760sp both sidebars switch to `AdwSidebarMode::Page` (boxed rows with arrows), libadwaita's pattern for a sidebar collapsed into a page, instead of the mockup's plain rows.

@@ -85,3 +85,12 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - `services/library.rs`: `Library` ties them together. `subscribe` and `refresh` fetch without holding the store lock, then write. Time comes from an injected `Clock`.
 - Errors: `FeedError`, `StoreError`, `CoverError`, `LibraryError` (`error.rs`).
 
+### M2
+
+- `navigation.rs`: `Location` (Shows, New, Queue, Favorites, Downloaded, Add) and `History`, a stack where going somewhere new pushes and Back pops. No GTK; unit-tested.
+- `app.rs`: an outer `AdwToolbarView` holds the player bar as its bottom bar, so it spans the full width. Its content is an `AdwOverlaySplitView` (details pane at the end) around an `AdwNavigationSplitView` (sidebar and content). One `AdwBreakpoint` at 760sp collapses both, makes the details pane full width with its own Back, hides the details toggle, and switches the sidebars to page mode. `App` keeps the history and keeps the sidebar selection, content page title and Back in step with it.
+- `ui/sidebar.rs`: header with Refresh and the main menu, the library `AdwSidebar` with count badges, and Add in a second `AdwSidebar` in the bottom bar.
+- `ui/content.rs`: header (Back, Search toggle, details toggle), a `GtkSearchBar` (toggle, Ctrl+F, type to search; not in Add), and a `GtkStack` with one empty state per location.
+- `ui/details_pane.rs`, `ui/player_bar.rs`: placeholders for M4.
+- Actions: `win.about`, `win.search` (Ctrl+F). `win.refresh`, `win.import`, `win.export` and `win.preferences` are referenced but not registered yet, which leaves their buttons and menu items insensitive until they land.
+

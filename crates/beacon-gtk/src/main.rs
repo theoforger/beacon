@@ -2,6 +2,7 @@
 
 mod app;
 mod config;
+mod navigation;
 mod ui;
 
 use gettextrs::{LocaleCategory, gettext};
@@ -56,4 +57,5 @@ fn setup_app_actions(app: &adw::Application) {
 
     app.set_accels_for_action("app.quit", &["<Control>q"]);
     app.set_accels_for_action("window.close", &["<Control>w"]);
+    app.set_accels_for_action("win.search", &["<Control>f"]);
 }

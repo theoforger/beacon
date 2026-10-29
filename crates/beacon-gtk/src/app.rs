@@ -1,29 +1,59 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+//! The window: three columns (sidebar, content, details pane) over a
+//! full-width player bar, the navigation history, and the narrow layout.
+
 use gettextrs::gettext;
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::adw::prelude::*;
 use relm4::gtk::{gio, glib};
-use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
+use relm4::{
+    Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
+};
 
 use crate::config::APP_ID;
+use crate::navigation::{History, Location};
+use crate::ui::content::{Content, ContentInput, ContentOutput};
+use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
 use crate::ui::dialogs::about;
+use crate::ui::labels;
+use crate::ui::player_bar::PlayerBar;
+use crate::ui::sidebar::{Sidebar, SidebarInput, SidebarOutput};
 
-/// The sidebar and content collapse into pages below this width.
+/// Below this width the columns become pages.
 const NARROW_BREAKPOINT_SP: f64 = 760.0;
+/// Width of the details pane when it sits beside the content.
+const DETAILS_WIDTH: f64 = 360.0;
 
 relm4::new_action_group!(WindowActionGroup, "win");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
+relm4::new_stateless_action!(SearchAction, WindowActionGroup, "search");
+
+#[derive(Debug)]
+pub enum AppMsg {
+    Navigate(Location),
+    Back,
+    SetNarrow(bool),
+    CloseDetails,
+    ToggleSearch,
+}
 
 pub struct App {
     settings: gio::Settings,
+    history: History,
+    narrow: bool,
+    sidebar: Controller<Sidebar>,
+    content: Controller<Content>,
+    details: Controller<DetailsPane>,
+    _player: Controller<PlayerBar>,
 }
 
 #[relm4::component(pub)]
-impl SimpleComponent for App {
+impl Component for App {
     type Init = ();
-    type Input = ();
+    type Input = AppMsg;
     type Output = ();
+    type CommandOutput = ();
 
     view! {
         main_window = adw::ApplicationWindow {
@@ -31,44 +61,41 @@ impl SimpleComponent for App {
             set_width_request: 360,
             set_height_request: 294,
 
-            #[name = "split_view"]
-            adw::NavigationSplitView {
+            adw::ToolbarView {
+                set_bottom_bar_style: adw::ToolbarStyle::RaisedBorder,
+
                 #[wrap(Some)]
-                set_sidebar = &adw::NavigationPage {
-                    set_title: &gettext("Beacon"),
-                    set_tag: Some("sidebar"),
+                #[name = "details_split"]
+                set_content = &adw::OverlaySplitView {
+                    set_sidebar_position: gtk::PackType::End,
+                    set_show_sidebar: false,
+                    set_max_sidebar_width: DETAILS_WIDTH,
+                    set_sidebar_width_fraction: 0.3,
 
                     #[wrap(Some)]
-                    set_child = &adw::ToolbarView {
-                        add_top_bar = &adw::HeaderBar {
-                            pack_end = &gtk::MenuButton {
-                                set_icon_name: "open-menu-symbolic",
-                                set_menu_model: Some(&primary_menu()),
-                                set_primary: true,
-                                set_tooltip_text: Some(&gettext("Main Menu")),
-                                update_property: &[gtk::accessible::Property::Label(&gettext("Main Menu"))],
-                            },
+                    #[name = "split_view"]
+                    set_content = &adw::NavigationSplitView {
+                        #[wrap(Some)]
+                        set_sidebar = &adw::NavigationPage {
+                            set_title: &gettext("Beacon"),
+                            set_tag: Some("sidebar"),
+                            set_child: Some(model.sidebar.widget()),
                         },
-                    },
-                },
-
-                #[wrap(Some)]
-                set_content = &adw::NavigationPage {
-                    set_title: &gettext("Shows"),
-                    set_tag: Some("content"),
-
-                    #[wrap(Some)]
-                    set_child = &adw::ToolbarView {
-                        add_top_bar = &adw::HeaderBar {},
 
                         #[wrap(Some)]
-                        set_content = &adw::StatusPage {
-                            set_icon_name: Some("com.theoforger.Beacon-symbolic"),
-                            set_title: &gettext("No Podcasts"),
-                            set_description: Some(&gettext("Subscribed podcasts will appear here")),
+                        #[name = "content_page"]
+                        set_content = &adw::NavigationPage {
+                            set_title: &labels::title(model.history.current()),
+                            set_tag: Some("content"),
+                            set_child: Some(model.content.widget()),
                         },
                     },
+
+                    #[wrap(Some)]
+                    set_sidebar = model.details.widget(),
                 },
+
+                add_bottom_bar = model._player.widget(),
             },
         }
     }
@@ -76,19 +103,49 @@ impl SimpleComponent for App {
     fn init(
         _init: Self::Init,
         root: Self::Root,
-        _sender: ComponentSender<Self>,
+        sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let settings = gio::Settings::new(APP_ID);
-        let model = App { settings };
+        let sidebar = Sidebar::builder()
+            .launch(())
+            .forward(sender.input_sender(), |SidebarOutput::Activated(l)| {
+                AppMsg::Navigate(l)
+            });
+        let content = Content::builder()
+            .launch(())
+            .forward(sender.input_sender(), |output| match output {
+                ContentOutput::Back => AppMsg::Back,
+                ContentOutput::AddPodcast => AppMsg::Navigate(Location::Add),
+            });
+        let details = DetailsPane::builder()
+            .launch(())
+            .forward(sender.input_sender(), |DetailsPaneOutput::Close| {
+                AppMsg::CloseDetails
+            });
+        let player = PlayerBar::builder().launch(()).detach();
+
+        let model = App {
+            settings: gio::Settings::new(APP_ID),
+            history: History::default(),
+            narrow: false,
+            sidebar,
+            content,
+            details,
+            _player: player,
+        };
         let widgets = view_output!();
 
-        let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
-            adw::BreakpointConditionLengthType::MaxWidth,
-            NARROW_BREAKPOINT_SP,
-            adw::LengthUnit::Sp,
-        ));
-        breakpoint.add_setter(&widgets.split_view, "collapsed", Some(&true.to_value()));
-        root.add_breakpoint(breakpoint);
+        // The details toggle and the pane stay in step whichever side changes.
+        model
+            .content
+            .widgets()
+            .details_toggle()
+            .bind_property("active", &widgets.details_split, "show-sidebar")
+            .bidirectional()
+            .sync_create()
+            .build();
+
+        root.add_breakpoint(model.narrow_breakpoint(&widgets, &sender));
+        model.content.widgets().capture_typing(Some(&root));
 
         model.restore_window_state(&root);
         let settings = model.settings.clone();
@@ -102,13 +159,109 @@ impl SimpleComponent for App {
         actions.add_action(RelmAction::<AboutAction>::new_stateless(move |_| {
             about::present(&window);
         }));
+        let s = sender.clone();
+        actions.add_action(RelmAction::<SearchAction>::new_stateless(move |_| {
+            s.input(AppMsg::ToggleSearch);
+        }));
         actions.register_for_widget(&root);
 
         ComponentParts { model, widgets }
     }
+
+    fn update_with_view(
+        &mut self,
+        widgets: &mut Self::Widgets,
+        message: Self::Input,
+        _sender: ComponentSender<Self>,
+        root: &Self::Root,
+    ) {
+        match message {
+            AppMsg::Navigate(location) => {
+                if self.history.go(location) {
+                    self.show_current(widgets, root);
+                }
+                // In the narrow layout, choosing anything pushes the content.
+                widgets.split_view.set_show_content(true);
+            }
+            AppMsg::Back => {
+                if self.history.back().is_some() {
+                    self.show_current(widgets, root);
+                }
+            }
+            AppMsg::SetNarrow(narrow) => {
+                self.narrow = narrow;
+                self.content.emit(ContentInput::SetNarrow(narrow));
+            }
+            AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
+            AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
+        }
+    }
 }
 
 impl App {
+    fn show_current(&self, widgets: &AppWidgets, window: &adw::ApplicationWindow) {
+        let location = self.history.current();
+        widgets.content_page.set_title(&labels::title(location));
+        self.content
+            .widgets()
+            .capture_typing(location.has_search().then_some(window));
+        self.content.emit(ContentInput::Show(location));
+        self.content
+            .emit(ContentInput::SetCanGoBack(self.history.can_go_back()));
+        self.sidebar.emit(SidebarInput::Select(location));
+    }
+
+    /// Narrow windows: the sidebar becomes a page with the content pushed on
+    /// top, and the details pane covers the window with its own Back. It
+    /// starts closed and its header toggle is hidden.
+    fn narrow_breakpoint(
+        &self,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) -> adw::Breakpoint {
+        let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
+            adw::BreakpointConditionLengthType::MaxWidth,
+            NARROW_BREAKPOINT_SP,
+            adw::LengthUnit::Sp,
+        ));
+        breakpoint.add_setter(&widgets.split_view, "collapsed", Some(&true.to_value()));
+        breakpoint.add_setter(&widgets.details_split, "collapsed", Some(&true.to_value()));
+        breakpoint.add_setter(
+            &widgets.details_split,
+            "show-sidebar",
+            Some(&false.to_value()),
+        );
+        breakpoint.add_setter(
+            &widgets.details_split,
+            "max-sidebar-width",
+            Some(&f64::MAX.to_value()),
+        );
+        breakpoint.add_setter(
+            &widgets.details_split,
+            "sidebar-width-fraction",
+            Some(&1.0f64.to_value()),
+        );
+        breakpoint.add_setter(
+            self.content.widgets().details_toggle(),
+            "visible",
+            Some(&false.to_value()),
+        );
+        breakpoint.add_setter(
+            self.details.widgets().back_button(),
+            "visible",
+            Some(&true.to_value()),
+        );
+        for sidebar in self.sidebar.widgets().sidebars() {
+            breakpoint.add_setter(sidebar, "mode", Some(&adw::SidebarMode::Page.to_value()));
+        }
+
+        let s = sender.clone();
+        breakpoint.connect_apply(move |_| s.input(AppMsg::SetNarrow(true)));
+        let s = sender.clone();
+        breakpoint.connect_unapply(move |_| s.input(AppMsg::SetNarrow(false)));
+        breakpoint
+    }
+
     fn restore_window_state(&self, window: &adw::ApplicationWindow) {
         window.set_default_size(
             self.settings.int("window-width"),
@@ -129,14 +282,4 @@ fn save_window_state(settings: &gio::Settings, window: &adw::ApplicationWindow) 
     if let Err(err) = result {
         tracing::warn!("could not save the window state: {err}");
     }
-}
-
-fn primary_menu() -> gio::Menu {
-    let section = gio::Menu::new();
-    section.append(Some(&gettext("_Keyboard Shortcuts")), Some("app.shortcuts"));
-    section.append(Some(&gettext("_About Beacon")), Some("win.about"));
-
-    let menu = gio::Menu::new();
-    menu.append_section(None, &section);
-    menu
 }

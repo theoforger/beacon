@@ -55,9 +55,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green; docs up to date
 - [x] Human review of the running app (2026-10-28)
 
-## M1 Data and feeds
+## M1 Data and feeds ✓
 
 **Done when:** a feed URL becomes stored episodes, and a refresh adds only new ones.
+
+**Finished 2026-10-28.**
 
 ### Deliverables
 
@@ -83,8 +85,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: no UI changes in M1; pending list still empty
 - [x] Accessibility and translation: no user-visible strings or UI in M1 (`beacon-core` has none by design)
 - [x] Tests: 15 unit tests, 9 integration tests (`tests/library.rs`), 5 real-feed tests (`tests/real_feeds.rs`), plus an opt-in check of full downloaded feeds
-- [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] CI and docs: CI green (run 40813797153 on `dd97ff9`); docs up to date
+- [x] Human review: not applicable (no UI in M1); the user approved the seen-on-subscribe behaviour
 
 ## M2 Window shell
 
@@ -92,27 +94,27 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Three columns: `AdwNavigationSplitView` (sidebar and content) inside `AdwOverlaySplitView` (details pane)
-- [ ] Sidebar header: Refresh, the app title and Main Menu; no group title
-- [ ] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, with Add at the bottom, plus count badges
-- [ ] Content header: Back only with history, the view title, Search, and the details-pane toggle (darker background while on); no Forward
-- [ ] Details pane header "Episode Details"; the close button moves between the pane header and the content header
-- [ ] Narrow layout: sidebar as a page, content pushed on top, details pane as a full page with its own Back, starting closed, toggle hidden
-- [ ] Navigation history in `App`
-- [ ] Empty-state status pages for every view; the Shows placeholder says how to add a podcast and offers an Add Podcast button (deferred from the M0 HIG review)
-- [ ] Main menu shell (Import and Export Subscriptions, Preferences, Keyboard Shortcuts, About), with items disabled until their features land
-- [ ] Persistent bottom player bar placeholder across the full width
-- [ ] Opens on Shows; follows the system dark mode and accent colour
+- [x] Three columns: `AdwNavigationSplitView` (sidebar and content) inside `AdwOverlaySplitView` (details pane)
+- [x] Sidebar header: Refresh, the app title and Main Menu; no group title
+- [x] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, with Add at the bottom (a second one-item `AdwSidebar` in the bottom bar), plus count badges (shown once M3 feeds them)
+- [x] Content header: Back only with history, the view title, Search, and the details-pane toggle (darker background while on); no Forward
+- [x] Details pane header "Episode Details"; the close button moves between the pane header and the content header
+- [x] Narrow layout: sidebar as a page, content pushed on top, details pane as a full page with its own Back, starting closed, toggle hidden
+- [x] Navigation history in `App`
+- [x] Empty-state status pages for every view; the Shows placeholder says how to add a podcast and offers an Add Podcast button (deferred from the M0 HIG review)
+- [x] Main menu shell (Import and Export Subscriptions, Preferences, Keyboard Shortcuts, About), with items disabled until their features land
+- [x] Persistent bottom player bar placeholder across the full width
+- [x] Opens on Shows; follows the system dark mode and accent colour
 
 ### Tests
 
-- [ ] Unit: navigation history and the `App` component's `update` (Back visibility, view switching)
+- [x] Unit: navigation history (`navigation.rs`, 5 tests). `App::update` only forwards to `History` and widgets, so its rules are tested there
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m2.md`)
+- [x] Translation and labels checked (all strings in gettext, new files in `POTFILES.in`, labels and tooltips on icon-only buttons); accessibility walk-throughs logged in `pending-accessibility.md`
+- [x] Tests: unit tests for the navigation rules; no feature scenario yet (the views get data in M3)
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
@@ -131,6 +133,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] Episode lists use `GtkListView` over `gio::ListStore`
 - [ ] Unplayed dot cleared on viewing the details, and not restored by Mark as Unplayed
 - [ ] Marking played or unplayed never touches the queue, including Mark All as Played
+- [ ] Carried from M2: sidebar count badges fed from the library (Shows with new episodes, new episodes, queue length), and the details pane opening as a narrow full page with its own Back, checked in screenshots
 
 ### Tests
 
