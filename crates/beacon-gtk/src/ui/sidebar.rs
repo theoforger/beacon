@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The sidebar: its own header (Add Podcast, Refresh, title, Main Menu) and
-//! the library items with count badges.
+//! The sidebar: its own header (Add Podcast, title, Main Menu) and the
+//! library items with count badges.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
@@ -57,13 +57,6 @@ impl Component for Sidebar {
                     connect_clicked[sender] => move |_| {
                         let _ = sender.output(SidebarOutput::AddPodcast);
                     },
-                },
-                pack_start = &gtk::Button {
-                    set_icon_name: "view-refresh-symbolic",
-                    // Enabled once feeds can be refreshed (M3).
-                    set_action_name: Some("win.refresh"),
-                    set_tooltip_text: Some(&gettext("Refresh Feeds")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Refresh Feeds"))],
                 },
                 pack_end = &gtk::MenuButton {
                     set_icon_name: "open-menu-symbolic",
@@ -159,8 +152,9 @@ impl SidebarWidgets {
 
 fn primary_menu() -> gio::Menu {
     // Actions that do not exist yet leave their items disabled until the
-    // feature lands: import and export in M7, Preferences in M5.
+    // feature lands: refresh in M3, import and export in M7, Preferences in M5.
     let files = gio::Menu::new();
+    files.append(Some(&gettext("_Refresh Feeds")), Some("win.refresh"));
     files.append(Some(&gettext("_Import Subscriptions…")), Some("win.import"));
     files.append(Some(&gettext("_Export Subscriptions…")), Some("win.export"));
 
