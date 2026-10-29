@@ -88,9 +88,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green (run 40813797153 on `dd97ff9`); docs up to date
 - [x] Human review: not applicable (no UI in M1); the user approved the seen-on-subscribe behaviour
 
-## M2 Window shell
+## M2 Window shell ✓
 
 **Done when:** it matches the mockup at 1440px and 360px wide, in light and dark.
+
+**Finished 2026-10-29.**
 
 ### Deliverables
 
@@ -116,7 +118,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Translation and labels checked (all strings in gettext, new files in `POTFILES.in`, labels and tooltips on icon-only buttons); accessibility walk-throughs logged in `pending-accessibility.md`
 - [x] Tests: unit tests for the navigation rules; no feature scenario yet (the views get data in M3)
 - [x] CI and docs: CI green (run 40814712761 on `a84f682`); docs up to date
-- [ ] Human review of the running app
+- [x] Human review of the running app (2026-10-29: "M2 looks good"). The main-menu icon stays `open-menu-symbolic`, as the HIG asks; the user's Papirus theme draws it as dots
 
 ## M3 Library views
 
