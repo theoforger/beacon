@@ -20,6 +20,8 @@ pub enum StoreError {
     Sqlite(#[from] rusqlite::Error),
     #[error("database migration failed: {0}")]
     Migration(#[from] rusqlite_migration::Error),
+    #[error("could not create the library folder: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -5,16 +5,27 @@
 //! The store sits behind a mutex that is never held across an `await`, so the
 //! network work of several feeds can overlap.
 
+use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use url::Url;
 
-use crate::error::LibraryError;
+use crate::error::{LibraryError, StoreError};
 use crate::model::ShowId;
 use crate::services::clock::Clock;
+use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
 use crate::services::feeds::FeedClient;
+use crate::services::http_client;
 use crate::store::{Store, SyncStats};
+
+/// What a refresh of every show did.
+#[derive(Debug, Default)]
+pub struct RefreshSummary {
+    pub added: usize,
+    /// Shows whose feed could not be refreshed, with the reason.
+    pub failed: Vec<(ShowId, LibraryError)>,
+}
 
 pub struct Library {
     store: Mutex<Store>,
@@ -31,6 +42,24 @@ impl Library {
             covers,
             clock,
         }
+    }
+
+    /// The library in `data_dir` (`beacon.db`), caching covers in
+    /// `cache_dir/covers`. Creates the folders if needed.
+    pub fn open(data_dir: &Path, cache_dir: &Path) -> Result<Self, StoreError> {
+        std::fs::create_dir_all(data_dir)?;
+        let store = Store::open(&data_dir.join("beacon.db"))?;
+        let http = http_client();
+        Ok(Self::new(
+            store,
+            FeedClient::new(http.clone()),
+            CoverCache::new(cache_dir.join("covers"), http),
+            Arc::new(SystemClock),
+        ))
+    }
+
+    pub fn now(&self) -> chrono::DateTime<chrono::Utc> {
+        self.clock.now()
     }
 
     /// Run `f` with the store. Keep the closure short and synchronous.
@@ -74,6 +103,28 @@ impl Library {
             self.cache_cover(id).await;
         }
         Ok(stats)
+    }
+
+    /// Refresh every show, one after another. A feed that fails does not
+    /// stop the others.
+    pub async fn refresh_all(&self) -> RefreshSummary {
+        let shows = match self.lock().shows() {
+            Ok(shows) => shows,
+            Err(err) => {
+                return RefreshSummary {
+                    added: 0,
+                    failed: vec![(ShowId(0), err.into())],
+                };
+            }
+        };
+        let mut summary = RefreshSummary::default();
+        for show in shows {
+            match self.refresh(show.id).await {
+                Ok(stats) => summary.added += stats.added,
+                Err(err) => summary.failed.push((show.id, err)),
+            }
+        }
+        summary
     }
 
     /// Download the show's cover. A missing cover is not an error worth

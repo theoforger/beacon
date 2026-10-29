@@ -330,3 +330,46 @@ async fn library_on_disk_survives_a_restart() {
     assert_eq!(shows.len(), 1);
     assert_eq!(store.episodes(shows[0].id).unwrap().len(), 2);
 }
+
+#[tokio::test]
+async fn refreshing_everything_reports_new_episodes_and_failures() {
+    let server = MockServer::start_async().await;
+    let plain = serve(&server, "/plain.xml", fixture("plain.xml", &server)).await;
+    let gone = serve(&server, "/gone.xml", fixture("seasons.xml", &server)).await;
+    let setup = library();
+    let plain_id = setup
+        .library
+        .subscribe(&feed_url(&server, "/plain.xml"))
+        .await
+        .unwrap();
+    let gone_id = setup
+        .library
+        .subscribe(&feed_url(&server, "/gone.xml"))
+        .await
+        .unwrap();
+
+    plain.delete_async().await;
+    gone.delete_async().await;
+    serve(&server, "/plain.xml", fixture("plain-updated.xml", &server)).await;
+
+    let summary = setup.library.refresh_all().await;
+    assert_eq!(summary.added, 1);
+    assert_eq!(summary.failed.len(), 1);
+    assert_eq!(summary.failed[0].0, gone_id);
+    assert!(matches!(
+        summary.failed[0].1,
+        LibraryError::Feed(FeedError::Status(404))
+    ));
+    setup.library.with_store(|store| {
+        assert_eq!(store.episodes(plain_id).unwrap().len(), 3);
+    });
+}
+
+#[test]
+fn opening_creates_the_library_folder() {
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data/beacon");
+    let library = Library::open(&data, &dir.path().join("cache")).unwrap();
+    assert!(data.join("beacon.db").exists());
+    library.with_store(|store| assert!(store.shows().unwrap().is_empty()));
+}
