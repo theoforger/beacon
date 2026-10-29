@@ -4,6 +4,7 @@
 //!
 //! This crate must never depend on GTK, GLib or relm4. See `CLAUDE.md`.
 
+pub mod browse;
 pub mod error;
 pub mod model;
 pub mod services;

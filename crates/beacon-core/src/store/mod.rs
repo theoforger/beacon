@@ -12,13 +12,19 @@ use rusqlite_migration::{M, Migrations};
 use url::Url;
 
 mod rows;
+mod state;
+mod views;
 
 use self::rows::{EPISODE_COLUMNS, SHOW_COLUMNS, episode_from_row, episode_params, show_from_row};
 use crate::error::StoreError;
 use crate::model::{Chapter, Episode, EpisodeId, ParsedEpisode, Show, ShowId, ShowInfo};
 
-static MIGRATIONS: LazyLock<Migrations<'static>> =
-    LazyLock::new(|| Migrations::new(vec![M::up(include_str!("migrations/001_initial.sql"))]));
+static MIGRATIONS: LazyLock<Migrations<'static>> = LazyLock::new(|| {
+    Migrations::new(vec![
+        M::up(include_str!("migrations/001_initial.sql")),
+        M::up(include_str!("migrations/002_show_prefs.sql")),
+    ])
+});
 
 /// What a sync changed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

@@ -90,6 +90,19 @@ pub struct EpisodeState {
     pub downloaded_at: Option<DateTime<Utc>>,
 }
 
+impl EpisodeState {
+    /// New: not yet seen and not played. Shows the blue dot and counts
+    /// towards the Shows badges and the New count.
+    pub fn is_new(&self) -> bool {
+        !self.seen && !self.played
+    }
+
+    /// Started but not finished: shows a progress bar.
+    pub fn is_partly_played(&self) -> bool {
+        !self.played && !self.position.is_zero()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Episode {
     pub id: EpisodeId,
@@ -116,4 +129,44 @@ pub struct ParsedEpisode {
 pub struct ParsedFeed {
     pub show: ShowInfo,
     pub episodes: Vec<ParsedEpisode>,
+}
+
+/// Which episodes a list shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EpisodeFilter {
+    #[default]
+    All,
+    Unplayed,
+}
+
+impl EpisodeFilter {
+    pub fn accepts(self, episode: &Episode) -> bool {
+        match self {
+            EpisodeFilter::All => true,
+            EpisodeFilter::Unplayed => !episode.state.played,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SortOrder {
+    #[default]
+    NewestFirst,
+    OldestFirst,
+}
+
+/// How a podcast page lists its episodes, remembered per show.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ShowPrefs {
+    pub filter: EpisodeFilter,
+    pub order: SortOrder,
+}
+
+/// The numbers beside the sidebar items.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct LibraryCounts {
+    /// Shows with at least one new episode.
+    pub shows_with_new: u32,
+    pub new_episodes: u32,
+    pub queue: u32,
 }
