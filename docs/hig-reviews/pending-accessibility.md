@@ -12,3 +12,4 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 | 2026-10-28 | M2, `app.rs` | Narrow layout: Back from a pushed page returns focus to the sidebar item; Tab order sidebar → content → player bar | Keyboard |
 | 2026-10-28 | M2, `ui/content.rs` | Empty-state descriptions wrap at 360px with large text | Large text |
 | 2026-10-29 | M2, `ui/content.rs` | Back from a deeper page by keyboard: Alt+Left and the Back key wherever focus is; focus lands on the parent page afterwards; the Add page's Back is reachable with Tab | Keyboard |
+| 2026-10-29 | M2, `ui/content.rs` | Refresh Feeds in the Shows and New headers: label read, reachable with Tab, absent from other views' focus order | Orca, keyboard |

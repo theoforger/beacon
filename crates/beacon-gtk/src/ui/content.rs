@@ -55,6 +55,16 @@ impl Component for Content {
                 #[wrap(Some)]
                 set_child = &adw::ToolbarView {
                     add_top_bar = &adw::HeaderBar {
+                        // Only in Shows and New, where new episodes appear.
+                        // Enabled once feeds can be refreshed (M3).
+                        #[name = "refresh"]
+                        pack_start = &gtk::Button {
+                            set_icon_name: "view-refresh-symbolic",
+                            set_action_name: Some("win.refresh"),
+                            set_tooltip_text: Some(&gettext("Refresh Feeds")),
+                            update_property: &[gtk::accessible::Property::Label(&gettext("Refresh Feeds"))],
+                        },
+
                         #[name = "details_toggle"]
                         pack_end = &details_toggle() -> gtk::ToggleButton {},
 
@@ -145,6 +155,9 @@ impl Component for Content {
         match view {
             View::Section(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
+                widgets
+                    .refresh
+                    .set_visible(matches!(location, Location::Shows | Location::New));
                 widgets.root_page.set_title(&labels::title(location));
                 // Leaving a section's deeper pages for another section: no
                 // slide, the section simply changes.

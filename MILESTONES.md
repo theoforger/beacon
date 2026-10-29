@@ -95,7 +95,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Deliverables
 
 - [x] Three columns: `AdwNavigationSplitView` (sidebar and content) inside `AdwOverlaySplitView` (details pane)
-- [x] Sidebar header: Add Podcast (+), the app title and Main Menu; no group title. Refresh Feeds is in the main menu (changed 2026-10-29)
+- [x] Sidebar header: Add Podcast (+), the app title and Main Menu; no group title. Refresh Feeds is in the main menu, and a button at the start of the Shows and New headers (changed 2026-10-29)
 - [x] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, plus count badges (shown once M3 feeds them). Add is a page under Shows, opened from the + in the sidebar header (changed 2026-10-29)
 - [x] Content header: Back only on deeper pages (breadcrumb, not history), which slide in from the right and go back by swipe, mouse back button or Alt+Left too, the view title, Search, and the details-pane toggle (darker background while on); no Forward
 - [x] Details pane header "Episode Details"; the close button moves between the pane header and the content header
