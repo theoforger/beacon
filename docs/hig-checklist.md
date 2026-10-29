@@ -19,6 +19,8 @@ Rules found while auditing the mockup. Run through them after every UI change, t
 
 ## Accessibility and translation
 
+Until the accessibility checkpoint after M3, the walk-through items (states, keyboard, large text, Orca) are logged in `docs/hig-reviews/pending-accessibility.md` instead of checked. The first three items always apply.
+
 - [ ] Every user-visible string goes through gettext, including tooltips, accessible labels and status pages.
 - [ ] Every icon-only button has an accessible label and a tooltip.
 - [ ] State changes (pressed, selected, current) are exposed to assistive technology.

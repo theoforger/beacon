@@ -37,7 +37,7 @@ If a URL has moved, find the page from the HIG index instead of guessing.
 
 1. Every item in `docs/hig-checklist.md` that applies to the change.
 2. Anything else in the fetched pages that applies.
-3. The accessibility and translation section of the checklist: strings through `gettext`, new files in `po/POTFILES.in`, accessible label and tooltip on icon-only buttons, states exposed, keyboard reachability, no fixed-width labels.
+3. The accessibility and translation section of the checklist. Always: strings through `gettext`, new files in `po/POTFILES.in`, accessible label and tooltip on icon-only buttons, no fixed-width labels. The walk-throughs (Orca, keyboard reachability, exposed states, large text) are deferred until the accessibility checkpoint after M3: until then, add a row per change to `docs/hig-reviews/pending-accessibility.md` saying what to check and how, instead of running them. From M4 on, run them here.
 4. The mockup in `docs/design/` and the Requirements in `CLAUDE.md`, for layout and behaviour.
 
 ## 4. Screenshots
@@ -67,7 +67,7 @@ Findings
 2. [PASS] …
 
 Screenshots: <views taken>, <what was seen>
-Deferred: <rows added to pending-screenshots.md, or none>
+Deferred: <rows added to pending-screenshots.md and pending-accessibility.md, or none>
 Needs a human: <Orca, keyboard walk-through, anything not visible headless>
 ```
 

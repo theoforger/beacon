@@ -59,7 +59,7 @@ After every UI change, before reporting it done:
 1. Go through `docs/hig-checklist.md`.
 2. Fetch the relevant pages from https://developer.gnome.org/hig/ and quote them for each finding. Do not cite the HIG from memory.
 3. Screenshots, sparingly. Take only the views the change affects (often one size and one scheme), once the change is finished, not while iterating. Every affected view you skip goes in `docs/hig-reviews/pending-screenshots.md`: what to check, which views, and how to reach the state. At the end of each milestone take the full set (1440×900 and 360×640, light and dark), work through every pending row, record the results in `docs/hig-reviews/mN.md` and clear the rows. A milestone cannot close with pending rows.
-4. Run the accessibility and translation checks in the checklist.
+4. Run the translation and label checks in the checklist (gettext, `POTFILES.in`, accessible labels and tooltips). Until the accessibility checkpoint after M3, do not run the accessibility walk-throughs (Orca, keyboard, large text, exposed states): log what each change needs checked in `docs/hig-reviews/pending-accessibility.md`. From M4 on, run them in the gate.
 5. Fix and rerun until clean. A human looks at the end of each milestone.
 
 ## Requirements

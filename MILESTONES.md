@@ -5,7 +5,7 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 A milestone is finished when its deliverables are done and its own **exit gate** is ticked:
 
 - **HIG:** gate clean (`docs/hig-checklist.md`, HIG pages quoted); full screenshot set at 1440×900 and 360×640 in light and dark; `docs/hig-reviews/pending-screenshots.md` empty
-- **Accessibility and translation:** gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text
+- **Accessibility and translation:** gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text. For M0 to M3 the walk-throughs are deferred to the accessibility checkpoint after M3: log them in `docs/hig-reviews/pending-accessibility.md`
 - **Tests:** unit tests for all new logic, plus an integration test of each new feature's main scenario
 - **CI and docs:** CI green; `docs/decisions.md` and `docs/architecture.md` up to date
 - **Human review** of the running app
@@ -48,7 +48,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Exit gate
 
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m0.md`)
-- [ ] Accessibility and translation: gettext, labels and tooltips, and Ctrl+Q, Ctrl+W, F10 and menu arrow keys verified headless; Orca and large-text walk-through still needed (human)
+- [x] Accessibility and translation: gettext, labels and tooltips done; Ctrl+Q, Ctrl+W, F10 and menu arrow keys verified headless; Orca, large text and Ctrl+? deferred to the checkpoint after M3 (logged in `pending-accessibility.md`)
 - [x] Tests: no logic in M0; `cargo test` and the Meson validation tests run in CI
 - [x] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
@@ -142,6 +142,17 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
+
+## Accessibility checkpoint (after M3)
+
+**Done when:** every row of `docs/hig-reviews/pending-accessibility.md` is checked, fixed where needed and cleared. M4 starts after this.
+
+- [ ] Orca walk-through of every view and dialog built in M0 to M3
+- [ ] Keyboard-only walk-through: every control reachable, focus order sensible, shortcuts work
+- [ ] States exposed to assistive technology (selected sidebar item, toggle groups, played and unplayed)
+- [ ] Large text at 360px wide: no clipping or overlap
+- [ ] Results recorded in `docs/hig-reviews/a11y-checkpoint.md`; fixes have their own commits
+- [ ] `pending-accessibility.md` empty
 
 ## M4 Playback
 
