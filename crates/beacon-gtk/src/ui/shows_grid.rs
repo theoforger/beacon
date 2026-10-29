@@ -45,9 +45,8 @@ impl SimpleComponent for ShowsGrid {
     type Output = ShowsGridOutput;
 
     view! {
+        #[name = "stack"]
         gtk::Stack {
-            #[watch]
-            set_visible_child_name: if model.empty { "empty" } else { "grid" },
 
             add_named[Some("empty")] = &adw::StatusPage {
                 set_icon_name: Some("com.theoforger.Beacon-symbolic"),
@@ -115,6 +114,10 @@ impl SimpleComponent for ShowsGrid {
         });
 
         ComponentParts { model, widgets }
+    }
+
+    fn post_view() {
+        stack.set_visible_child_name(if model.empty { "empty" } else { "grid" });
     }
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {

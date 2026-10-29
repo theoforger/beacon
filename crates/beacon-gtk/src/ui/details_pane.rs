@@ -56,9 +56,8 @@ impl SimpleComponent for DetailsPane {
             },
 
             #[wrap(Some)]
+            #[name = "stack"]
             set_content = &gtk::Stack {
-                #[watch]
-                set_visible_child_name: if model.episode.is_some() { "episode" } else { "empty" },
 
                 add_named[Some("empty")] = &adw::StatusPage {
                     set_icon_name: Some("audio-x-generic-symbolic"),
@@ -133,6 +132,14 @@ impl SimpleComponent for DetailsPane {
         };
         let widgets = view_output!();
         ComponentParts { model, widgets }
+    }
+
+    fn post_view() {
+        stack.set_visible_child_name(if model.episode.is_some() {
+            "episode"
+        } else {
+            "empty"
+        });
     }
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {

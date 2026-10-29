@@ -8,6 +8,11 @@ use relm4::{ComponentController, adw};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
 
+/// The details pane's maximum width in the narrow layout: more than any
+/// window, so the fraction of 1.0 decides. `f64::MAX` overflows when GTK
+/// converts it to an integer.
+const FULL_WIDTH: f64 = 100_000.0;
+
 impl App {
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
@@ -28,7 +33,7 @@ impl App {
         breakpoint.add_setter(
             &widgets.details_split,
             "max-sidebar-width",
-            Some(&f64::MAX.to_value()),
+            Some(&FULL_WIDTH.to_value()),
         );
         breakpoint.add_setter(
             &widgets.details_split,
