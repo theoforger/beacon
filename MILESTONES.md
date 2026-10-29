@@ -1,6 +1,6 @@
 # Beacon milestones
 
-The checklist for building Beacon from `PLAN.md`. Tick an item only when it is merged and verified. Every milestone also has to pass the **exit gate**:
+The checklist for building Beacon. Design details are in `docs/`. Tick an item only when it is merged and verified. Every milestone also has to pass the **exit gate**:
 
 - [ ] HIG gate clean (`docs/hig-checklist.md`, HIG pages quoted, screenshots at 1440×900 and 360×640 in light and dark)
 - [ ] Accessibility and translation checks pass (gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text)
@@ -136,6 +136,8 @@ The checklist for building Beacon from `PLAN.md`. Tick an item only when it is m
 
 **Done when:** the queue behaves like the mockup's.
 
+**Spec:** `docs/specs/auto-delete.md`
+
 ### Deliverables
 
 - [ ] Queue view: Now Playing; Next in Queue with count and total time; Next from the source list
@@ -154,6 +156,8 @@ The checklist for building Beacon from `PLAN.md`. Tick an item only when it is m
 ## M6 Search and Add
 
 **Done when:** you can find a show and subscribe.
+
+**Spec:** `docs/specs/add-and-itunes.md`
 
 ### Deliverables
 
@@ -175,6 +179,8 @@ The checklist for building Beacon from `PLAN.md`. Tick an item only when it is m
 ## M7 OPML
 
 **Done when:** a file from another app imports, and an export re-imports with no loss.
+
+**Spec:** `docs/specs/opml.md`
 
 ### Deliverables
 

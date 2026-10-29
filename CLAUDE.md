@@ -2,8 +2,9 @@
 
 A podcast app for GNOME. Rust, relm4 0.11, libadwaita 1.9, GNOME 50 runtime, packaged as a Flatpak. App ID `com.theoforger.Beacon`. Licence GPL-3.0-or-later.
 
-- `PLAN.md`: the build plan. `MILESTONES.md`: milestone checklist; tick items as they land.
-- `docs/decisions.md`: every crate and custom widget, with the reason. `docs/hig-checklist.md`: the HIG gate. `docs/architecture.md`: what is built. `docs/design/`: the mockup.
+- `MILESTONES.md`: milestone checklist; tick items as they land.
+- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add view and iTunes, auto-delete).
+- `docs/decisions.md`: every crate and custom widget, with the reason, plus planned crates. `docs/hig-checklist.md`: the HIG gate. `docs/design/`: the mockup.
 
 ## Commands
 
@@ -67,7 +68,7 @@ This section is the contract for Claude Code. It records everything agreed in th
 
 ### Build requirements
 
-1. Start the plan with project setup.
+1. Project setup comes before any feature work (done in M0).
 2. Use Rust and the relm4 framework.
 3. Prefer well-maintained, off-the-shelf Rust libraries over writing things from scratch.
 4. After every UI change, check it against the GNOME Human Interface Guidelines (HIG).
@@ -111,7 +112,7 @@ Read the design's files from that link. Match how it looks.
 - **Podcast page:** a hero with cover, category, title, author and description. Subscribe is the accent button, and becomes a neutral Unsubscribe once subscribed. A More Options menu holds Mark All as Played, Download All Episodes and Copy Feed Address. Below sit an All / Unplayed toggle group (remembered per show) and a sort menu with radio items, Newest First and Oldest First. Episodes group into collapsible seasons, with season names, when the feed carries season tags.
 - **Queue:** three groups. Now Playing. Next in Queue, with count and total time, for episodes added by hand. Next from the list the playing episode came from. The behaviour copies a music app: manual queue first, then the rest of the list. Rows have a drag handle at the start, and Move Up and Move Down in the row menu.
 - **Favorites** and **Downloaded:** episode lists with status pages when empty.
-- **Add:** one search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see Add view and iTunes), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
+- **Add:** one search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see `docs/specs/add-and-itunes.md`), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
 - **Search:** a header toggle (and Ctrl+F) opens a search bar under the header. On a podcast page a This Show / Everywhere toggle appears, and This Show filters that page in place. Otherwise results show matching shows and episodes. With no results, a suggested Search Online button opens the Add view with the query filled in. The button does not appear in This Show scope.
 - **Empty states** are status pages with an icon, a title and one line of description.
 

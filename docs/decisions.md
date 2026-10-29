@@ -6,11 +6,28 @@ Every crate and every custom widget gets an entry here, with the reason. Before 
 
 | Crate | Job | Latest | Last release | Downloads (all / 90 days) | Repository | Licence | Why |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `relm4` (features `libadwaita`, `gnome_50`) | UI framework | 0.11.0 | 2026-04-08 | 1.36M / 783k | Relm4/Relm4, 73 open, pushed 2026-10-27 | Apache-2.0 OR MIT | Required by the plan. Pulls gtk4 0.11 and libadwaita 0.9; `gnome_50` enables `adw/v1_9`, which binds `AdwSidebar`, `AdwToggleGroup` and `AdwShortcutsDialog` |
+| `relm4` (features `libadwaita`, `gnome_50`) | UI framework | 0.11.0 | 2026-04-08 | 1.36M / 783k | Relm4/Relm4, 73 open, pushed 2026-10-27 | Apache-2.0 OR MIT | Required by the build requirements. Pulls gtk4 0.11 and libadwaita 0.9; `gnome_50` enables `adw/v1_9`, which binds `AdwSidebar`, `AdwToggleGroup` and `AdwShortcutsDialog` |
 | `gettext-rs` (feature `gettext-system`) | Translation | 0.8.0 | 2026-08-05 | 5.0M / 663k | gettext-rs/gettext-rs, 23 open, pushed 2026-10-17 | MIT | The standard gettext binding used by GNOME Rust apps. `gettext-system` links the runtime's libintl instead of building gettext |
 | `tracing` | Logging | 0.1.44 | 2025-12-18 | 984M / 242M | tokio-rs/tracing, 905 open, pushed 2026-10-09 | MIT | De facto standard; works with tokio, which relm4 commands use. The open count is high but the project is very active |
 | `tracing-subscriber` (feature `env-filter`) | Log output | 0.3.23 | 2026-03-13 | 702M / 175M | tokio-rs/tracing | MIT | Companion to `tracing`; `RUST_LOG` filtering |
 | `glib-build-tools` (build dependency) | Compile the GResource in `build.rs` | 0.22.8 | 2026-06-29 | 543k / 138k | gtk-rs/gtk-rs-core, 170 open, pushed 2026-10-28 | MIT | Lets a plain `cargo build` embed resources, so clippy and tests run without Meson |
+
+## Planned crates
+
+One maintained crate per job. Before adding each one, check it and move it to the Crates table with its figures.
+
+| Job | Candidate | To check before adding |
+| --- | --- | --- |
+| Playback | `gstreamer-play` from gstreamer-rs (high-level player: seek, rate, position and state signals) | Use the release that matches gtk4-rs; GStreamer 1.26 is in the runtime |
+| Feed parsing | `feed-rs` | Whether it exposes iTunes season, episode and chapters. Test with real feeds, and add a small `roxmltree` pass for those tags if not |
+| OPML | `opml` | That it both parses and writes (both listed on docs.rs) |
+| HTTP | `reqwest` with rustls, on tokio (relm4 commands run on tokio) | Standard choice |
+| Storage | `rusqlite`, with FTS5 for search | That the bundled or runtime SQLite has FTS5 enabled |
+| Directory search | iTunes Search API (no key) | Apple's terms and rate limits; see `docs/specs/add-and-itunes.md` |
+| Media keys and MPRIS | An MPRIS server crate, not chosen | Compare candidates on last release, downloads and open issues |
+| Settings | GSettings through `gio` | Already in use |
+
+**Reference code:** [GNOME Podcasts](https://github.com/alatiera/gnome-podcasts) (Rust, GTK4, libadwaita). Read it for feed refresh and download edge cases; check its licence before reusing any code.
 
 ## Runtime
 
