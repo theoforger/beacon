@@ -1,0 +1,979 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture: excerpt of the real feed https://feeds.fireside.fm/destinationlinux/rss, fetched 2026-10-28. 5 of 495 items kept (indexes [0, 1, 91, 312, 494]), otherwise unchanged. -->
+<?xml-stylesheet type="text/xsl" href="/feed.xsl"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:admin="http://webns.net/mvcb/" xmlns:atom="http://www.w3.org/2005/Atom/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:fireside="https://fireside.fm/modules/rss/fireside">
+  <channel>
+    <fireside:hostname>app02</fireside:hostname>
+    <fireside:genDate>Mon, 26 Oct 2026 10:16:14 +0000</fireside:genDate>
+    <generator>Fireside (https://fireside.fm)</generator>
+    <title>Destination Linux</title>
+    <link>https://destinationlinux.net</link>
+    <atom:link href="https://feeds.fireside.fm/destinationlinux/rss" rel="self" type="application/rss+xml"/>
+    <atom:link href="https://pubsubhubbub.appspot.com/" rel="hub"/>
+    <pubDate>Mon, 26 Oct 2026 06:15:06 -0400</pubDate>
+    <description>Destination Linux is a weekly show where Ryan, Jill, and guests share their passion for Linux and Open Source. Destination Linux is a show for all experience levels, whether you’re a beginner to Linux and Open Source or a long time user, this is the podcast for you. Destination Linux covers a wide range of topics from the latest news, discussions on Linux and Open Source, Linux distributions, Linux applications, security, privacy, AI, gaming on Linux, and unique in-depth interviews with Linux developers and leaders and much more! Destination Linux website https://deviantairwaves.com Become a Patron https://patreon.com/destinationlinux Buy Me a Coffee https://buymeacoffee.com/destinationlinux Merch https://shop.deviantairwaves.com EFF x Destination Linux https://eff.org/destinationlinux Sandfly Security https://sandfly.com/?utmsource=destinationlinux&amp;utmmedium=podcast&amp;utmcampaign=podcast&amp;utmcontent=player-page</description>
+    <language>en</language>
+    <copyright>© 2026 Destination Linux</copyright>
+    <itunes:type>episodic</itunes:type>
+    <itunes:subtitle>A conversational podcast by people who love running Linux.</itunes:subtitle>
+    <itunes:author>Deviant Airwaves</itunes:author>
+    <itunes:summary>Destination Linux is a weekly show where Ryan, Jill, and guests share their passion for Linux and Open Source. Destination Linux is a show for all experience levels, whether you’re a beginner to Linux and Open Source or a long time user, this is the podcast for you. Destination Linux covers a wide range of topics from the latest news, discussions on Linux and Open Source, Linux distributions, Linux applications, security, privacy, AI, gaming on Linux, and unique in-depth interviews with Linux developers and leaders and much more! Destination Linux website https://deviantairwaves.com Become a Patron https://patreon.com/destinationlinux Buy Me a Coffee https://buymeacoffee.com/destinationlinux Merch https://shop.deviantairwaves.com EFF x Destination Linux https://eff.org/destinationlinux Sandfly Security https://sandfly.com/?utmsource=destinationlinux&amp;utmmedium=podcast&amp;utmcampaign=podcast&amp;utmcontent=player-page</itunes:summary>
+    <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/cover.jpg?v=14"/>
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:keywords>linux, open source, foss, floss, security, privacy, applications, distributions, gaming, AI, retro, ubuntu, arch, debian, fedora, red hat, System76, slackware, opensuse, suse, enterprise, IT, hacking, terminal</itunes:keywords>
+    <itunes:owner>
+      <itunes:name>Deviant Airwaves</itunes:name>
+      <itunes:email>comments@destinationlinux.net</itunes:email>
+    </itunes:owner>
+    <podcast:locked email="comments@destinationlinux.org">yes</podcast:locked>
+    <podcast:podping usesPodping="true"/>
+<itunes:category text="Technology"/>
+<itunes:category text="News">
+  <itunes:category text="Tech News"/>
+</itunes:category>
+<itunes:category text="Education"/>
+    <item>
+      <title>489: Destination Linux 489: PHP2Shell Emergency &amp; Inside the OOSC Conference</title>
+      <link>https://podcast.destinationlinux.org/489</link>
+      <guid isPermaLink="false">2ccead8f-d833-4919-a578-d1ca3b8e2b58</guid>
+      <pubDate>Mon, 26 Oct 2026 06:00:00 -0400</pubDate>
+      <author>comments@destinationlinux.net (Deviant Airwaves)</author>
+      <enclosure url="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/2ccead8f-d833-4919-a578-d1ca3b8e2b58.mp3" length="137816205" type="audio/mpeg"/>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Deviant Airwaves</itunes:author>
+      <itunes:subtitle>DL 489 is packed! Ryan and Jill break down the critical PHP2Shell vulnerability, share community feedback on AI art, and sit down with Akarshan and Till from the Opportunity Open Source Conference - who used Destination Linux streaming as part of their event framework! A tight, focused episode full of open‑source insight and important security news.</itunes:subtitle>
+      <itunes:duration>1:35:41</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+      <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/cover.jpg?v=14"/>
+      <description>
+        <![CDATA[<p>In Destination Linux Episode 489, Ryan and Jill deliver a tight, focused episode centered around community perspectives, major security news, and an inspiring interview with the organizers of India’s rapidly growing Opportunity Open Source Conference (OOSC).</p>
+
+<p>We begin with community feedback on AI art, exploring how prompting, creativity, and human intention intersect in this evolving medium.</p>
+
+<p>Then we dive into the PHP2Shell emergency: two critical vulnerabilities (CVE‑2026‑109618 and CVE‑2026‑109619) affecting PHP’s session.upload_progress feature. These flaws allow unauthenticated remote code execution and forced an emergency patch release. We break down what happened, who’s affected, and what everyday users, site owners, and administrators need to do right now.</p>
+
+<p>In our feature interview, we welcome Akarshan and Till Kamppeter from OOSC, founded by OpenPrinting’s Till Kamppeter and Aveek Basu. OOSC 4.0 brought together more than 500 developers, researchers, and students, and the team used Destination Linux as a framework for their streaming and event structure. We talk inspiration, challenges, community impact, and the future of OOSC.</p>
+
+<p>Plus new patrons, merch shoutouts, and plenty of laughs along the way.</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure.</p>
+
+<p>Timestamps<br>
+00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+<p>OOSC Link <a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>This is Destination Linux.</p>
+
+<p>Destination Linux is a weekly show where Ryan, Jill, and guests share their passion for Linux and Open Source. Destination Linux is a show for all experience levels, whether you’re a beginner to Linux and Open Source or a long time user, this is the podcast for you. Destination Linux covers a wide range of topics from the latest news, discussions on Linux and Open Source, Linux distributions, Linux applications, security, privacy, AI, gaming on Linux, and unique in-depth interviews with Linux developers and leaders and much more!</p>
+
+<p>OOSC Conference <br>
+<a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+Linux #opensource #FOSS #podcast #security #privacy #AI #redhat #ubuntu #suse #opensuse #debian #SteamOS]]>
+      </description>
+      <itunes:keywords>Destination Linux, DL489, PHP2Shell, PHP vulnerability, CVE‑2026‑109618, CVE‑2026‑109619, emergency patch, server security, Linux security, OOSC, Opportunity Open Source Conference, OpenPrinting, Till Kamppeter, Akarshan, Aveek Basu, open source India, AI art debate, community feedback, Linux news, Linux podcast, Jill Linuxgirl, Ryan, open source development, critical vulnerability, PHP exploit, sysadmin alert</itunes:keywords>
+      <content:encoded>
+        <![CDATA[<p>In Destination Linux Episode 489, Ryan and Jill deliver a tight, focused episode centered around community perspectives, major security news, and an inspiring interview with the organizers of India’s rapidly growing Opportunity Open Source Conference (OOSC).</p>
+
+<p>We begin with community feedback on AI art, exploring how prompting, creativity, and human intention intersect in this evolving medium.</p>
+
+<p>Then we dive into the PHP2Shell emergency: two critical vulnerabilities (CVE‑2026‑109618 and CVE‑2026‑109619) affecting PHP’s session.upload_progress feature. These flaws allow unauthenticated remote code execution and forced an emergency patch release. We break down what happened, who’s affected, and what everyday users, site owners, and administrators need to do right now.</p>
+
+<p>In our feature interview, we welcome Akarshan and Till Kamppeter from OOSC, founded by OpenPrinting’s Till Kamppeter and Aveek Basu. OOSC 4.0 brought together more than 500 developers, researchers, and students, and the team used Destination Linux as a framework for their streaming and event structure. We talk inspiration, challenges, community impact, and the future of OOSC.</p>
+
+<p>Plus new patrons, merch shoutouts, and plenty of laughs along the way.</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure.</p>
+
+<p>Timestamps<br>
+00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+<p>OOSC Link <a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>This is Destination Linux.</p>
+
+<p>Destination Linux is a weekly show where Ryan, Jill, and guests share their passion for Linux and Open Source. Destination Linux is a show for all experience levels, whether you’re a beginner to Linux and Open Source or a long time user, this is the podcast for you. Destination Linux covers a wide range of topics from the latest news, discussions on Linux and Open Source, Linux distributions, Linux applications, security, privacy, AI, gaming on Linux, and unique in-depth interviews with Linux developers and leaders and much more!</p>
+
+<p>OOSC Conference <br>
+<a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+Linux #opensource #FOSS #podcast #security #privacy #AI #redhat #ubuntu #suse #opensuse #debian #SteamOS]]>
+      </content:encoded>
+      <itunes:summary>
+        <![CDATA[<p>In Destination Linux Episode 489, Ryan and Jill deliver a tight, focused episode centered around community perspectives, major security news, and an inspiring interview with the organizers of India’s rapidly growing Opportunity Open Source Conference (OOSC).</p>
+
+<p>We begin with community feedback on AI art, exploring how prompting, creativity, and human intention intersect in this evolving medium.</p>
+
+<p>Then we dive into the PHP2Shell emergency: two critical vulnerabilities (CVE‑2026‑109618 and CVE‑2026‑109619) affecting PHP’s session.upload_progress feature. These flaws allow unauthenticated remote code execution and forced an emergency patch release. We break down what happened, who’s affected, and what everyday users, site owners, and administrators need to do right now.</p>
+
+<p>In our feature interview, we welcome Akarshan and Till Kamppeter from OOSC, founded by OpenPrinting’s Till Kamppeter and Aveek Basu. OOSC 4.0 brought together more than 500 developers, researchers, and students, and the team used Destination Linux as a framework for their streaming and event structure. We talk inspiration, challenges, community impact, and the future of OOSC.</p>
+
+<p>Plus new patrons, merch shoutouts, and plenty of laughs along the way.</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure.</p>
+
+<p>Timestamps<br>
+00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+<p>OOSC Link <a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>This is Destination Linux.</p>
+
+<p>Destination Linux is a weekly show where Ryan, Jill, and guests share their passion for Linux and Open Source. Destination Linux is a show for all experience levels, whether you’re a beginner to Linux and Open Source or a long time user, this is the podcast for you. Destination Linux covers a wide range of topics from the latest news, discussions on Linux and Open Source, Linux distributions, Linux applications, security, privacy, AI, gaming on Linux, and unique in-depth interviews with Linux developers and leaders and much more!</p>
+
+<p>OOSC Conference <br>
+<a href="https://oosc.iiita.ac.in/" rel="nofollow noopener">https://oosc.iiita.ac.in/</a></p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:36 Community Feedback<br>
+00:11:57 Thanks to Our Supporters<br>
+00:14:10 Introducing the Opportunity Open Source Conference<br>
+00:20:58 Growing OOSC From Meetup to Major Conference<br>
+00:34:03 Nicknames and Hats<br>
+00:38:55 From First-Time Contributor to Conference Organizer<br>
+00:54:01 Building a Conference With Open Source Tools<br>
+01:04:57 Modernizing Printers With Open Printing on Zephyr<br>
+01:08:08 OOSC 4.0’s Highlights and What’s Next<br>
+01:22:07 Critical PHP Vulnerabilities: PHP2Shell<br>
+01:33:08 Closing Thoughts</p>
+
+Linux #opensource #FOSS #podcast #security #privacy #AI #redhat #ubuntu #suse #opensuse #debian #SteamOS]]>
+      </itunes:summary>
+      <fireside:playerURL>https://fireside.fm/player/v2/_llMen1n+HDgiri80</fireside:playerURL>
+      <fireside:playerEmbedCode>
+        <![CDATA[<iframe src="https://fireside.fm/player/v2/_llMen1n+HDgiri80" width="740" height="200" frameborder="0" scrolling="no"></iframe>]]>
+      </fireside:playerEmbedCode>
+      <podcast:chapters url="https://feeds.fireside.fm/destinationlinux/json/episodes/2ccead8f-d833-4919-a578-d1ca3b8e2b58/chapters" type="application/json"/>
+      <podcast:person email="" href="https://destinationlinux.network/creators/ryan-dasgeek/" role="host">Ryan (DasGeek)</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.network/creators/jill-bryant" role="host">Jill Bryant</podcast:person>
+    </item>
+    <item>
+      <title>488: Epic Games on Linux?! Lutris Mathieu Comandon Explores This Huge Gaming News, Steam Frame Review &amp; F‑Droid 2.0 | DL488</title>
+      <link>https://podcast.destinationlinux.org/488</link>
+      <guid isPermaLink="false">1412dd38-11ec-4663-a722-d7ac31b84e0f</guid>
+      <pubDate>Mon, 19 Oct 2026 06:00:00 -0400</pubDate>
+      <author>comments@destinationlinux.net (Deviant Airwaves)</author>
+      <enclosure url="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/1412dd38-11ec-4663-a722-d7ac31b84e0f.mp3" length="100351353" type="audio/mpeg"/>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Deviant Airwaves</itunes:author>
+      <itunes:subtitle>Mathieu Comandon, creator of Lutris, joins Jill and Zeb with massive Linux gaming news: Epic Games Launcher Beta for Linux, EAC Linux v2, and a hands‑on look at the Steam Frame. We also cover Linus Torvalds using AI for kernel patches, Discord’s latest breach, Denmark’s “123456” password disaster, and the huge F‑Droid 2.0 overhaul. A fun, fast‑moving episode packed with Linux goodness!</itunes:subtitle>
+      <itunes:duration>1:09:40</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+      <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/cover.jpg?v=14"/>
+      <description>
+        <![CDATA[<p>In Destination Linux Episode 488, Jill hosts an action‑packed Linux adventure with Zeb and special guest host <strong>Mathieu Comandon</strong>, creator of Lutris. Mathieu brings massive Linux gaming updates, including <strong>Easy Anti‑Cheat Linux v2</strong>, the <strong>Epic Games Launcher AppImage Beta</strong>, and his early impressions of the <strong>Steam Frame</strong> - marking one of the biggest Linux gaming leaps in years.</p>
+
+<p>Jill announces upcoming <strong>Destination Linux community game streams</strong>, featuring Jackbox, Golf With Your Friends, Serious Sam, and more - all streamed on Twitch and the platform with the big red button.</p>
+
+<p>Zeb covers three major news stories shaking the tech world:</p>
+
+<ul>
+<li><p><strong>Linus Torvalds using AI/LLMs</strong> to decipher complex kernel patches</p></li>
+<li><p>A <strong>Discord data breach</strong> affecting millions</p></li>
+<li><p>Denmark’s unbelievable <strong>“123456” password</strong> incident exposing 88 million records</p></li>
+</ul>
+
+<p>Jill wraps up with a deep dive into <strong>F‑Droid 2.0</strong>, the largest overhaul of the privacy‑centric Android app store in nearly a decade - featuring a modern UI, expanded search, automatic background updates, and Jetpack Compose redesign.</p>
+
+<p>Plus, we highlight new Patrons, community feedback, and plenty of laughs along the way.</p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:43 Community Feedback<br>
+00:10:11 Live Stream Announcements<br>
+00:13:46 Sponsored by Sandfly Security<br>
+00:15:14 Thanks to Our Supporters<br>
+00:18:15 Easy Anti-Cheat Rebuilds Linux Support<br>
+00:28:22 Epic Games Store Arrives on Linux<br>
+00:37:37 Steam Frame: VR Gaming on Linux<br>
+00:50:48 Self-Hosted Writing Help with LanguageTool<br>
+00:56:18 Linus Torvalds Uses AI to Review Code<br>
+00:59:15 New Discord Data Breach<br>
+01:02:27 Denmark's Central Person Register Breached<br>
+01:06:30 Closing Thoughts (and Kitty!)</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure!</p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>]]>
+      </description>
+      <itunes:keywords>Destination Linux, DL488, Lutris, Mathieu Comandon, Linux gaming, Epic Games Launcher Linux, EAC Linux v2, Easy Anti Cheat Linux, Steam Frame review, F‑Droid 2.0, Linus Torvalds AI, Discord breach, Denmark data breach, open source news, Jill Linuxgirl, Zeb, Linux apps, Linux security, Linux privacy, AppImage, Jetpack Compose, Android FOSS, Linux community, gaming on Linux, Linux hardware, open source development</itunes:keywords>
+      <content:encoded>
+        <![CDATA[<p>In Destination Linux Episode 488, Jill hosts an action‑packed Linux adventure with Zeb and special guest host <strong>Mathieu Comandon</strong>, creator of Lutris. Mathieu brings massive Linux gaming updates, including <strong>Easy Anti‑Cheat Linux v2</strong>, the <strong>Epic Games Launcher AppImage Beta</strong>, and his early impressions of the <strong>Steam Frame</strong> - marking one of the biggest Linux gaming leaps in years.</p>
+
+<p>Jill announces upcoming <strong>Destination Linux community game streams</strong>, featuring Jackbox, Golf With Your Friends, Serious Sam, and more - all streamed on Twitch and the platform with the big red button.</p>
+
+<p>Zeb covers three major news stories shaking the tech world:</p>
+
+<ul>
+<li><p><strong>Linus Torvalds using AI/LLMs</strong> to decipher complex kernel patches</p></li>
+<li><p>A <strong>Discord data breach</strong> affecting millions</p></li>
+<li><p>Denmark’s unbelievable <strong>“123456” password</strong> incident exposing 88 million records</p></li>
+</ul>
+
+<p>Jill wraps up with a deep dive into <strong>F‑Droid 2.0</strong>, the largest overhaul of the privacy‑centric Android app store in nearly a decade - featuring a modern UI, expanded search, automatic background updates, and Jetpack Compose redesign.</p>
+
+<p>Plus, we highlight new Patrons, community feedback, and plenty of laughs along the way.</p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:43 Community Feedback<br>
+00:10:11 Live Stream Announcements<br>
+00:13:46 Sponsored by Sandfly Security<br>
+00:15:14 Thanks to Our Supporters<br>
+00:18:15 Easy Anti-Cheat Rebuilds Linux Support<br>
+00:28:22 Epic Games Store Arrives on Linux<br>
+00:37:37 Steam Frame: VR Gaming on Linux<br>
+00:50:48 Self-Hosted Writing Help with LanguageTool<br>
+00:56:18 Linus Torvalds Uses AI to Review Code<br>
+00:59:15 New Discord Data Breach<br>
+01:02:27 Denmark's Central Person Register Breached<br>
+01:06:30 Closing Thoughts (and Kitty!)</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure!</p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>]]>
+      </content:encoded>
+      <itunes:summary>
+        <![CDATA[<p>In Destination Linux Episode 488, Jill hosts an action‑packed Linux adventure with Zeb and special guest host <strong>Mathieu Comandon</strong>, creator of Lutris. Mathieu brings massive Linux gaming updates, including <strong>Easy Anti‑Cheat Linux v2</strong>, the <strong>Epic Games Launcher AppImage Beta</strong>, and his early impressions of the <strong>Steam Frame</strong> - marking one of the biggest Linux gaming leaps in years.</p>
+
+<p>Jill announces upcoming <strong>Destination Linux community game streams</strong>, featuring Jackbox, Golf With Your Friends, Serious Sam, and more - all streamed on Twitch and the platform with the big red button.</p>
+
+<p>Zeb covers three major news stories shaking the tech world:</p>
+
+<ul>
+<li><p><strong>Linus Torvalds using AI/LLMs</strong> to decipher complex kernel patches</p></li>
+<li><p>A <strong>Discord data breach</strong> affecting millions</p></li>
+<li><p>Denmark’s unbelievable <strong>“123456” password</strong> incident exposing 88 million records</p></li>
+</ul>
+
+<p>Jill wraps up with a deep dive into <strong>F‑Droid 2.0</strong>, the largest overhaul of the privacy‑centric Android app store in nearly a decade - featuring a modern UI, expanded search, automatic background updates, and Jetpack Compose redesign.</p>
+
+<p>Plus, we highlight new Patrons, community feedback, and plenty of laughs along the way.</p>
+
+<p>00:00:00 Welcome to Destination Linux<br>
+00:01:43 Community Feedback<br>
+00:10:11 Live Stream Announcements<br>
+00:13:46 Sponsored by Sandfly Security<br>
+00:15:14 Thanks to Our Supporters<br>
+00:18:15 Easy Anti-Cheat Rebuilds Linux Support<br>
+00:28:22 Epic Games Store Arrives on Linux<br>
+00:37:37 Steam Frame: VR Gaming on Linux<br>
+00:50:48 Self-Hosted Writing Help with LanguageTool<br>
+00:56:18 Linus Torvalds Uses AI to Review Code<br>
+00:59:15 New Discord Data Breach<br>
+01:02:27 Denmark's Central Person Register Breached<br>
+01:06:30 Closing Thoughts (and Kitty!)</p>
+
+<p>Boot up your favorite distro, fire up your terminal, and join us for another Linux adventure!</p>
+
+<p>Destination Linux website<br>
+<a href="https://deviantairwaves.com" rel="nofollow noopener">https://deviantairwaves.com</a></p>
+
+<p>Become a Patron<br>
+<a href="https://patreon.com/destinationlinux" rel="nofollow noopener">https://patreon.com/destinationlinux</a></p>
+
+<p>Buy Me a Coffee<br>
+<a href="https://buymeacoffee.com/destinationlinux" rel="nofollow noopener">https://buymeacoffee.com/destinationlinux</a></p>
+
+<p>Merch<br>
+<a href="https://shop.deviantairwaves.com" rel="nofollow noopener">https://shop.deviantairwaves.com</a></p>
+
+<p>EFF x Destination Linux<br>
+<a href="https://eff.org/destinationlinux" rel="nofollow noopener">https://eff.org/destinationlinux</a></p>
+
+<p>Sandfly Security<br>
+<a href="https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description" rel="nofollow noopener">https://sandfly.com/?utm_source=destinationlinux&amp;utm_medium=youtube&amp;utm_campaign=podcast&amp;utm_content=yt-description</a></p>]]>
+      </itunes:summary>
+      <fireside:playerURL>https://fireside.fm/player/v2/_llMen1n+ezbaYVMW</fireside:playerURL>
+      <fireside:playerEmbedCode>
+        <![CDATA[<iframe src="https://fireside.fm/player/v2/_llMen1n+ezbaYVMW" width="740" height="200" frameborder="0" scrolling="no"></iframe>]]>
+      </fireside:playerEmbedCode>
+      <podcast:chapters url="https://feeds.fireside.fm/destinationlinux/json/episodes/1412dd38-11ec-4663-a722-d7ac31b84e0f/chapters" type="application/json"/>
+      <podcast:person email="" href="https://destinationlinux.network/creators/jill-bryant" role="host">Jill Bryant</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.org" role="host">Zeb (ZebedeeBoss)</podcast:person>
+    </item>
+    <item>
+      <title>398: Open Source Strikes Back Against Patent Trolls!</title>
+      <link>https://podcast.destinationlinux.org/398</link>
+      <guid isPermaLink="false">1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e</guid>
+      <pubDate>Mon, 25 Nov 2024 06:00:00 -0500</pubDate>
+      <author>comments@destinationlinux.net (Deviant Airwaves)</author>
+      <enclosure url="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e.mp3" length="93239617" type="audio/mpeg"/>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Deviant Airwaves</itunes:author>
+      <itunes:subtitle></itunes:subtitle>
+      <itunes:duration>1:04:44</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+      <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/cover.jpg?v=14"/>
+      <podcast:transcript url="https://assets.fireside.fm/file/fireside-images-2024/podcasts/transcripts/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/episodes/1/1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e/transcript.txt" type="text/plain"/>
+      <description>
+        <![CDATA[<p>video: <a href="https://youtu.be/8Xw4zaVp14Y" rel="nofollow noopener">https://youtu.be/8Xw4zaVp14Y</a></p>
+
+<p>On this weeks episode we’re going on a hunt to take out some trolls. No we’re not kidding, this is a call to arms and we need your help! Welcome to Destination Linux, where we discuss the latest news, hot topics, gaming, mobile, and all things Open Source &amp; Linux. We are only 2 shows away from episode 400! We have big things in store for you. Now let’s get this show on the road toward Destination Linux!</p>
+
+<p><a href="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e.mp3" rel="nofollow noopener">Download as MP3</a></p>
+
+<p>Support the show by becoming a patron at <a href="https://tuxdigital.com/membership" rel="nofollow noopener">tuxdigital.com/membership</a> or get some swag at <a href="https://tuxdigital.com/store" rel="nofollow noopener">tuxdigital.com/store</a></p>
+
+<h4>Hosted by:</h4>
+
+<p>Ryan (DasGeek) = <a href="https://dasgeek.net" rel="nofollow noopener">dasgeek.net</a><br>
+Jill Bryant = <a href="https://jilllinuxgirl.com" rel="nofollow noopener">jilllinuxgirl.com</a><br>
+Michael Tunnell = <a href="https://michaeltunnell.com" rel="nofollow noopener">michaeltunnell.com</a></p>
+
+<h4>Chapters:</h4>
+
+<p>00:00:00 Intro<br>
+00:01:46 Just a Reminder<br>
+00:02:28 Community Feedback<br>
+00:13:47 Microsoft Launches a Thin Clent<br>
+00:22:25 To Your Battle Stations<br>
+00:24:41 It’s time to hunt some trolls<br>
+00:38:25 Fedora 41 Released<br>
+00:43:52 Back to the Trolls<br>
+00:45:04 Contact Verification System Android<br>
+00:52:58 Gaming: Bioweaver<br>
+00:57:57 Tip: Splinux<br>
+01:00:25 Call to Action<br>
+01:01:00 Support the Show</p>
+
+<h4>Links:</h4>
+
+<ul>
+<li>Community Feedback
+
+<ul>
+<li><a href="https://destinationlinux.net/comments" rel="nofollow noopener">https://destinationlinux.net/comments</a></li>
+<li><a href="https://destinationlinux.net/forum" rel="nofollow noopener">https://destinationlinux.net/forum</a></li>
+</ul></li>
+<li>Microsoft Launches a Thin Clent
+
+<ul>
+<li><a href="https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/" rel="nofollow noopener">https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/</a></li>
+</ul></li>
+<li>Your Battle Stations
+
+<ul>
+<li><a href="https://forum.tuxdigital.com/t/listener-battle-stations/6500" rel="nofollow noopener">https://forum.tuxdigital.com/t/listener-battle-stations/6500</a></li>
+<li><a href="https://discord.com/channels/366022993882906624/1308945814911193160" rel="nofollow noopener">https://discord.com/channels/366022993882906624/1308945814911193160</a></li>
+</ul></li>
+<li>It’s time to hunt some trolls
+
+<ul>
+<li><a href="https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/" rel="nofollow noopener">https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/</a></li>
+<li><a href="https://www.cncf.io/heroes/" rel="nofollow noopener">https://www.cncf.io/heroes/</a></li>
+</ul></li>
+<li>Fedora 41 Released
+
+<ul>
+<li><a href="https://fedoramagazine.org/announcing-fedora-linux-41/" rel="nofollow noopener">https://fedoramagazine.org/announcing-fedora-linux-41/</a></li>
+</ul></li>
+<li>Contact Verification System Android
+
+<ul>
+<li><a href="https://www.androidauthority.com/android-system-key-verifier-3499353/" rel="nofollow noopener">https://www.androidauthority.com/android-system-key-verifier-3499353/</a></li>
+</ul></li>
+<li>Gaming: Bioweaver
+
+<ul>
+<li><a href="https://store.steampowered.com/app/3177970/Bioweaver/" rel="nofollow noopener">https://store.steampowered.com/app/3177970/Bioweaver/</a></li>
+</ul></li>
+<li>Tip: Splinux
+
+<ul>
+<li><a href="https://github.com/Syntrait/splinux" rel="nofollow noopener">https://github.com/Syntrait/splinux</a></li>
+</ul></li>
+<li>Support the Show
+
+<ul>
+<li><a href="https://tuxdigital.com/membership" rel="nofollow noopener">https://tuxdigital.com/membership</a></li>
+<li><a href="https://tuxdigital.com/store" rel="nofollow noopener">https://tuxdigital.com/store</a></li>
+</ul></li>
+</ul>]]>
+      </description>
+      <content:encoded>
+        <![CDATA[<p>video: <a href="https://youtu.be/8Xw4zaVp14Y" rel="nofollow noopener">https://youtu.be/8Xw4zaVp14Y</a></p>
+
+<p>On this weeks episode we’re going on a hunt to take out some trolls. No we’re not kidding, this is a call to arms and we need your help! Welcome to Destination Linux, where we discuss the latest news, hot topics, gaming, mobile, and all things Open Source &amp; Linux. We are only 2 shows away from episode 400! We have big things in store for you. Now let’s get this show on the road toward Destination Linux!</p>
+
+<p><a href="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e.mp3" rel="nofollow noopener">Download as MP3</a></p>
+
+<p>Support the show by becoming a patron at <a href="https://tuxdigital.com/membership" rel="nofollow noopener">tuxdigital.com/membership</a> or get some swag at <a href="https://tuxdigital.com/store" rel="nofollow noopener">tuxdigital.com/store</a></p>
+
+<h4>Hosted by:</h4>
+
+<p>Ryan (DasGeek) = <a href="https://dasgeek.net" rel="nofollow noopener">dasgeek.net</a><br>
+Jill Bryant = <a href="https://jilllinuxgirl.com" rel="nofollow noopener">jilllinuxgirl.com</a><br>
+Michael Tunnell = <a href="https://michaeltunnell.com" rel="nofollow noopener">michaeltunnell.com</a></p>
+
+<h4>Chapters:</h4>
+
+<p>00:00:00 Intro<br>
+00:01:46 Just a Reminder<br>
+00:02:28 Community Feedback<br>
+00:13:47 Microsoft Launches a Thin Clent<br>
+00:22:25 To Your Battle Stations<br>
+00:24:41 It’s time to hunt some trolls<br>
+00:38:25 Fedora 41 Released<br>
+00:43:52 Back to the Trolls<br>
+00:45:04 Contact Verification System Android<br>
+00:52:58 Gaming: Bioweaver<br>
+00:57:57 Tip: Splinux<br>
+01:00:25 Call to Action<br>
+01:01:00 Support the Show</p>
+
+<h4>Links:</h4>
+
+<ul>
+<li>Community Feedback
+
+<ul>
+<li><a href="https://destinationlinux.net/comments" rel="nofollow noopener">https://destinationlinux.net/comments</a></li>
+<li><a href="https://destinationlinux.net/forum" rel="nofollow noopener">https://destinationlinux.net/forum</a></li>
+</ul></li>
+<li>Microsoft Launches a Thin Clent
+
+<ul>
+<li><a href="https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/" rel="nofollow noopener">https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/</a></li>
+</ul></li>
+<li>Your Battle Stations
+
+<ul>
+<li><a href="https://forum.tuxdigital.com/t/listener-battle-stations/6500" rel="nofollow noopener">https://forum.tuxdigital.com/t/listener-battle-stations/6500</a></li>
+<li><a href="https://discord.com/channels/366022993882906624/1308945814911193160" rel="nofollow noopener">https://discord.com/channels/366022993882906624/1308945814911193160</a></li>
+</ul></li>
+<li>It’s time to hunt some trolls
+
+<ul>
+<li><a href="https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/" rel="nofollow noopener">https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/</a></li>
+<li><a href="https://www.cncf.io/heroes/" rel="nofollow noopener">https://www.cncf.io/heroes/</a></li>
+</ul></li>
+<li>Fedora 41 Released
+
+<ul>
+<li><a href="https://fedoramagazine.org/announcing-fedora-linux-41/" rel="nofollow noopener">https://fedoramagazine.org/announcing-fedora-linux-41/</a></li>
+</ul></li>
+<li>Contact Verification System Android
+
+<ul>
+<li><a href="https://www.androidauthority.com/android-system-key-verifier-3499353/" rel="nofollow noopener">https://www.androidauthority.com/android-system-key-verifier-3499353/</a></li>
+</ul></li>
+<li>Gaming: Bioweaver
+
+<ul>
+<li><a href="https://store.steampowered.com/app/3177970/Bioweaver/" rel="nofollow noopener">https://store.steampowered.com/app/3177970/Bioweaver/</a></li>
+</ul></li>
+<li>Tip: Splinux
+
+<ul>
+<li><a href="https://github.com/Syntrait/splinux" rel="nofollow noopener">https://github.com/Syntrait/splinux</a></li>
+</ul></li>
+<li>Support the Show
+
+<ul>
+<li><a href="https://tuxdigital.com/membership" rel="nofollow noopener">https://tuxdigital.com/membership</a></li>
+<li><a href="https://tuxdigital.com/store" rel="nofollow noopener">https://tuxdigital.com/store</a></li>
+</ul></li>
+</ul>]]>
+      </content:encoded>
+      <itunes:summary>
+        <![CDATA[<p>video: <a href="https://youtu.be/8Xw4zaVp14Y" rel="nofollow noopener">https://youtu.be/8Xw4zaVp14Y</a></p>
+
+<p>On this weeks episode we’re going on a hunt to take out some trolls. No we’re not kidding, this is a call to arms and we need your help! Welcome to Destination Linux, where we discuss the latest news, hot topics, gaming, mobile, and all things Open Source &amp; Linux. We are only 2 shows away from episode 400! We have big things in store for you. Now let’s get this show on the road toward Destination Linux!</p>
+
+<p><a href="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/1c60efbe-d1db-452a-8d13-7c3ac1ae4a0e.mp3" rel="nofollow noopener">Download as MP3</a></p>
+
+<p>Support the show by becoming a patron at <a href="https://tuxdigital.com/membership" rel="nofollow noopener">tuxdigital.com/membership</a> or get some swag at <a href="https://tuxdigital.com/store" rel="nofollow noopener">tuxdigital.com/store</a></p>
+
+<h4>Hosted by:</h4>
+
+<p>Ryan (DasGeek) = <a href="https://dasgeek.net" rel="nofollow noopener">dasgeek.net</a><br>
+Jill Bryant = <a href="https://jilllinuxgirl.com" rel="nofollow noopener">jilllinuxgirl.com</a><br>
+Michael Tunnell = <a href="https://michaeltunnell.com" rel="nofollow noopener">michaeltunnell.com</a></p>
+
+<h4>Chapters:</h4>
+
+<p>00:00:00 Intro<br>
+00:01:46 Just a Reminder<br>
+00:02:28 Community Feedback<br>
+00:13:47 Microsoft Launches a Thin Clent<br>
+00:22:25 To Your Battle Stations<br>
+00:24:41 It’s time to hunt some trolls<br>
+00:38:25 Fedora 41 Released<br>
+00:43:52 Back to the Trolls<br>
+00:45:04 Contact Verification System Android<br>
+00:52:58 Gaming: Bioweaver<br>
+00:57:57 Tip: Splinux<br>
+01:00:25 Call to Action<br>
+01:01:00 Support the Show</p>
+
+<h4>Links:</h4>
+
+<ul>
+<li>Community Feedback
+
+<ul>
+<li><a href="https://destinationlinux.net/comments" rel="nofollow noopener">https://destinationlinux.net/comments</a></li>
+<li><a href="https://destinationlinux.net/forum" rel="nofollow noopener">https://destinationlinux.net/forum</a></li>
+</ul></li>
+<li>Microsoft Launches a Thin Clent
+
+<ul>
+<li><a href="https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/" rel="nofollow noopener">https://arstechnica.com/gadgets/2024/11/microsoft-builds-a-349-mini-desktop-but-only-for-accessing-windows-in-the-cloud/</a></li>
+</ul></li>
+<li>Your Battle Stations
+
+<ul>
+<li><a href="https://forum.tuxdigital.com/t/listener-battle-stations/6500" rel="nofollow noopener">https://forum.tuxdigital.com/t/listener-battle-stations/6500</a></li>
+<li><a href="https://discord.com/channels/366022993882906624/1308945814911193160" rel="nofollow noopener">https://discord.com/channels/366022993882906624/1308945814911193160</a></li>
+</ul></li>
+<li>It’s time to hunt some trolls
+
+<ul>
+<li><a href="https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/" rel="nofollow noopener">https://www.zdnet.com/article/open-source-fights-back-we-wont-get-patent-trolled-again/</a></li>
+<li><a href="https://www.cncf.io/heroes/" rel="nofollow noopener">https://www.cncf.io/heroes/</a></li>
+</ul></li>
+<li>Fedora 41 Released
+
+<ul>
+<li><a href="https://fedoramagazine.org/announcing-fedora-linux-41/" rel="nofollow noopener">https://fedoramagazine.org/announcing-fedora-linux-41/</a></li>
+</ul></li>
+<li>Contact Verification System Android
+
+<ul>
+<li><a href="https://www.androidauthority.com/android-system-key-verifier-3499353/" rel="nofollow noopener">https://www.androidauthority.com/android-system-key-verifier-3499353/</a></li>
+</ul></li>
+<li>Gaming: Bioweaver
+
+<ul>
+<li><a href="https://store.steampowered.com/app/3177970/Bioweaver/" rel="nofollow noopener">https://store.steampowered.com/app/3177970/Bioweaver/</a></li>
+</ul></li>
+<li>Tip: Splinux
+
+<ul>
+<li><a href="https://github.com/Syntrait/splinux" rel="nofollow noopener">https://github.com/Syntrait/splinux</a></li>
+</ul></li>
+<li>Support the Show
+
+<ul>
+<li><a href="https://tuxdigital.com/membership" rel="nofollow noopener">https://tuxdigital.com/membership</a></li>
+<li><a href="https://tuxdigital.com/store" rel="nofollow noopener">https://tuxdigital.com/store</a></li>
+</ul></li>
+</ul>]]>
+      </itunes:summary>
+      <fireside:playerURL>https://fireside.fm/player/v2/_llMen1n+VeMa2DP7</fireside:playerURL>
+      <fireside:playerEmbedCode>
+        <![CDATA[<iframe src="https://fireside.fm/player/v2/_llMen1n+VeMa2DP7" width="740" height="200" frameborder="0" scrolling="no"></iframe>]]>
+      </fireside:playerEmbedCode>
+      <podcast:person email="" href="https://destinationlinux.network/creators/ryan-dasgeek/" role="host">Ryan (DasGeek)</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.network/creators/jill-bryant" role="host">Jill Bryant</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.network/creators/michael-tunnell/" role="host">Michael Tunnell</podcast:person>
+    </item>
+    <item>
+      <title>Episode 178: Destination Linux 178: Everyone Should Use Ubuntu Studio and This Is Why</title>
+      <link>https://podcast.destinationlinux.org/178</link>
+      <guid isPermaLink="false">ff4f7373-814e-4f0b-b7a5-1d16680c2a88</guid>
+      <pubDate>Wed, 17 Jun 2020 15:00:00 -0400</pubDate>
+      <author>comments@destinationlinux.net (Deviant Airwaves)</author>
+      <enclosure url="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/ff4f7373-814e-4f0b-b7a5-1d16680c2a88.mp3" length="54282620" type="audio/mpeg"/>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Deviant Airwaves</itunes:author>
+      <itunes:subtitle></itunes:subtitle>
+      <itunes:duration>56:17</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+      <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/episodes/f/ff4f7373-814e-4f0b-b7a5-1d16680c2a88/cover.jpg?v=1"/>
+      <description>
+        <![CDATA[<p><a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a> - Hosted by Michael, Ryan &amp; Noah</p>
+
+<p>Coming up on this week’s episode of Destination Linux, we’re covering community feedback, why we think everyone should be using Ubuntu Studio, KDE Plasma 5.19 was released, Pine64 announced the Pre-Orders for the Pinetab, we're also going to cover some Linux Gaming plus our Tips &amp; Tricks! All of this and so much more this week on Destination Linux!</p>
+
+<p>DL Hosts:<br>
+Michael of TuxDigital = <a href="https://tuxdigital.com" rel="nofollow noopener">https://tuxdigital.com</a><br>
+Ryan, aka DasGeek = <a href="https://dasgeekcommunity.com" rel="nofollow noopener">https://dasgeekcommunity.com</a><br>
+Noah of Ask Noah Show = <a href="https://asknoahshow.com" rel="nofollow noopener">https://asknoahshow.com</a></p>
+
+<p>Want to Support the Show?<br>
+Support us on Patreon = <a href="https://destinationlinux.org/patreon" rel="nofollow noopener">https://destinationlinux.org/patreon</a><br>
+Support us on Sponsus = <a href="https://destinationlinux.org/sponsus" rel="nofollow noopener">https://destinationlinux.org/sponsus</a><br>
+Destination Linux Network Store = <a href="https://destinationlinux.network/store" rel="nofollow noopener">https://destinationlinux.network/store</a></p>
+
+<p>Want to follow the show and hosts on social media?<br>
+You can find all of our social accounts at <a href="https://destinationlinux.org/contact" rel="nofollow noopener">https://destinationlinux.org/contact</a></p>
+
+Linux #OpenSource #TikTokSuperstars
+
+<hr>
+
+<p>Topics covered in this episode:</p>
+
+<p>Full Show Notes (for links and such)<br>
+<a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a></p>
+
+Linux #OpenSource #TikTokSuperstars]]>
+      </description>
+      <content:encoded>
+        <![CDATA[<p><a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a> - Hosted by Michael, Ryan &amp; Noah</p>
+
+<p>Coming up on this week’s episode of Destination Linux, we’re covering community feedback, why we think everyone should be using Ubuntu Studio, KDE Plasma 5.19 was released, Pine64 announced the Pre-Orders for the Pinetab, we're also going to cover some Linux Gaming plus our Tips &amp; Tricks! All of this and so much more this week on Destination Linux!</p>
+
+<p>DL Hosts:<br>
+Michael of TuxDigital = <a href="https://tuxdigital.com" rel="nofollow noopener">https://tuxdigital.com</a><br>
+Ryan, aka DasGeek = <a href="https://dasgeekcommunity.com" rel="nofollow noopener">https://dasgeekcommunity.com</a><br>
+Noah of Ask Noah Show = <a href="https://asknoahshow.com" rel="nofollow noopener">https://asknoahshow.com</a></p>
+
+<p>Want to Support the Show?<br>
+Support us on Patreon = <a href="https://destinationlinux.org/patreon" rel="nofollow noopener">https://destinationlinux.org/patreon</a><br>
+Support us on Sponsus = <a href="https://destinationlinux.org/sponsus" rel="nofollow noopener">https://destinationlinux.org/sponsus</a><br>
+Destination Linux Network Store = <a href="https://destinationlinux.network/store" rel="nofollow noopener">https://destinationlinux.network/store</a></p>
+
+<p>Want to follow the show and hosts on social media?<br>
+You can find all of our social accounts at <a href="https://destinationlinux.org/contact" rel="nofollow noopener">https://destinationlinux.org/contact</a></p>
+
+Linux #OpenSource #TikTokSuperstars
+
+<hr>
+
+<p>Topics covered in this episode:</p>
+
+<p>Full Show Notes (for links and such)<br>
+<a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a></p>
+
+Linux #OpenSource #TikTokSuperstars]]>
+      </content:encoded>
+      <itunes:summary>
+        <![CDATA[<p><a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a> - Hosted by Michael, Ryan &amp; Noah</p>
+
+<p>Coming up on this week’s episode of Destination Linux, we’re covering community feedback, why we think everyone should be using Ubuntu Studio, KDE Plasma 5.19 was released, Pine64 announced the Pre-Orders for the Pinetab, we're also going to cover some Linux Gaming plus our Tips &amp; Tricks! All of this and so much more this week on Destination Linux!</p>
+
+<p>DL Hosts:<br>
+Michael of TuxDigital = <a href="https://tuxdigital.com" rel="nofollow noopener">https://tuxdigital.com</a><br>
+Ryan, aka DasGeek = <a href="https://dasgeekcommunity.com" rel="nofollow noopener">https://dasgeekcommunity.com</a><br>
+Noah of Ask Noah Show = <a href="https://asknoahshow.com" rel="nofollow noopener">https://asknoahshow.com</a></p>
+
+<p>Want to Support the Show?<br>
+Support us on Patreon = <a href="https://destinationlinux.org/patreon" rel="nofollow noopener">https://destinationlinux.org/patreon</a><br>
+Support us on Sponsus = <a href="https://destinationlinux.org/sponsus" rel="nofollow noopener">https://destinationlinux.org/sponsus</a><br>
+Destination Linux Network Store = <a href="https://destinationlinux.network/store" rel="nofollow noopener">https://destinationlinux.network/store</a></p>
+
+<p>Want to follow the show and hosts on social media?<br>
+You can find all of our social accounts at <a href="https://destinationlinux.org/contact" rel="nofollow noopener">https://destinationlinux.org/contact</a></p>
+
+Linux #OpenSource #TikTokSuperstars
+
+<hr>
+
+<p>Topics covered in this episode:</p>
+
+<p>Full Show Notes (for links and such)<br>
+<a href="https://destinationlinux.org/episode-178" rel="nofollow noopener">https://destinationlinux.org/episode-178</a></p>
+
+Linux #OpenSource #TikTokSuperstars]]>
+      </itunes:summary>
+      <fireside:playerURL>https://fireside.fm/player/v2/_llMen1n+SJSw1zzg</fireside:playerURL>
+      <fireside:playerEmbedCode>
+        <![CDATA[<iframe src="https://fireside.fm/player/v2/_llMen1n+SJSw1zzg" width="740" height="200" frameborder="0" scrolling="no"></iframe>]]>
+      </fireside:playerEmbedCode>
+      <podcast:chapters url="https://feeds.fireside.fm/destinationlinux/json/episodes/ff4f7373-814e-4f0b-b7a5-1d16680c2a88/chapters" type="application/json"/>
+      <podcast:person email="" href="https://destinationlinux.network/creators/ryan-dasgeek/" role="host">Ryan (DasGeek)</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.network/creators/michael-tunnell/" role="host">Michael Tunnell</podcast:person>
+      <podcast:person email="" href="https://destinationlinux.network/creators/noah-chelliah/" role="host">Noah Chelliah</podcast:person>
+    </item>
+    <item>
+      <title>Episode 1: Destination Linux EP01 – First Episode</title>
+      <link>https://podcast.destinationlinux.org/1</link>
+      <guid isPermaLink="false">http://destinationlinux.org/?p=16</guid>
+      <pubDate>Mon, 03 Apr 2017 16:40:33 -0400</pubDate>
+      <author>comments@destinationlinux.net (Deviant Airwaves)</author>
+      <enclosure url="https://aphid.fireside.fm/d/1437767933/32f28071-0b08-4ea1-afcc-37af75bd83d6/af903ce3-885a-4c65-bb57-7c2e40ea2082.mp3" length="23287808" type="audio/mpeg"/>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Deviant Airwaves</itunes:author>
+      <itunes:subtitle>Welcome To Destination Linux Episode 01 – 12-17-16 This is the 1st episode of a weekly podcast/vidcast with Hosts Rob and Rocco discussing everyday Linux things. Distro Challenge Discussion Rob has ran KDE Neon for the last week while Rocco has run Ant...</itunes:subtitle>
+      <itunes:duration>43:28</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+      <itunes:image href="https://cdn.fireside.fm/file/fireside-images-2024/podcasts/images/3/32f28071-0b08-4ea1-afcc-37af75bd83d6/cover.jpg?v=14"/>
+      <description>
+        <![CDATA[<p><iframe width="640" height="360" src="https://www.youtube.com/embed/NotcfsbCYbQ?feature=oembed" frameborder="0" allowfullscreen=""></iframe></p>
+
+<p>Welcome To Destination Linux Episode 01 – 12-17-16</p>
+
+<p>This is the 1st episode of a weekly podcast/vidcast with Hosts Rob and Rocco discussing everyday Linux things.</p>
+
+<p><b>Distro Challenge Discussion </b></p>
+
+<p>Rob has ran KDE Neon for the last week while Rocco has run Antergos Gnome. The Distro challenge was cut short due to time during the Holidays</p>
+
+<p><b>News</b></p>
+
+<p><a href="http://lkml.iu.edu/hypermail/linux/kernel/1612.1/01831.html" rel="nofollow noopener">Linux Kernel 4.9 release</a></p>
+
+<p><a href="http://www.phoronix.com/scan.php?page=news_item&amp;px=Linux-4.10-Features-So-Far" rel="nofollow noopener">Linux Kernel 4.10 Features</a></p>
+
+<p><a href="http://distrowatch.com/table.php?distribution=cub" rel="nofollow noopener">Cub Linux Has Ceased Development</a></p>
+
+<p><a href="http://solus-project.com/2016/12/11/this-week-in-solus-install-40/" rel="nofollow noopener">The Brisk menu will be ported over to Mate</a></p>
+
+<p><b>App Pick of the Week </b></p>
+
+<p>No App this week Distro Update</p>
+
+<p><b>Distrowatch</b></p>
+
+<p><a href="http://kororaproject.org/" rel="nofollow noopener">Korora 25</a></p>
+
+<p><a href="http://antix.mepis.org/index.php?title=Main_Page" rel="nofollow noopener">MX16</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=E26d-do3sMI&amp;t=353s" rel="nofollow noopener">Sudo Reboot’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=RgbHkKDq5bM&amp;t=270s" rel="nofollow noopener">English Bob’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=_LFD2d7UwLo" rel="nofollow noopener">Don’t Call Me Lenny</a></p>
+
+<p><b>Distro Discussion</b></p>
+
+<p><a href="http://blog.linuxmint.com/?p=3181" rel="nofollow noopener">Linux Mint 18.1</a></p>
+
+<p><b>Youtube Comments</b></p>
+
+<p>Going back to the Distro challenge for a moment Brave Hippo Commented that I should check out ApricityOS. So we want your comments on which direction Rocco should go in and what specific distro you recommend for his next install. Matt also teased about having a great <a href="http://www.youtube.com/watch?v=IOFouymuglw" rel="nofollow noopener">Distro challenge</a></p>]]>
+      </description>
+      <content:encoded>
+        <![CDATA[<p><iframe width="640" height="360" src="https://www.youtube.com/embed/NotcfsbCYbQ?feature=oembed" frameborder="0" allowfullscreen=""></iframe></p>
+
+<p>Welcome To Destination Linux Episode 01 – 12-17-16</p>
+
+<p>This is the 1st episode of a weekly podcast/vidcast with Hosts Rob and Rocco discussing everyday Linux things.</p>
+
+<p><b>Distro Challenge Discussion </b></p>
+
+<p>Rob has ran KDE Neon for the last week while Rocco has run Antergos Gnome. The Distro challenge was cut short due to time during the Holidays</p>
+
+<p><b>News</b></p>
+
+<p><a href="http://lkml.iu.edu/hypermail/linux/kernel/1612.1/01831.html" rel="nofollow noopener">Linux Kernel 4.9 release</a></p>
+
+<p><a href="http://www.phoronix.com/scan.php?page=news_item&amp;px=Linux-4.10-Features-So-Far" rel="nofollow noopener">Linux Kernel 4.10 Features</a></p>
+
+<p><a href="http://distrowatch.com/table.php?distribution=cub" rel="nofollow noopener">Cub Linux Has Ceased Development</a></p>
+
+<p><a href="http://solus-project.com/2016/12/11/this-week-in-solus-install-40/" rel="nofollow noopener">The Brisk menu will be ported over to Mate</a></p>
+
+<p><b>App Pick of the Week </b></p>
+
+<p>No App this week Distro Update</p>
+
+<p><b>Distrowatch</b></p>
+
+<p><a href="http://kororaproject.org/" rel="nofollow noopener">Korora 25</a></p>
+
+<p><a href="http://antix.mepis.org/index.php?title=Main_Page" rel="nofollow noopener">MX16</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=E26d-do3sMI&amp;t=353s" rel="nofollow noopener">Sudo Reboot’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=RgbHkKDq5bM&amp;t=270s" rel="nofollow noopener">English Bob’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=_LFD2d7UwLo" rel="nofollow noopener">Don’t Call Me Lenny</a></p>
+
+<p><b>Distro Discussion</b></p>
+
+<p><a href="http://blog.linuxmint.com/?p=3181" rel="nofollow noopener">Linux Mint 18.1</a></p>
+
+<p><b>Youtube Comments</b></p>
+
+<p>Going back to the Distro challenge for a moment Brave Hippo Commented that I should check out ApricityOS. So we want your comments on which direction Rocco should go in and what specific distro you recommend for his next install. Matt also teased about having a great <a href="http://www.youtube.com/watch?v=IOFouymuglw" rel="nofollow noopener">Distro challenge</a></p>]]>
+      </content:encoded>
+      <itunes:summary>
+        <![CDATA[<p><iframe width="640" height="360" src="https://www.youtube.com/embed/NotcfsbCYbQ?feature=oembed" frameborder="0" allowfullscreen=""></iframe></p>
+
+<p>Welcome To Destination Linux Episode 01 – 12-17-16</p>
+
+<p>This is the 1st episode of a weekly podcast/vidcast with Hosts Rob and Rocco discussing everyday Linux things.</p>
+
+<p><b>Distro Challenge Discussion </b></p>
+
+<p>Rob has ran KDE Neon for the last week while Rocco has run Antergos Gnome. The Distro challenge was cut short due to time during the Holidays</p>
+
+<p><b>News</b></p>
+
+<p><a href="http://lkml.iu.edu/hypermail/linux/kernel/1612.1/01831.html" rel="nofollow noopener">Linux Kernel 4.9 release</a></p>
+
+<p><a href="http://www.phoronix.com/scan.php?page=news_item&amp;px=Linux-4.10-Features-So-Far" rel="nofollow noopener">Linux Kernel 4.10 Features</a></p>
+
+<p><a href="http://distrowatch.com/table.php?distribution=cub" rel="nofollow noopener">Cub Linux Has Ceased Development</a></p>
+
+<p><a href="http://solus-project.com/2016/12/11/this-week-in-solus-install-40/" rel="nofollow noopener">The Brisk menu will be ported over to Mate</a></p>
+
+<p><b>App Pick of the Week </b></p>
+
+<p>No App this week Distro Update</p>
+
+<p><b>Distrowatch</b></p>
+
+<p><a href="http://kororaproject.org/" rel="nofollow noopener">Korora 25</a></p>
+
+<p><a href="http://antix.mepis.org/index.php?title=Main_Page" rel="nofollow noopener">MX16</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=E26d-do3sMI&amp;t=353s" rel="nofollow noopener">Sudo Reboot’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=RgbHkKDq5bM&amp;t=270s" rel="nofollow noopener">English Bob’s Video</a></p>
+
+<p><a href="http://www.youtube.com/watch?v=_LFD2d7UwLo" rel="nofollow noopener">Don’t Call Me Lenny</a></p>
+
+<p><b>Distro Discussion</b></p>
+
+<p><a href="http://blog.linuxmint.com/?p=3181" rel="nofollow noopener">Linux Mint 18.1</a></p>
+
+<p><b>Youtube Comments</b></p>
+
+<p>Going back to the Distro challenge for a moment Brave Hippo Commented that I should check out ApricityOS. So we want your comments on which direction Rocco should go in and what specific distro you recommend for his next install. Matt also teased about having a great <a href="http://www.youtube.com/watch?v=IOFouymuglw" rel="nofollow noopener">Distro challenge</a></p>]]>
+      </itunes:summary>
+      <fireside:playerURL>https://fireside.fm/player/v2/_llMen1n+y4qn0QJt</fireside:playerURL>
+      <fireside:playerEmbedCode>
+        <![CDATA[<iframe src="https://fireside.fm/player/v2/_llMen1n+y4qn0QJt" width="740" height="200" frameborder="0" scrolling="no"></iframe>]]>
+      </fireside:playerEmbedCode>
+    </item>
+  </channel>
+</rss>

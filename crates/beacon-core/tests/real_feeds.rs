@@ -107,8 +107,60 @@ fn hey_riddle_riddle() {
 }
 
 #[test]
+fn destination_linux() {
+    let feed = parse_fixture("destination-linux.xml");
+    assert_eq!(feed.show.title, "Destination Linux");
+    assert!(feed.show.image_url.is_some());
+
+    let episodes: Vec<_> = feed.episodes.iter().map(|e| &e.info).collect();
+    assert_eq!(episodes.len(), 5);
+    assert_eq!(
+        episodes[0].title,
+        "489: Destination Linux 489: PHP2Shell Emergency & Inside the OOSC Conference"
+    );
+    // Single-digit hours, and MM:SS on older episodes.
+    let durations: Vec<_> = episodes.iter().map(|e| e.duration).collect();
+    assert_eq!(
+        durations,
+        [
+            hms(1, 35, 41),
+            hms(1, 9, 40),
+            hms(1, 4, 44),
+            hms(0, 56, 17),
+            hms(0, 43, 28)
+        ]
+    );
+    assert_eq!(
+        episodes[0].published,
+        Some(Utc.with_ymd_and_hms(2026, 10, 26, 10, 0, 0).unwrap())
+    );
+    // Podcasting 2.0 chapters on recent episodes, none on old ones.
+    let with_chapters: Vec<_> = episodes.iter().map(|e| e.chapters_url.is_some()).collect();
+    assert_eq!(with_chapters, [true, true, false, true, false]);
+    assert!(
+        episodes[0]
+            .chapters_url
+            .as_ref()
+            .unwrap()
+            .as_str()
+            .ends_with("/2ccead8f-d833-4919-a578-d1ca3b8e2b58/chapters")
+    );
+    // The first episode kept its WordPress identifier from before the move.
+    assert_eq!(episodes[4].guid, "http://destinationlinux.org/?p=16");
+    assert!(
+        episodes
+            .iter()
+            .all(|e| e.season.is_none() && e.number.is_none())
+    );
+}
+
+#[test]
 fn real_feeds_store_every_episode_once() {
-    for name in ["magic-tavern.xml", "hey-riddle-riddle.xml"] {
+    for name in [
+        "magic-tavern.xml",
+        "hey-riddle-riddle.xml",
+        "destination-linux.xml",
+    ] {
         let feed = parse_fixture(name);
         let mut store = Store::open_in_memory().unwrap();
         let url = url::Url::parse("https://example.com/feed.xml").unwrap();
