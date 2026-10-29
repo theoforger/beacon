@@ -155,11 +155,54 @@ fn destination_linux() {
 }
 
 #[test]
+fn the_adventure_zone() {
+    let feed = parse_fixture("adventure-zone.xml");
+    assert_eq!(feed.show.title, "The Adventure Zone");
+    assert_eq!(feed.show.author.as_deref(), Some("The McElroys"));
+    assert_eq!(feed.show.category.as_deref(), Some("Fiction"));
+
+    // Real season tags on every episode, including the trailer and bonus
+    // episodes, which have no episode number. The first episode is number 0.
+    let summary: Vec<_> = feed
+        .episodes
+        .iter()
+        .map(|e| (e.info.season.as_ref().map(|s| s.number), e.info.number))
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            (Some(10), Some(2.0)),
+            (Some(10), Some(1.0)),
+            (Some(10), None),
+            (Some(9), None),
+            (Some(9), Some(29.0)),
+            (Some(1), Some(0.0)),
+        ]
+    );
+    assert!(
+        feed.episodes
+            .iter()
+            .all(|e| e.info.season.as_ref().unwrap().name.is_none())
+    );
+
+    // Single-digit day of the month.
+    assert_eq!(
+        feed.episodes[1].info.published,
+        Some(Utc.with_ymd_and_hms(2026, 10, 1, 11, 0, 0).unwrap())
+    );
+    // Some episodes have no artwork of their own; the UI falls back to the show's.
+    assert!(feed.episodes[4].info.image_url.is_none());
+    assert!(feed.episodes[0].info.image_url.is_some());
+    assert!(feed.episodes.iter().all(|e| e.info.description.is_some()));
+}
+
+#[test]
 fn real_feeds_store_every_episode_once() {
     for name in [
         "magic-tavern.xml",
         "hey-riddle-riddle.xml",
         "destination-linux.xml",
+        "adventure-zone.xml",
     ] {
         let feed = parse_fixture(name);
         let mut store = Store::open_in_memory().unwrap();

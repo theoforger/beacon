@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture: excerpt of the real feed https://feeds.simplecast.com/cYQVc__c, fetched 2026-10-28. 6 of 422 items kept (indexes [0, 1, 2, 3, 7, 421]), otherwise unchanged. -->
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:media="http://search.yahoo.com/mrss/" xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <atom:link href="https://feeds.simplecast.com/cYQVc__c" rel="self" title="MP3 Audio" type="application/atom+xml"/>
+    <atom:link href="https://simplecast.superfeedr.com" rel="hub" xmlns="http://www.w3.org/2005/Atom"/>
+    <generator>https://simplecast.com</generator>
+    <title>The Adventure Zone</title>
+    <description>Justin, Travis and Griffin McElroy from My Brother, My Brother and Me have recruited their dad Clint for a campaign of high adventure. Join the McElroys as they find their fortune and slay an unconscionable number of ... you know, kobolds or whatever in ... The Adventure Zone..</description>
+    <copyright>Copyright The McElroy Family, all rights reserved.</copyright>
+    <language>en</language>
+    <pubDate>Thu, 15 Oct 2026 11:00:00 +0000</pubDate>
+    <lastBuildDate>Thu, 15 Oct 2026 11:00:23 +0000</lastBuildDate>
+    <image>
+      <link>https://adventurezone.simplecast.com</link>
+      <title>The Adventure Zone</title>
+      <url>https://image.simplecastcdn.com/images/9ba52d4c-4e8c-4203-a3de-be89969671f2/19f0432c-ab24-49c1-946c-6c5e76f33ed8/3000x3000/cropped_1791393495062.jpg?aid=rss_feed</url>
+    </image>
+    <link>https://adventurezone.simplecast.com</link>
+    <itunes:type>episodic</itunes:type>
+    <itunes:summary>Justin, Travis and Griffin McElroy from My Brother, My Brother and Me have recruited their dad Clint for a campaign of high adventure. Join the McElroys as they find their fortune and slay an unconscionable number of ... you know, kobolds or whatever in ... The Adventure Zone..</itunes:summary>
+    <itunes:author>The McElroys</itunes:author>
+    <itunes:explicit>true</itunes:explicit>
+    <itunes:image href="https://image.simplecastcdn.com/images/9ba52d4c-4e8c-4203-a3de-be89969671f2/19f0432c-ab24-49c1-946c-6c5e76f33ed8/3000x3000/cropped_1791393495062.jpg?aid=rss_feed"/>
+    <itunes:new-feed-url>https://feeds.simplecast.com/cYQVc__c</itunes:new-feed-url>
+    <itunes:keywords>adventure, mcelroy, rpg</itunes:keywords>
+    <itunes:owner>
+      <itunes:name>The McElroys</itunes:name>
+      <itunes:email>shows@themcelroy.family</itunes:email>
+    </itunes:owner>
+    <itunes:category text="Fiction">
+      <itunes:category text="Comedy Fiction"/>
+    </itunes:category>
+    <itunes:category text="Leisure">
+      <itunes:category text="Games"/>
+    </itunes:category>
+    <item>
+      <guid isPermaLink="false">69d81f4f-15e4-41cc-9376-e10fa903c265</guid>
+      <title>The Adventure Zone Providence: Episode 2</title>
+      <description><![CDATA[<p>Tintabula, Spira, and Minutiae investigate a very personal robbery by questioning a schoolbell, a rogue lobster, and the mysterious new island community members.</p><p>We're playing Super Normal from Ursidice: https://ursidice.com/supernormal/</p><p>Original Music by Griffin McElroy</p><p>Additional Music in this Episode: "Ancient" by Lightning Traveler: https://open.spotify.com/artist/1oLhhXyQ8Xf4CUrO7Ir0vU; Creeping Scary Atmosphere for Night Scenes" by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/; and "Atlantis" by Jason Shaw: https://audionautix.com/.</p><p>Center for Reproductive Rights: https://reproductiverights.org/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Thu, 15 Oct 2026 11:00:00 +0000</pubDate>
+      <author>shows@themcelroy.family (Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy)</author>
+      <link>https://adventurezone.simplecast.com/episodes/the-adventure-zone-providence-episode-2-BZsVEUMb</link>
+      <content:encoded><![CDATA[<p>Tintabula, Spira, and Minutiae investigate a very personal robbery by questioning a schoolbell, a rogue lobster, and the mysterious new island community members.</p><p>We're playing Super Normal from Ursidice: https://ursidice.com/supernormal/</p><p>Original Music by Griffin McElroy</p><p>Additional Music in this Episode: "Ancient" by Lightning Traveler: https://open.spotify.com/artist/1oLhhXyQ8Xf4CUrO7Ir0vU; Creeping Scary Atmosphere for Night Scenes" by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/; and "Atlantis" by Jason Shaw: https://audionautix.com/.</p><p>Center for Reproductive Rights: https://reproductiverights.org/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="67347755" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/5b9b4c49-1c2a-465f-bece-a138f5048b2e/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=5b9b4c49-1c2a-465f-bece-a138f5048b2e&amp;feed=cYQVc__c"/>
+      <itunes:title>The Adventure Zone Providence: Episode 2</itunes:title>
+      <itunes:author>Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy</itunes:author>
+      <itunes:image href="https://image.simplecastcdn.com/images/ab2ecf0d-35c9-4d5a-928d-82855fd0f7c9/075e3074-af23-4325-bee2-40d1d426b848/3000x3000/cropped_1791986898717.jpg?aid=rss_feed"/>
+      <itunes:duration>00:54:29</itunes:duration>
+      <itunes:summary>Tintabula, Spira, and Minutiae investigate a very personal robbery by questioning a schoolbell, a rogue lobster, and the mysterious new island community members.
+
+We&apos;re playing Super Normal from Ursidice: https://ursidice.com/supernormal/
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode: &quot;Ancient&quot; by Lightning Traveler: https://open.spotify.com/artist/1oLhhXyQ8Xf4CUrO7Ir0vU; Creeping Scary Atmosphere for Night Scenes&quot; by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/; and &quot;Atlantis&quot; by Jason Shaw: https://audionautix.com/.
+
+Center for Reproductive Rights: https://reproductiverights.org/</itunes:summary>
+      <itunes:subtitle>Tintabula, Spira, and Minutiae investigate a very personal robbery by questioning a schoolbell, a rogue lobster, and the mysterious new island community members.
+
+We&apos;re playing Super Normal from Ursidice: https://ursidice.com/supernormal/
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode: &quot;Ancient&quot; by Lightning Traveler: https://open.spotify.com/artist/1oLhhXyQ8Xf4CUrO7Ir0vU; Creeping Scary Atmosphere for Night Scenes&quot; by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/; and &quot;Atlantis&quot; by Jason Shaw: https://audionautix.com/.
+
+Center for Reproductive Rights: https://reproductiverights.org/</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>2</itunes:episode>
+      <itunes:season>10</itunes:season>
+    </item>
+    <item>
+      <guid isPermaLink="false">d5ec70f6-47ac-4312-976b-85047c4457a5</guid>
+      <title>The Adventure Zone Providence: Episode 1</title>
+      <description><![CDATA[<p>Someone in the small fishing village of Asta is planning . . . a dark ritual! Harumph! Not to worry, three minor gods are on the case: Spira, the god of bellows; Tintabula, the god of bells; and Minutiae, the god of marine chronometers. They definitely have skills that will come in handy for uncovering the town’s dark secrets. That is . . . if they can blend in with the mortals</p><p>We're playing Super Normal from Ursidice: https://ursidice.com/supernormal/</p><p>Original Music by Griffin McElroy</p><p>Additional Music in this Episode: &nbsp;Stars" by Sabine Bloch x Fachhochschule Dortmund: https://sabinebloch.de/; &nbsp;“Sad Piano Ambient” by Lite Saturation:https://litesaturation.com/; and "Creeping Scary Atmosphere for Night Scenes" by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/.</p><p>Center for Reproductive Rights: https://reproductiverights.org/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Thu, 1 Oct 2026 11:00:00 +0000</pubDate>
+      <author>shows@themcelroy.family (Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy)</author>
+      <link>https://adventurezone.simplecast.com/episodes/the-adventure-zone-providence-episode-1-viqXK_kQ</link>
+      <content:encoded><![CDATA[<p>Someone in the small fishing village of Asta is planning . . . a dark ritual! Harumph! Not to worry, three minor gods are on the case: Spira, the god of bellows; Tintabula, the god of bells; and Minutiae, the god of marine chronometers. They definitely have skills that will come in handy for uncovering the town’s dark secrets. That is . . . if they can blend in with the mortals</p><p>We're playing Super Normal from Ursidice: https://ursidice.com/supernormal/</p><p>Original Music by Griffin McElroy</p><p>Additional Music in this Episode: &nbsp;Stars" by Sabine Bloch x Fachhochschule Dortmund: https://sabinebloch.de/; &nbsp;“Sad Piano Ambient” by Lite Saturation:https://litesaturation.com/; and "Creeping Scary Atmosphere for Night Scenes" by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/.</p><p>Center for Reproductive Rights: https://reproductiverights.org/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="78308771" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/c572193b-028c-47ee-9660-f4bbfa831faf/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=c572193b-028c-47ee-9660-f4bbfa831faf&amp;feed=cYQVc__c"/>
+      <itunes:title>The Adventure Zone Providence: Episode 1</itunes:title>
+      <itunes:author>Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy</itunes:author>
+      <itunes:image href="https://image.simplecastcdn.com/images/ee8ef2f9-5bb2-4a0a-bad7-44fd3b17d53c/5f8a7f68-48be-4b15-bfe4-f6aeca3afbb7/3000x3000/cropped_1791393654556.jpg?aid=rss_feed"/>
+      <itunes:duration>01:05:53</itunes:duration>
+      <itunes:summary>Someone in the small fishing village of Asta is planning . . . a dark ritual! Harumph! Not to worry, three minor gods are on the case: Spira, the god of bellows; Tintabula, the god of bells; and Minutiae, the god of marine chronometers. They definitely have skills that will come in handy for uncovering the town’s dark secrets. That is . . . if they can blend in with the mortals
+
+We&apos;re playing Super Normal from Ursidice: https://ursidice.com/supernormal/
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode:  Stars&quot; by Sabine Bloch x Fachhochschule Dortmund: https://sabinebloch.de/;  “Sad Piano Ambient” by Lite Saturation:https://litesaturation.com/; and &quot;Creeping Scary Atmosphere for Night Scenes&quot; by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/.
+
+Center for Reproductive Rights: https://reproductiverights.org/</itunes:summary>
+      <itunes:subtitle>Someone in the small fishing village of Asta is planning . . . a dark ritual! Harumph! Not to worry, three minor gods are on the case: Spira, the god of bellows; Tintabula, the god of bells; and Minutiae, the god of marine chronometers. They definitely have skills that will come in handy for uncovering the town’s dark secrets. That is . . . if they can blend in with the mortals
+
+We&apos;re playing Super Normal from Ursidice: https://ursidice.com/supernormal/
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode:  Stars&quot; by Sabine Bloch x Fachhochschule Dortmund: https://sabinebloch.de/;  “Sad Piano Ambient” by Lite Saturation:https://litesaturation.com/; and &quot;Creeping Scary Atmosphere for Night Scenes&quot; by Alex Morgan: https://freemusicarchive.org/music/alex-morgan/.
+
+Center for Reproductive Rights: https://reproductiverights.org/</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>1</itunes:episode>
+      <itunes:season>10</itunes:season>
+    </item>
+    <item>
+      <guid isPermaLink="false">897ffefe-5ec5-46d3-af68-3c4d3c157341</guid>
+      <title>The Adventure Zone: Providence Trailer</title>
+      <description><![CDATA[<p>Three unassuming gods pop into a small New England town, pretending to be mortals, to investigate potential magical interference. Should be easy, right? Only the town is not quite what it seems and its strange inhabitants harbor secrets . . .</p><p>Join us for The Adventure Zone: Providence, a 6-episode series using Super Normal from Ursidice: https://ursidice.com/supernormal/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Mon, 28 Sep 2026 16:30:00 +0000</pubDate>
+      <author>shows@themcelroy.family (Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy)</author>
+      <link>https://adventurezone.simplecast.com/episodes/the-adventure-zone-providence-trailer-Ittp_2dX</link>
+      <content:encoded><![CDATA[<p>Three unassuming gods pop into a small New England town, pretending to be mortals, to investigate potential magical interference. Should be easy, right? Only the town is not quite what it seems and its strange inhabitants harbor secrets . . .</p><p>Join us for The Adventure Zone: Providence, a 6-episode series using Super Normal from Ursidice: https://ursidice.com/supernormal/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="11591383" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/2585e854-afac-4a96-8b39-05c00d12a900/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=2585e854-afac-4a96-8b39-05c00d12a900&amp;feed=cYQVc__c"/>
+      <itunes:title>The Adventure Zone: Providence Trailer</itunes:title>
+      <itunes:author>Travis McElroy, Justin McElroy, Griffin McElroy, Clint McElroy</itunes:author>
+      <itunes:image href="https://image.simplecastcdn.com/images/ee8ef2f9-5bb2-4a0a-bad7-44fd3b17d53c/092283e2-78a7-43ef-bc97-488a1423abcd/3000x3000/cropped_1791393682300.jpg?aid=rss_feed"/>
+      <itunes:duration>00:01:52</itunes:duration>
+      <itunes:summary>Three unassuming gods pop into a small New England town, pretending to be mortals, to investigate potential magical interference. Should be easy, right? Only the town is not quite what it seems and its strange inhabitants harbor secrets . . .
+
+Join us for The Adventure Zone: Providence, a 6-episode series using Super Normal from Ursidice: https://ursidice.com/supernormal/</itunes:summary>
+      <itunes:subtitle>Three unassuming gods pop into a small New England town, pretending to be mortals, to investigate potential magical interference. Should be easy, right? Only the town is not quite what it seems and its strange inhabitants harbor secrets . . .
+
+Join us for The Adventure Zone: Providence, a 6-episode series using Super Normal from Ursidice: https://ursidice.com/supernormal/</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>trailer</itunes:episodeType>
+      <itunes:season>10</itunes:season>
+    </item>
+    <item>
+      <guid isPermaLink="false">fef18232-afee-4dc1-bd16-36081bb54bb1</guid>
+      <title>The Adventure Zone Versus The Wonderful Wizard of Oz: Live in St. Paul!</title>
+      <description><![CDATA[<p>Lions and tigers and bears, oh shit! Glinda the Good Witch has gone missing and her bubble dispatched to find the three heroes of the realm. Unfortunately for the denizens of the Emerald City, it found Lady Godwin, Winnie-the-Pooh, and one Crawford Muttner, and it’s up to them to save the day.</p><p>Midwest Food Bank: https://midwestfoodbank.org/disaster-relief/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Thu, 17 Sep 2026 11:00:00 +0000</pubDate>
+      <author>shows@themcelroy.family (Clint McElroy, Justin McElroy, Travis McElroy, Griffin McElroy)</author>
+      <link>https://adventurezone.simplecast.com/episodes/the-adventure-zone-versus-the-wonderful-wizard-of-oz-live-in-st-paul-fWj4Wtkk</link>
+      <content:encoded><![CDATA[<p>Lions and tigers and bears, oh shit! Glinda the Good Witch has gone missing and her bubble dispatched to find the three heroes of the realm. Unfortunately for the denizens of the Emerald City, it found Lady Godwin, Winnie-the-Pooh, and one Crawford Muttner, and it’s up to them to save the day.</p><p>Midwest Food Bank: https://midwestfoodbank.org/disaster-relief/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="101074569" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/aa7c050e-a9f2-4f09-927f-ff20f7657405/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=aa7c050e-a9f2-4f09-927f-ff20f7657405&amp;feed=cYQVc__c"/>
+      <itunes:title>The Adventure Zone Versus The Wonderful Wizard of Oz: Live in St. Paul!</itunes:title>
+      <itunes:author>Clint McElroy, Justin McElroy, Travis McElroy, Griffin McElroy</itunes:author>
+      <itunes:image href="https://image.simplecastcdn.com/images/ab2ecf0d-35c9-4d5a-928d-82855fd0f7c9/9dc77881-9d6f-422a-8b5e-146012d1689e/3000x3000/cropped_1789407973823.jpg?aid=rss_feed"/>
+      <itunes:duration>01:37:43</itunes:duration>
+      <itunes:summary>Lions and tigers and bears, oh shit! Glinda the Good Witch has gone missing and her bubble dispatched to find the three heroes of the realm. Unfortunately for the denizens of the Emerald City, it found Lady Godwin, Winnie-the-Pooh, and one Crawford Muttner, and it’s up to them to save the day.
+
+Midwest Food Bank: https://midwestfoodbank.org/disaster-relief/</itunes:summary>
+      <itunes:subtitle>Lions and tigers and bears, oh shit! Glinda the Good Witch has gone missing and her bubble dispatched to find the three heroes of the realm. Unfortunately for the denizens of the Emerald City, it found Lady Godwin, Winnie-the-Pooh, and one Crawford Muttner, and it’s up to them to save the day.
+
+Midwest Food Bank: https://midwestfoodbank.org/disaster-relief/</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>bonus</itunes:episodeType>
+      <itunes:season>9</itunes:season>
+    </item>
+    <item>
+      <guid isPermaLink="false">aa72d88c-9ea8-40c7-ba2d-db455c30061d</guid>
+      <title>The Adventure Zone Royale: Episode 29</title>
+      <description><![CDATA[<p>The Trial of Enchantment, Part 1</p>
+<p>With the truth finally out in the open, the aspirants are less willing than ever to participate in the battle royale. But whatever has come to light, the contest still goes on, with more trials to overcome and only one winner.</p>
+<p>Royale Theme: “Wizard Disco” by Louie Zong: https://louiezong.bandcamp.com/album/wizard-disco</p>
+<p>Original Music by Griffin McElroy</p>
+<p>Additional Music in this Episode: "Fireball", "Night Sky", and "Simple Song" by Jar of Flies: https://jaroffliesofficial.bandcamp.com/; and Taffy Machine" by Kate Kody: https://freemusicarchive.org/music/kate-kody/.</p>
+<p>Asian Pacific Environmental Network: https://apen4ej.org/our-work/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Thu, 23 Jul 2026 11:00:00 +0000</pubDate>
+      <author>shows@themcelroy.family (Griffin McElroy, Justin McElroy, Travis McElroy, Clint McElroy)</author>
+      <link>https://adventurezone.simplecast.com/episodes/the-adventure-zone-royale-episode-29-_8ee0HYZ</link>
+      <content:encoded><![CDATA[<p>The Trial of Enchantment, Part 1</p>
+<p>With the truth finally out in the open, the aspirants are less willing than ever to participate in the battle royale. But whatever has come to light, the contest still goes on, with more trials to overcome and only one winner.</p>
+<p>Royale Theme: “Wizard Disco” by Louie Zong: https://louiezong.bandcamp.com/album/wizard-disco</p>
+<p>Original Music by Griffin McElroy</p>
+<p>Additional Music in this Episode: "Fireball", "Night Sky", and "Simple Song" by Jar of Flies: https://jaroffliesofficial.bandcamp.com/; and Taffy Machine" by Kate Kody: https://freemusicarchive.org/music/kate-kody/.</p>
+<p>Asian Pacific Environmental Network: https://apen4ej.org/our-work/</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="59138880" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/804b5a56-38f1-4b04-8baa-25b86ebde92c/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=804b5a56-38f1-4b04-8baa-25b86ebde92c&amp;feed=cYQVc__c"/>
+      <itunes:title>The Adventure Zone Royale: Episode 29</itunes:title>
+      <itunes:author>Griffin McElroy, Justin McElroy, Travis McElroy, Clint McElroy</itunes:author>
+      <itunes:duration>00:56:43</itunes:duration>
+      <itunes:summary>The Trial of Enchantment, Part 1
+
+With the truth finally out in the open, the aspirants are less willing than ever to participate in the battle royale. But whatever has come to light, the contest still goes on, with more trials to overcome and only one winner.
+
+Royale Theme: “Wizard Disco” by Louie Zong: https://louiezong.bandcamp.com/album/wizard-disco
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode: &quot;Fireball&quot;, &quot;Night Sky&quot;, and &quot;Simple Song&quot; by Jar of Flies: https://jaroffliesofficial.bandcamp.com/; and Taffy Machine&quot; by Kate Kody: https://freemusicarchive.org/music/kate-kody/.
+
+Asian Pacific Environmental Network: https://apen4ej.org/our-work/</itunes:summary>
+      <itunes:subtitle>The Trial of Enchantment, Part 1
+
+With the truth finally out in the open, the aspirants are less willing than ever to participate in the battle royale. But whatever has come to light, the contest still goes on, with more trials to overcome and only one winner.
+
+Royale Theme: “Wizard Disco” by Louie Zong: https://louiezong.bandcamp.com/album/wizard-disco
+
+Original Music by Griffin McElroy
+
+Additional Music in this Episode: &quot;Fireball&quot;, &quot;Night Sky&quot;, and &quot;Simple Song&quot; by Jar of Flies: https://jaroffliesofficial.bandcamp.com/; and Taffy Machine&quot; by Kate Kody: https://freemusicarchive.org/music/kate-kody/.
+
+Asian Pacific Environmental Network: https://apen4ej.org/our-work/</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>29</itunes:episode>
+      <itunes:season>9</itunes:season>
+    </item>
+    <item>
+      <guid isPermaLink="false">f9343285c2bcbdcc9f5569b072d71833</guid>
+      <title>Ep. 1: Here There Be Gerblins - Chapter One</title>
+      <description><![CDATA[<p>In this, the pilot episode of The Adventure Zone, the McElroys create the characters with which they'll build a new -- and hopefuly very, very lucrative -- fantasy fiction franchise. Join in the campaign as Justin (Taako), Travis (Magnus) and Clint (Merle), led by Dungeon Master Griffin, take their first steps into the unknown.</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></description>
+      <pubDate>Wed, 3 Dec 2014 15:40:03 +0000</pubDate>
+      <author>shows@themcelroy.family (The McElroys)</author>
+      <link>https://adventurezone.simplecast.com/episodes/ep-1-here-there-be-gerblins-chapter-one-6zf8ZUQ9</link>
+      <content:encoded><![CDATA[<p>In this, the pilot episode of The Adventure Zone, the McElroys create the characters with which they'll build a new -- and hopefuly very, very lucrative -- fantasy fiction franchise. Join in the campaign as Justin (Taako), Travis (Magnus) and Clint (Merle), led by Dungeon Master Griffin, take their first steps into the unknown.</p>
+<p><p>Help support this show and unlock bonus content! Become a member at <a href="https://maximumfun.org/jointaz" target="_blank"><strong>https://maximumfun.org/jointaz</strong></a></p></p>]]></content:encoded>
+      <enclosure length="115722055" type="audio/mpeg" url="https://afp-9384.calisto.simplecastaudio.com/e7ec86c9-5b4f-4c1c-af7b-0957921e175d/episodes/dcb5d4e2-c757-4b6b-ae0c-691b26f70e7a/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=e7ec86c9-5b4f-4c1c-af7b-0957921e175d&amp;awEpisodeId=dcb5d4e2-c757-4b6b-ae0c-691b26f70e7a&amp;feed=cYQVc__c"/>
+      <itunes:title>Ep. 1: Here There Be Gerblins - Chapter One</itunes:title>
+      <itunes:author>The McElroys</itunes:author>
+      <itunes:image href="https://image.simplecastcdn.com/images/756be4b5-6f31-492d-8611-f7c8f29043c7/fe0d26c3-b7f5-4dda-90a4-3acf73c7331d/3000x3000/tazb-cover.jpg?aid=rss_feed"/>
+      <itunes:duration>01:53:47</itunes:duration>
+      <itunes:summary>In this, the pilot episode of The Adventure Zone, the McElroys create the characters with which they&apos;ll build a new -- and hopefuly very, very lucrative -- fantasy fiction franchise. Join in the campaign as Justin (Taako), Travis (Magnus) and Clint (Merle), led by Dungeon Master Griffin, take their first steps into the unknown.</itunes:summary>
+      <itunes:subtitle>In this, the pilot episode of The Adventure Zone, the McElroys create the characters with which they&apos;ll build a new -- and hopefuly very, very lucrative -- fantasy fiction franchise. Join in the campaign as Justin (Taako), Travis (Magnus) and Clint (Merle), led by Dungeon Master Griffin, take their first steps into the unknown.</itunes:subtitle>
+      <itunes:explicit>true</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>0</itunes:episode>
+      <itunes:season>1</itunes:season>
+    </item>
+  </channel>
+</rss>
