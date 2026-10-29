@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The window: three columns (sidebar, content, details pane) over a
-//! full-width player bar, the navigation history, and the narrow layout.
+//! full-width player bar, the navigation trail, and the narrow layout.
 
 use gettextrs::gettext;
 use relm4::actions::{RelmAction, RelmActionGroup};
@@ -12,7 +12,7 @@ use relm4::{
 };
 
 use crate::config::APP_ID;
-use crate::navigation::{History, Location};
+use crate::navigation::{Location, Trail};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
 use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
 use crate::ui::dialogs::about;
@@ -33,15 +33,13 @@ relm4::new_stateless_action!(SearchAction, WindowActionGroup, "search");
 pub enum AppMsg {
     Navigate(Location),
     Back,
-    SetNarrow(bool),
     CloseDetails,
     ToggleSearch,
 }
 
 pub struct App {
     settings: gio::Settings,
-    history: History,
-    narrow: bool,
+    trail: Trail,
     sidebar: Controller<Sidebar>,
     content: Controller<Content>,
     details: Controller<DetailsPane>,
@@ -85,7 +83,7 @@ impl Component for App {
                         #[wrap(Some)]
                         #[name = "content_page"]
                         set_content = &adw::NavigationPage {
-                            set_title: &labels::title(model.history.current()),
+                            set_title: &labels::title(model.trail.section()),
                             set_tag: Some("content"),
                             set_child: Some(model.content.widget()),
                         },
@@ -125,8 +123,7 @@ impl Component for App {
 
         let model = App {
             settings: gio::Settings::new(APP_ID),
-            history: History::default(),
-            narrow: false,
+            trail: Trail::default(),
             sidebar,
             content,
             details,
@@ -144,7 +141,7 @@ impl Component for App {
             .sync_create()
             .build();
 
-        root.add_breakpoint(model.narrow_breakpoint(&widgets, &sender));
+        root.add_breakpoint(model.narrow_breakpoint(&widgets));
         model.content.widgets().capture_typing(Some(&root));
 
         model.restore_window_state(&root);
@@ -177,20 +174,16 @@ impl Component for App {
     ) {
         match message {
             AppMsg::Navigate(location) => {
-                if self.history.go(location) {
+                if self.trail.go(location) {
                     self.show_current(widgets, root);
                 }
                 // In the narrow layout, choosing anything pushes the content.
                 widgets.split_view.set_show_content(true);
             }
             AppMsg::Back => {
-                if self.history.back().is_some() {
+                if self.trail.back() {
                     self.show_current(widgets, root);
                 }
-            }
-            AppMsg::SetNarrow(narrow) => {
-                self.narrow = narrow;
-                self.content.emit(ContentInput::SetNarrow(narrow));
             }
             AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
@@ -200,25 +193,21 @@ impl Component for App {
 
 impl App {
     fn show_current(&self, widgets: &AppWidgets, window: &adw::ApplicationWindow) {
-        let location = self.history.current();
+        let location = self.trail.section();
         widgets.content_page.set_title(&labels::title(location));
         self.content
             .widgets()
             .capture_typing(location.has_search().then_some(window));
         self.content.emit(ContentInput::Show(location));
         self.content
-            .emit(ContentInput::SetCanGoBack(self.history.can_go_back()));
+            .emit(ContentInput::SetCanGoBack(self.trail.can_go_back()));
         self.sidebar.emit(SidebarInput::Select(location));
     }
 
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.
-    fn narrow_breakpoint(
-        &self,
-        widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
-    ) -> adw::Breakpoint {
+    fn narrow_breakpoint(&self, widgets: &AppWidgets) -> adw::Breakpoint {
         let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
             adw::BreakpointConditionLengthType::MaxWidth,
             NARROW_BREAKPOINT_SP,
@@ -254,11 +243,6 @@ impl App {
         for sidebar in self.sidebar.widgets().sidebars() {
             breakpoint.add_setter(sidebar, "mode", Some(&adw::SidebarMode::Page.to_value()));
         }
-
-        let s = sender.clone();
-        breakpoint.connect_apply(move |_| s.input(AppMsg::SetNarrow(true)));
-        let s = sender.clone();
-        breakpoint.connect_unapply(move |_| s.input(AppMsg::SetNarrow(false)));
         breakpoint
     }
 

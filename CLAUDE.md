@@ -100,7 +100,7 @@ Read the design's files from that link. Match how it looks.
 - Three columns: a left sidebar, a centre view, and an expandable right details pane. A persistent playback bar sits at the bottom across the full width.
 - The sidebar runs from the top edge of the window and has its own header: Refresh on the left, the app title in the centre, Main Menu on the right. It has no group title.
 - Sidebar items: Shows, New, Queue, Favorites, Downloaded, with Add at the bottom. Shows carries a count of podcasts that have new episodes. New shows the number of new episodes. Queue shows its length.
-- The centre header has Back on the left (only when there is history to go back to), the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Search is hidden in the Add view.
+- The centre header has Back on the left, the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Back follows the page hierarchy, not history (decided 2026-10-29): it appears only on a deeper page (such as a podcast page under Shows) and returns to its parent. Switching sections never adds a Back. Search is hidden in the Add view.
 - The details pane also runs from the top edge. Its header says Episode Details. The window close button sits in the pane header while the pane is open, and in the centre header when it is closed.
 - On narrow windows the sidebar becomes a full page. Choosing an item pushes the content on top, and Back returns to the sidebar. The details pane becomes a full page with its own Back button, starts closed, and its header toggle is hidden.
 - The app opens on Shows. Dark mode and the accent colour follow the system.

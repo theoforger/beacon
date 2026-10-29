@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Where the content pane is, and how it got there. No GTK here, so the rules
-//! are unit-tested without a display.
+//! Where the content pane is. Navigation is a breadcrumb trail, not a
+//! history: a top-level section from the sidebar, then any deeper pages
+//! opened from it. Back only leaves a deeper page for its parent; changing
+//! section starts a new trail. No GTK here, so the rules are unit-tested
+//! without a display.
 
-/// A place the content pane can show.
+use beacon_core::model::ShowId;
+
+/// A top-level section: the sidebar items and Add.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Location {
     Shows,
@@ -42,46 +47,68 @@ impl Location {
     }
 }
 
-/// Browser-style history without Forward: going somewhere new pushes it,
-/// Back pops. Going to the current location is not a step.
+/// A page below a section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Subpage {
+    /// A podcast's page, opened from Shows (M3).
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "opened from the Shows grid in M3")
+    )]
+    Show(ShowId),
+}
+
 #[derive(Debug, Clone)]
-pub struct History {
-    stack: Vec<Location>,
+pub struct Trail {
+    section: Location,
+    pages: Vec<Subpage>,
 }
 
-impl History {
-    pub fn new(start: Location) -> Self {
-        Self { stack: vec![start] }
+impl Trail {
+    pub fn new(section: Location) -> Self {
+        Self {
+            section,
+            pages: Vec::new(),
+        }
     }
 
-    pub fn current(&self) -> Location {
-        *self.stack.last().expect("history is never empty")
+    pub fn section(&self) -> Location {
+        self.section
     }
 
+    /// The deepest open page, if any.
+    #[cfg_attr(not(test), expect(dead_code, reason = "used from M3"))]
+    pub fn page(&self) -> Option<Subpage> {
+        self.pages.last().copied()
+    }
+
+    /// Back is offered only on a deeper page.
     pub fn can_go_back(&self) -> bool {
-        self.stack.len() > 1
+        !self.pages.is_empty()
     }
 
-    /// Returns true if the location changed.
-    pub fn go(&mut self, location: Location) -> bool {
-        if self.current() == location {
-            return false;
-        }
-        self.stack.push(location);
-        true
+    /// Switch to a section, leaving any deeper pages. Returns true if
+    /// anything changed.
+    pub fn go(&mut self, section: Location) -> bool {
+        let changed = self.section != section || !self.pages.is_empty();
+        self.section = section;
+        self.pages.clear();
+        changed
     }
 
-    /// Returns the location now shown, or `None` if there was nowhere to go.
-    pub fn back(&mut self) -> Option<Location> {
-        if !self.can_go_back() {
-            return None;
-        }
-        self.stack.pop();
-        Some(self.current())
+    /// Open a page one level deeper.
+    #[cfg_attr(not(test), expect(dead_code, reason = "used from M3"))]
+    pub fn open(&mut self, page: Subpage) {
+        self.pages.push(page);
+    }
+
+    /// Leave the deepest page for its parent. Returns false at the top level.
+    pub fn back(&mut self) -> bool {
+        self.pages.pop().is_some()
     }
 }
 
-impl Default for History {
+impl Default for Trail {
     /// The app opens on Shows.
     fn default() -> Self {
         Self::new(Location::Shows)
@@ -92,42 +119,55 @@ impl Default for History {
 mod tests {
     use super::*;
 
+    const SHOW: Subpage = Subpage::Show(ShowId(1));
+
     #[test]
-    fn opens_on_shows_with_nothing_to_go_back_to() {
-        let history = History::default();
-        assert_eq!(history.current(), Location::Shows);
-        assert!(!history.can_go_back());
+    fn opens_on_shows_at_the_top_level() {
+        let trail = Trail::default();
+        assert_eq!(trail.section(), Location::Shows);
+        assert_eq!(trail.page(), None);
+        assert!(!trail.can_go_back());
     }
 
     #[test]
-    fn going_somewhere_pushes_and_back_pops() {
-        let mut history = History::default();
-        assert!(history.go(Location::Queue));
-        assert!(history.go(Location::Add));
-        assert!(history.can_go_back());
-        assert_eq!(history.back(), Some(Location::Queue));
-        assert_eq!(history.back(), Some(Location::Shows));
-        assert_eq!(history.back(), None);
-        assert_eq!(history.current(), Location::Shows);
+    fn switching_sections_never_offers_back() {
+        let mut trail = Trail::default();
+        assert!(trail.go(Location::Queue));
+        assert!(trail.go(Location::Add));
+        assert!(!trail.can_go_back());
+        assert!(!trail.back());
+        assert_eq!(trail.section(), Location::Add);
     }
 
     #[test]
-    fn going_to_the_current_location_is_not_a_step() {
-        let mut history = History::default();
-        assert!(!history.go(Location::Shows));
-        assert!(!history.can_go_back());
-        history.go(Location::New);
-        assert!(!history.go(Location::New));
-        assert_eq!(history.back(), Some(Location::Shows));
+    fn back_leaves_a_deeper_page_for_its_parent() {
+        let mut trail = Trail::default();
+        trail.open(SHOW);
+        assert!(trail.can_go_back());
+        assert_eq!(trail.page(), Some(SHOW));
+        assert!(trail.back());
+        assert_eq!(trail.page(), None);
+        assert_eq!(trail.section(), Location::Shows);
+        assert!(!trail.can_go_back());
     }
 
     #[test]
-    fn revisiting_a_location_is_a_new_step() {
-        let mut history = History::default();
-        history.go(Location::New);
-        history.go(Location::Shows);
-        assert_eq!(history.back(), Some(Location::New));
-        assert_eq!(history.back(), Some(Location::Shows));
+    fn switching_sections_leaves_deeper_pages() {
+        let mut trail = Trail::default();
+        trail.open(SHOW);
+        assert!(trail.go(Location::New));
+        assert!(!trail.can_go_back());
+        // Choosing the current section from a deeper page returns to its top.
+        trail.go(Location::Shows);
+        trail.open(SHOW);
+        assert!(trail.go(Location::Shows));
+        assert_eq!(trail.page(), None);
+    }
+
+    #[test]
+    fn choosing_the_current_section_at_its_top_changes_nothing() {
+        let mut trail = Trail::default();
+        assert!(!trail.go(Location::Shows));
     }
 
     #[test]

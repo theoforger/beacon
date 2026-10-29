@@ -14,11 +14,8 @@ use crate::ui::labels;
 #[derive(Debug)]
 pub enum ContentInput {
     Show(Location),
-    /// Whether the history has somewhere to go back to.
+    /// Whether a deeper page is open, so Back leads to its parent.
     SetCanGoBack(bool),
-    /// In the narrow layout the header's own Back returns to the sidebar,
-    /// so the history Back is hidden.
-    SetNarrow(bool),
 }
 
 #[derive(Debug)]
@@ -30,7 +27,6 @@ pub enum ContentOutput {
 pub struct Content {
     location: Location,
     can_go_back: bool,
-    narrow: bool,
 }
 
 #[relm4::component(pub)]
@@ -42,12 +38,17 @@ impl SimpleComponent for Content {
     view! {
         adw::ToolbarView {
             add_top_bar = &adw::HeaderBar {
+                // In the narrow layout the header's own Back returns to the
+                // sidebar; on a deeper page ours replaces it.
+                #[watch]
+                set_show_back_button: !model.can_go_back,
+
                 pack_start = &gtk::Button {
                     set_icon_name: "go-previous-symbolic",
                     set_tooltip_text: Some(&gettext("Back")),
                     update_property: &[gtk::accessible::Property::Label(&gettext("Back"))],
                     #[watch]
-                    set_visible: model.can_go_back && !model.narrow,
+                    set_visible: model.can_go_back,
                     connect_clicked[sender] => move |_| {
                         let _ = sender.output(ContentOutput::Back);
                     },
@@ -100,7 +101,6 @@ impl SimpleComponent for Content {
         let model = Content {
             location: Location::Shows,
             can_go_back: false,
-            narrow: false,
         };
         let widgets = view_output!();
 
@@ -125,7 +125,6 @@ impl SimpleComponent for Content {
         match message {
             ContentInput::Show(location) => self.location = location,
             ContentInput::SetCanGoBack(can) => self.can_go_back = can,
-            ContentInput::SetNarrow(narrow) => self.narrow = narrow,
         }
     }
 

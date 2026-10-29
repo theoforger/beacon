@@ -97,10 +97,10 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Three columns: `AdwNavigationSplitView` (sidebar and content) inside `AdwOverlaySplitView` (details pane)
 - [x] Sidebar header: Refresh, the app title and Main Menu; no group title
 - [x] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, with Add at the bottom (a second one-item `AdwSidebar` in the bottom bar), plus count badges (shown once M3 feeds them)
-- [x] Content header: Back only with history, the view title, Search, and the details-pane toggle (darker background while on); no Forward
+- [x] Content header: Back only on deeper pages (breadcrumb, not history), the view title, Search, and the details-pane toggle (darker background while on); no Forward
 - [x] Details pane header "Episode Details"; the close button moves between the pane header and the content header
 - [x] Narrow layout: sidebar as a page, content pushed on top, details pane as a full page with its own Back, starting closed, toggle hidden
-- [x] Navigation history in `App`
+- [x] Navigation trail in `App` (a section plus deeper pages; Back returns to the parent)
 - [x] Empty-state status pages for every view; the Shows placeholder says how to add a podcast and offers an Add Podcast button (deferred from the M0 HIG review)
 - [x] Main menu shell (Import and Export Subscriptions, Preferences, Keyboard Shortcuts, About), with items disabled until their features land
 - [x] Persistent bottom player bar placeholder across the full width
@@ -108,7 +108,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Tests
 
-- [x] Unit: navigation history (`navigation.rs`, 5 tests). `App::update` only forwards to `History` and widgets, so its rules are tested there
+- [x] Unit: navigation trail (`navigation.rs`, 6 tests). `App::update` only forwards to `Trail` and widgets, so its rules are tested there
 
 ### Exit gate
 

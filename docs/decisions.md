@@ -60,7 +60,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 
 - **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Approved by the user on 2026-10-28.
 - **Seasons come only from tags** (M1, per the requirements). Some shows put seasons only in titles ("Season 6, Ep 11 - …" in Hello From The Magic Tavern); those do not group into seasons.
-- **History Back in the narrow layout** (M2). The content header's history Back is hidden when the split view is collapsed; the header's own Back returns to the sidebar. Revisit in M3, when show pages add depth inside the content.
+- **Back follows the page hierarchy** (M2, decided by the user 2026-10-29). Back appears only on a page deeper than a section, such as a podcast page under Shows, and returns to its parent; switching sections never adds one. On a deeper page in the narrow layout, this Back replaces the header's own Back to the sidebar.
 - **Episode identity** (M1). The feed's GUID; without one, the enclosure URL, then the item link, then the title. Refreshes match on this, so it must not change between fetches.
 
 ## Custom widgets and icons
