@@ -94,3 +94,11 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - `ui/details_pane.rs`, `ui/player_bar.rs`: placeholders for M4.
 - Actions: `win.about`, `win.search` (Ctrl+F), `win.back` (Alt+Left, Back key). `win.refresh`, `win.import`, `win.export` and `win.preferences` are referenced but not registered yet, which leaves their buttons and menu items insensitive until they land.
 
+### M3
+
+- Core: `browse.rs` (recency groups, season groups, sorting), the "new" rule on `EpisodeState`, `EpisodeFilter`, `SortOrder`, `ShowPrefs`, `LibraryCounts`; `store/state.rs` (played, seen, favourites, queue, page preferences, unsubscribe) and `store/views.rs` (counts, new counts, recent episodes); migration 002; `text.rs`; `Library::open` and `refresh_all`.
+- `app/`: `mod.rs` holds the window, its actions (`win.refresh` added, Ctrl+R and F5) and an `AdwToastOverlay`; `library.rs` reloads every view from the store after each change, applies row actions, runs subscribe and refresh as relm4 commands, and confirms unsubscribing with an `AdwAlertDialog`; `window.rs` holds the narrow breakpoint and window size.
+- `ui/models.rs`: view models (`EpisodeItem`, `ShowCard`, `ShowPageData`) and their loaders; views never read the store.
+- `ui/content.rs` hosts `ShowsGrid` (a `GtkGridView`), `NewView` (a `GtkListView` with section headers for recency groups) and the deeper pages `ShowPage` (a `GtkListView` over a `GtkTreeListModel`: hero row, collapsible season rows, episodes) and `AddPage`.
+- `ui/widgets/episode_row.rs`, `ui/covers.rs`, `ui/format.rs` (subtitles, lengths, dates, headers), `ui/errors.rs` (a translated message per error variant).
+

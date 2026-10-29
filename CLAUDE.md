@@ -31,7 +31,7 @@ flatpak run com.theoforger.Beacon
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest build-aux/com.theoforger.Beacon.json
 ```
 
-Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. To screenshot a state reached by clicks or keys, use `build-aux/headless/shot.sh SIZE SCHEME OUT key:F10 click:X,Y …` (it prints the frame's brightness; 0 means black). Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
+Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. To screenshot a state reached by clicks or keys, use `build-aux/headless/shot.sh SIZE SCHEME OUT key:F10 click:X,Y type:TEXT wait:2 …` (it prints the frame's brightness; 0 means black). It uses a scratch library, never yours; set `BEACON_STATE_DIR` to keep one across shots, and serve fixtures with `python3 -m http.server` to subscribe to them. `RUST_LOG=beacon=debug` logs every message `App` handles, often a cheaper check than a screenshot. Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
 
 ## Architecture
 

@@ -126,27 +126,27 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Shows: a grid of covers with unplayed badges, and a final Add Podcast tile that opens Add
-- [ ] New: episodes grouped by recency (Today, Yesterday, weekday, Last week, Earlier in the month), with an All / Unplayed `AdwToggleGroup` that is remembered in GSettings
-- [ ] Podcast page: a hero (cover, category, title, author, description), Subscribe (accent) / Unsubscribe (neutral), and a More Options menu (Mark All as Played, Download All Episodes, Copy Feed Address)
-- [ ] Podcast page: All / Unplayed remembered per show, a sort menu with radio items (Newest First, Oldest First), and collapsible seasons when the feed has season tags
-- [ ] Episode row widget: cover, a two-line title, a subtitle (show, season and episode, date, length), the blue unplayed dot, the grey played check, a progress bar, and a flat play button with hover feedback
-- [ ] Row menu: Show Details, queue, download, favourite and played toggles
-- [ ] Episode lists use `GtkListView` over `gio::ListStore`
-- [ ] Unplayed dot cleared on viewing the details, and not restored by Mark as Unplayed
-- [ ] Marking played or unplayed never touches the queue, including Mark All as Played
-- [ ] Carried from M2: sidebar count badges fed from the library (Shows with new episodes, new episodes, queue length), and the details pane opening as a narrow full page with its own Back, checked in screenshots
+- [x] Shows: a grid of covers with badges for new episodes (see decisions), and a final Add Podcast tile that opens Add
+- [x] New: episodes grouped by recency (Today, Yesterday, weekday, Last week, Earlier in the month), with an All / Unplayed `AdwToggleGroup` that is remembered in GSettings
+- [x] Podcast page: a hero (cover, category, title, author, description), Unsubscribe (neutral, confirmed), and a More Options menu (Mark All as Played, Download All Episodes disabled until M5, Copy Feed Address). The accent Subscribe arrives with show previews in M6
+- [x] Podcast page: All / Unplayed remembered per show, a sort menu with radio items (Newest First, Oldest First), and collapsible seasons when the feed has season tags
+- [x] Episode row widget: cover, a two-line title, a subtitle (show, season and episode, date, length), the blue unplayed dot, the grey played check, a progress bar, and a flat play button with hover feedback
+- [x] Row menu: Show Details, queue, download, favourite and played toggles
+- [x] Episode lists use `GtkListView` over `gio::ListStore` (a `GtkTreeListModel` on podcast pages)
+- [x] Unplayed dot cleared on viewing the details, and not restored by Mark as Unplayed
+- [x] Marking played or unplayed never touches the queue, including Mark All as Played
+- [x] Carried from M2: sidebar count badges fed from the library (Shows with new episodes, new episodes, queue length), and the details pane opening as a narrow full page with its own Back, checked in screenshots
 
 ### Tests
 
-- [ ] Unit: recency grouping, sort, played and "new" state rules
-- [ ] Integration: subscribe, see episodes, open a show page, use the All and Unplayed toggle
+- [x] Unit: recency grouping, sort, season grouping, played and "new" state rules, HTML to text, subtitle formatting, feed address detection
+- [x] Integration: subscribe, see episodes grouped as a show page shows them, use the All and Unplayed filter, played/queue/seen/favourite rules, unsubscribe, preferences across a restart, refresh of every show (`tests/browse.rs`, `tests/library.rs`); the UI journey checked headless
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m3.md`)
+- [x] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
+- [x] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
@@ -167,6 +167,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
+- [ ] Carried from M3: the details pane's extra space between the cover and the show name
 - [ ] `PlayerService` wrapping `gstreamer-play`, publishing state; position saved periodically and on close
 - [ ] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
 - [ ] Settle the sleep timer lengths and volume behaviour (open question 2)
