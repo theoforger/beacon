@@ -10,10 +10,10 @@ pub fn present(parent: &impl IsA<gtk::Widget>) {
     let dialog = adw::AboutDialog::builder()
         .application_name(gettext("Beacon"))
         .application_icon(APP_ID)
-        .developer_name("Theo")
-        .developers(["Theo"])
+        .developer_name("TheoForger")
+        .developers(["TheoForger"])
         .version(VERSION)
-        .copyright("© 2026 Theo")
+        .copyright("© 2026 TheoForger")
         .license_type(gtk::License::Gpl30)
         // Translators: Replace "translator-credits" with your name and email, one per line.
         .translator_credits(gettext("translator-credits"))
