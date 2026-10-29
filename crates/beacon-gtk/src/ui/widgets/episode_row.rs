@@ -5,10 +5,9 @@
 //! when partly played, a flat play button and the row menu. Two controls,
 //! as the HIG checklist allows; the row itself opens the details.
 
-use std::cell::{Cell, OnceCell};
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
-use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
 use relm4::gtk::subclass::prelude::*;
 use relm4::gtk::{self, gio, glib, pango, prelude::*};
@@ -18,7 +17,7 @@ use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
 
 /// Called with the row's episode when one of its actions is chosen.
-pub type OnRowAction = Rc<dyn Fn(EpisodeId, RowAction)>;
+pub type OnRowAction = Rc<dyn Fn(&EpisodeItem, RowAction)>;
 
 const COVER_SIZE: i32 = 48;
 
@@ -58,7 +57,7 @@ pub struct Parts {
     subtitle: gtk::Label,
     progress: gtk::ProgressBar,
     menu: gtk::MenuButton,
-    episode: Rc<Cell<Option<EpisodeId>>>,
+    episode: Rc<RefCell<Option<EpisodeItem>>>,
 }
 
 impl EpisodeRow {
@@ -137,7 +136,7 @@ impl EpisodeRow {
         root.append(&play);
         root.append(&menu);
 
-        let episode: Rc<Cell<Option<EpisodeId>>> = Rc::default();
+        let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
         let actions = gio::SimpleActionGroup::new();
         for (name, action) in [
             ("details", RowAction::ShowDetails),
@@ -149,8 +148,10 @@ impl EpisodeRow {
             let episode = episode.clone();
             let on_action = on_action.clone();
             entry.connect_activate(move |_, _| {
-                if let Some(id) = episode.get() {
-                    on_action(id, action);
+                // Clone first: the action may rebind this row.
+                let item = episode.borrow().clone();
+                if let Some(item) = item {
+                    on_action(&item, action);
                 }
             });
             actions.add_action(&entry);
@@ -177,7 +178,7 @@ impl EpisodeRow {
         };
         let episode = &item.episode;
         let state = &episode.state;
-        parts.episode.set(Some(episode.id));
+        parts.episode.replace(Some(item.clone()));
         parts.cover.set(item.cover.as_deref());
         parts.dot.set_visible(state.is_new());
         parts.title.set_label(&episode.info.title);

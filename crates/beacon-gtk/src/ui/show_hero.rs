@@ -30,6 +30,7 @@ pub struct ShowHero {
 impl ShowHero {
     pub fn new() -> Self {
         let cover = Cover::new(COVER_SIZE);
+        cover.widget().set_halign(gtk::Align::Center);
         let label = |classes: &[&str], lines: i32| {
             gtk::Label::builder()
                 .wrap(true)

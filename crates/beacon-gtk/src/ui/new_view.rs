@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeFilter, EpisodeId};
+use beacon_core::model::EpisodeFilter;
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gio, glib};
@@ -30,7 +30,7 @@ pub enum NewViewInput {
 
 #[derive(Debug)]
 pub enum NewViewOutput {
-    Action(EpisodeId, RowAction),
+    Action(Box<EpisodeItem>, RowAction),
     FilterChanged(EpisodeFilter),
 }
 
@@ -133,22 +133,22 @@ impl Component for NewView {
             .list
             .set_model(Some(&gtk::NoSelection::new(Some(sections))));
 
-        let on_action: OnRowAction = Rc::new(move |id, action| {
-            let _ = sender.output(NewViewOutput::Action(id, action));
+        let on_action: OnRowAction = Rc::new(move |item, action| {
+            let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
         });
         widgets
             .list
             .set_factory(Some(&row_factory(on_action.clone())));
         widgets.list.set_header_factory(Some(&header_factory()));
         widgets.list.connect_activate(move |list, position| {
-            if let Some(id) = list
+            if let Some(item) = list
                 .model()
                 .and_then(|m| m.item(position))
                 .as_ref()
                 .and_then(boxed)
-                .map(|b| b.borrow::<Entry>().1.episode.id)
+                .map(|b| b.borrow::<Entry>().1.clone())
             {
-                on_action(id, RowAction::ShowDetails);
+                on_action(&item, RowAction::ShowDetails);
             }
         });
 

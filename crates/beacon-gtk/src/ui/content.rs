@@ -9,7 +9,7 @@
 //! and their actions back.
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::{EpisodeFilter, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::{
@@ -51,7 +51,7 @@ pub enum ContentInput {
 
 #[derive(Debug)]
 pub enum ContentOutput {
-    Action(EpisodeId, RowAction),
+    Action(Box<EpisodeItem>, RowAction),
     OpenShow(ShowId),
     NewFilterChanged(EpisodeFilter),
     ShowPrefsChanged(ShowId, ShowPrefs),

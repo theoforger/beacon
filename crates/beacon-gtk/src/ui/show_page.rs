@@ -9,7 +9,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use beacon_core::model::{EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::{EpisodeFilter, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gdk, gio, glib, pango};
@@ -37,7 +37,7 @@ pub enum ShowPageInput {
 
 #[derive(Debug)]
 pub enum ShowPageOutput {
-    Action(EpisodeId, RowAction),
+    Action(Box<EpisodeItem>, RowAction),
     PrefsChanged(ShowId, ShowPrefs),
     MarkAllPlayed(ShowId),
     Unsubscribe(ShowId),
@@ -164,22 +164,23 @@ impl Component for ShowPage {
             .list
             .set_model(Some(&gtk::NoSelection::new(Some(tree))));
 
-        let on_action: OnRowAction = Rc::new(move |id, action| {
-            let _ = sender.output(ShowPageOutput::Action(id, action));
+        let on_action: OnRowAction = Rc::new(move |item, action| {
+            let _ = sender.output(ShowPageOutput::Action(Box::new(item.clone()), action));
         });
         widgets
             .list
             .set_factory(Some(&factory(hero.clone(), on_action.clone())));
         widgets.list.connect_activate(move |list, position| {
             let item = list.model().and_then(|m| m.item(position));
-            if let Some(Entry::Episode(episode)) = item
+            let episode = item
                 .as_ref()
                 .and_then(boxed)
-                .as_ref()
-                .map(|b| b.borrow::<Entry>())
-                .as_deref()
-            {
-                on_action(episode.episode.id, RowAction::ShowDetails);
+                .and_then(|b| match &*b.borrow::<Entry>() {
+                    Entry::Episode(episode) => Some((**episode).clone()),
+                    _ => None,
+                });
+            if let Some(episode) = episode {
+                on_action(&episode, RowAction::ShowDetails);
             }
         });
 

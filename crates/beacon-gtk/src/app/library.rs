@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The data side of the window: reload the views from the library, apply
-//! what they ask for, subscribe and refresh in the background, and report
-//! the outcome in toasts.
+//! The data side of the window. Every read and write of the library runs on
+//! a blocking worker, never on the UI thread; a job changes the store if
+//! asked, then loads only the parts of the views it affects, and the window
+//! applies the result when it arrives. Each part remembers its latest
+//! request, so a slow result never overwrites a newer one.
 
 use beacon_core::LibraryError;
 use beacon_core::StoreError;
-use beacon_core::model::{EpisodeId, ShowId};
+use beacon_core::browse::RecencyGroup;
+use beacon_core::model::{EpisodeFilter, EpisodeId, LibraryCounts, ShowId};
 use beacon_core::services::library::RefreshSummary;
 use beacon_core::store::Store;
+use chrono::{DateTime, Utc};
 use gettextrs::{gettext, ngettext};
 use relm4::adw::prelude::*;
 use relm4::{ComponentController, ComponentSender, adw};
@@ -18,36 +22,163 @@ use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::ui::content::{ContentInput, ContentOutput};
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
-use crate::ui::models::{self, RowAction};
+use crate::ui::models::{self, EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::filter_from;
 use crate::ui::sidebar::{Counts, SidebarInput};
 
 const NEW_FILTER_KEY: &str = "new-filter";
 
+/// Which parts of the views a job reloads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Parts {
+    pub shows: bool,
+    pub new: bool,
+    pub page: bool,
+    pub details: bool,
+    pub counts: bool,
+}
+
+impl Parts {
+    pub const ALL: Parts = Parts {
+        shows: true,
+        new: true,
+        page: true,
+        details: true,
+        counts: true,
+    };
+    const NONE: Parts = Parts {
+        shows: false,
+        new: false,
+        page: false,
+        details: false,
+        counts: false,
+    };
+    /// Everything an episode's state shows up in.
+    const EPISODE: Parts = Parts::ALL;
+    const NEW: Parts = Parts {
+        new: true,
+        ..Parts::NONE
+    };
+    const PAGE: Parts = Parts {
+        page: true,
+        ..Parts::NONE
+    };
+}
+
+/// What a job needs to know about the window, captured when it starts.
+#[derive(Debug, Clone)]
+struct Context {
+    now: DateTime<Utc>,
+    filter: EpisodeFilter,
+    page: Option<ShowId>,
+    details: Option<EpisodeId>,
+}
+
+/// Generation numbers: the latest request for each part.
+#[derive(Debug, Default)]
+pub struct Requests {
+    next: u64,
+    shows: u64,
+    new: u64,
+    page: u64,
+    details: u64,
+    counts: u64,
+}
+
+#[derive(Debug, Default)]
+pub struct Loaded {
+    generation: u64,
+    cards: Option<Vec<ShowCard>>,
+    new: Option<(Vec<(RecencyGroup, EpisodeItem)>, EpisodeFilter)>,
+    page: Option<Option<ShowPageData>>,
+    details: Option<Option<EpisodeItem>>,
+    counts: Option<LibraryCounts>,
+    /// Push the loaded podcast page rather than only refresh it.
+    open_page: bool,
+}
+
+fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreError> {
+    let mut loaded = Loaded::default();
+    if parts.shows {
+        loaded.cards = Some(models::show_cards(store)?);
+    }
+    if parts.new {
+        let items = models::new_items(store, context.now, context.filter)?;
+        loaded.new = Some((items, context.filter));
+    }
+    if parts.page {
+        loaded.page = Some(match context.page {
+            Some(id) => models::show_page(store, id)?,
+            None => None,
+        });
+    }
+    if parts.details {
+        loaded.details = Some(match context.details {
+            Some(id) => models::episode_item(store, id)?,
+            None => None,
+        });
+    }
+    if parts.counts {
+        loaded.counts = Some(store.counts()?);
+    }
+    Ok(loaded)
+}
+
 impl App {
-    /// Rebuild every view from the library: the Shows grid, New, the open
-    /// podcast page, the details pane and the sidebar counts.
-    pub(super) fn reload(&self, widgets: &AppWidgets) {
-        let Some(library) = &self.library else {
+    fn context(&self) -> Option<Context> {
+        Some(Context {
+            now: self.library.as_ref()?.now(),
+            filter: filter_from(Some(self.settings.string(NEW_FILTER_KEY).as_str())),
+            page: self.last_show,
+            details: self.details_episode.map(|(episode, _)| episode),
+        })
+    }
+
+    /// Run `change` on the store in the background, then reload `parts`.
+    fn job(
+        &mut self,
+        sender: &ComponentSender<Self>,
+        parts: Parts,
+        open_page: bool,
+        change: impl FnOnce(&mut Store) -> Result<(), StoreError> + Send + 'static,
+    ) {
+        let (Some(library), Some(context)) = (self.library.clone(), self.context()) else {
             return;
         };
-        let now = library.now();
-        let filter = filter_from(Some(self.settings.string(NEW_FILTER_KEY).as_str()));
-        let loaded = library.with_store(|store| -> Result<_, StoreError> {
-            let cards = models::show_cards(store)?;
-            let new = models::new_items(store, now, filter)?;
-            let counts = store.counts()?;
-            let page = match self.last_show {
-                Some(id) => models::show_page(store, id)?,
-                None => None,
-            };
-            let details = match self.details_episode {
-                Some(id) => models::episode_item(store, id)?,
-                None => None,
-            };
-            Ok((cards, new, counts, page, details))
+        let requests = &mut self.requests;
+        requests.next += 1;
+        let generation = requests.next;
+        for (wanted, slot) in [
+            (parts.shows, &mut requests.shows),
+            (parts.new, &mut requests.new),
+            (parts.page, &mut requests.page),
+            (parts.details, &mut requests.details),
+            (parts.counts, &mut requests.counts),
+        ] {
+            if wanted {
+                *slot = generation;
+            }
+        }
+        sender.spawn_oneshot_command(move || {
+            let result = library.with_store(|store| {
+                change(store)?;
+                load(store, parts, &context)
+            });
+            AppCommand::Loaded(Box::new(result.map(|mut loaded| {
+                loaded.generation = generation;
+                loaded.open_page = open_page;
+                loaded
+            })))
         });
-        let (cards, new, counts, page, details) = match loaded {
+    }
+
+    /// Reload `parts` without changing anything.
+    pub(super) fn reload(&mut self, sender: &ComponentSender<Self>, parts: Parts) {
+        self.job(sender, parts, false, |_| Ok(()));
+    }
+
+    pub(super) fn loaded(&mut self, result: Result<Loaded, StoreError>, widgets: &AppWidgets) {
+        let loaded = match result {
             Ok(loaded) => loaded,
             Err(err) => {
                 tracing::error!("could not read the library: {err}");
@@ -55,26 +186,49 @@ impl App {
                 return;
             }
         };
+        let generation = loaded.generation;
+        let current = |latest: u64| latest == generation;
 
-        let has_shows = !cards.is_empty();
-        self.content.emit(ContentInput::SetShows(cards));
-        self.content.emit(ContentInput::SetNew {
-            items: new,
-            filter,
-            has_shows,
-        });
-        if let Some(page) = page {
-            self.content.emit(ContentInput::UpdateShow(Box::new(page)));
+        if let Some(cards) = loaded.cards.filter(|_| current(self.requests.shows)) {
+            self.has_shows = !cards.is_empty();
+            self.titles = cards.iter().map(|c| (c.id, c.title.clone())).collect();
+            self.content.emit(ContentInput::SetShows(cards));
         }
-        match details {
-            Some(item) => self.details.emit(DetailsPaneInput::Show(Box::new(item))),
-            None => self.details.emit(DetailsPaneInput::Clear),
+        if let Some((items, filter)) = loaded.new.filter(|_| current(self.requests.new)) {
+            self.content.emit(ContentInput::SetNew {
+                items,
+                filter,
+                has_shows: self.has_shows,
+            });
         }
-        self.sidebar.emit(SidebarInput::SetCounts(Counts {
-            shows: counts.shows_with_new,
-            new: counts.new_episodes,
-            queue: counts.queue,
-        }));
+        if let Some(Some(page)) = loaded.page.filter(|_| current(self.requests.page)) {
+            if self.subscribed_toast == Some(page.show.id) {
+                self.subscribed_toast = None;
+                toast(
+                    &widgets.toasts,
+                    &gettext("Subscribed to {show}").replace("{show}", &page.show.info.title),
+                );
+            }
+            if loaded.open_page {
+                self.content.emit(ContentInput::OpenShow(Box::new(page)));
+                widgets.split_view.set_show_content(true);
+            } else {
+                self.content.emit(ContentInput::UpdateShow(Box::new(page)));
+            }
+        }
+        if let Some(details) = loaded.details.filter(|_| current(self.requests.details)) {
+            match details {
+                Some(item) => self.details.emit(DetailsPaneInput::Show(Box::new(item))),
+                None => self.details.emit(DetailsPaneInput::Clear),
+            }
+        }
+        if let Some(counts) = loaded.counts.filter(|_| current(self.requests.counts)) {
+            self.sidebar.emit(SidebarInput::SetCounts(Counts {
+                shows: counts.shows_with_new,
+                new: counts.new_episodes,
+                queue: counts.queue,
+            }));
+        }
     }
 
     pub(super) fn handle_content(
@@ -85,25 +239,29 @@ impl App {
         root: &adw::ApplicationWindow,
     ) {
         match output {
-            ContentOutput::Action(id, action) => self.row_action(id, action, widgets),
-            ContentOutput::OpenShow(id) => self.open_show(id, widgets),
+            ContentOutput::Action(item, action) => self.row_action(*item, action, widgets, sender),
+            ContentOutput::OpenShow(id) => self.open_show(id, sender),
             ContentOutput::NewFilterChanged(filter) => {
                 let name = match filter {
-                    beacon_core::model::EpisodeFilter::All => "all",
-                    beacon_core::model::EpisodeFilter::Unplayed => "unplayed",
+                    EpisodeFilter::All => "all",
+                    EpisodeFilter::Unplayed => "unplayed",
                 };
                 if let Err(err) = self.settings.set_string(NEW_FILTER_KEY, name) {
                     tracing::warn!("could not remember the New filter: {err}");
                 }
-                self.reload(widgets);
+                self.reload(sender, Parts::NEW);
             }
             ContentOutput::ShowPrefsChanged(id, prefs) => {
-                self.change(widgets, |store| store.set_show_prefs(id, prefs));
+                self.job(sender, Parts::PAGE, false, move |store| {
+                    store.set_show_prefs(id, prefs)
+                });
             }
             ContentOutput::MarkAllPlayed(id) => {
                 let now = self.library.as_ref().map(|l| l.now());
                 if let Some(now) = now {
-                    self.change(widgets, |store| store.mark_all_played(id, now).map(|_| ()));
+                    self.job(sender, Parts::EPISODE, false, move |store| {
+                        store.mark_all_played(id, now).map(|_| ())
+                    });
                 }
             }
             ContentOutput::Unsubscribe(id) => self.confirm_unsubscribe(id, sender, root),
@@ -122,63 +280,56 @@ impl App {
         }
     }
 
-    /// Apply a change to the store, then show the result everywhere.
-    fn change(&self, widgets: &AppWidgets, f: impl FnOnce(&mut Store) -> Result<(), StoreError>) {
-        let Some(library) = &self.library else {
+    fn row_action(
+        &mut self,
+        item: EpisodeItem,
+        action: RowAction,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) {
+        let Some(now) = self.library.as_ref().map(|l| l.now()) else {
             return;
         };
-        if let Err(err) = library.with_store(f) {
-            tracing::error!("could not change the library: {err}");
-            toast(&widgets.toasts, &errors::store(&err));
-        }
-        self.reload(widgets);
-    }
-
-    fn row_action(&mut self, id: EpisodeId, action: RowAction, widgets: &AppWidgets) {
-        let Some(library) = &self.library else {
-            return;
-        };
-        let now = library.now();
-        if action == RowAction::ShowDetails {
-            // Viewing the details clears the blue dot for good.
-            self.details_episode = Some(id);
-            widgets.details_split.set_show_sidebar(true);
-            self.change(widgets, |store| store.mark_seen(id));
-            return;
-        }
-        self.change(widgets, |store| {
-            let Some(episode) = store.episode(id)? else {
-                return Ok(());
-            };
-            match action {
-                RowAction::ToggleQueue => {
-                    if store.queue()?.contains(&id) {
+        let id = item.episode.id;
+        let state = item.episode.state.clone();
+        match action {
+            RowAction::ShowDetails => {
+                // Show what the row already knows at once; viewing clears
+                // the blue dot for good, which the reload then shows.
+                self.details_episode = Some((id, item.episode.show_id));
+                self.details.emit(DetailsPaneInput::Show(Box::new(item)));
+                widgets.details_split.set_show_sidebar(true);
+                self.job(sender, Parts::EPISODE, false, move |store| {
+                    store.mark_seen(id)
+                });
+            }
+            RowAction::ToggleQueue => {
+                let queued = item.in_queue;
+                self.job(sender, Parts::EPISODE, false, move |store| {
+                    if queued {
                         store.dequeue(id)
                     } else {
                         store.enqueue(id)
                     }
-                }
-                RowAction::ToggleFavorite => store.set_favorite(id, !episode.state.favorite),
-                // Never touches the queue.
-                RowAction::TogglePlayed => store.set_played(id, !episode.state.played, now),
-                RowAction::ShowDetails => Ok(()),
+                });
             }
-        });
+            RowAction::ToggleFavorite => {
+                self.job(sender, Parts::EPISODE, false, move |store| {
+                    store.set_favorite(id, !state.favorite)
+                });
+            }
+            // Never touches the queue.
+            RowAction::TogglePlayed => {
+                self.job(sender, Parts::EPISODE, false, move |store| {
+                    store.set_played(id, !state.played, now)
+                });
+            }
+        }
     }
 
-    fn open_show(&mut self, id: ShowId, widgets: &AppWidgets) {
-        let Some(library) = &self.library else {
-            return;
-        };
-        match library.with_store(|store| models::show_page(store, id)) {
-            Ok(Some(page)) => {
-                self.last_show = Some(id);
-                self.content.emit(ContentInput::OpenShow(Box::new(page)));
-                widgets.split_view.set_show_content(true);
-            }
-            Ok(None) => {}
-            Err(err) => toast(&widgets.toasts, &errors::store(&err)),
-        }
+    fn open_show(&mut self, id: ShowId, sender: &ComponentSender<Self>) {
+        self.last_show = Some(id);
+        self.job(sender, Parts::PAGE, true, |_| Ok(()));
     }
 
     fn confirm_unsubscribe(
@@ -187,14 +338,8 @@ impl App {
         sender: &ComponentSender<Self>,
         root: &adw::ApplicationWindow,
     ) {
-        let title = self
-            .library
-            .as_ref()
-            .and_then(|l| l.with_store(|store| store.show(id)).ok().flatten())
-            .map(|show| show.info.title)
-            .unwrap_or_default();
         let dialog = adw::AlertDialog::new(
-            Some(&gettext("Unsubscribe From {show}?").replace("{show}", &title)),
+            Some(&gettext("Unsubscribe From {show}?").replace("{show}", &self.show_title(id))),
             Some(&gettext(
                 "Its episodes, your progress in them and your favorites from it are removed from your library",
             )),
@@ -212,27 +357,28 @@ impl App {
         dialog.present(Some(root));
     }
 
-    pub(super) fn unsubscribe(&mut self, id: ShowId, widgets: &AppWidgets) {
-        let Some(library) = &self.library else {
-            return;
-        };
-        let title = library
-            .with_store(|store| store.show(id))
-            .ok()
-            .flatten()
-            .map(|show| show.info.title)
-            .unwrap_or_default();
-        let shown = self
-            .details_episode
-            .and_then(|e| library.with_store(|store| store.episode(e)).ok().flatten());
-        if shown.is_some_and(|e| e.show_id == id) {
+    /// A show's title as last loaded, without touching the store.
+    fn show_title(&self, id: ShowId) -> String {
+        self.titles.get(&id).cloned().unwrap_or_default()
+    }
+
+    pub(super) fn unsubscribe(
+        &mut self,
+        id: ShowId,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) {
+        if self.details_episode.is_some_and(|(_, show)| show == id) {
             self.details_episode = None;
         }
         if self.last_show == Some(id) {
             self.last_show = None;
         }
         self.content.emit(ContentInput::CloseShow);
-        self.change(widgets, |store| store.delete_show(id));
+        let title = self.show_title(id);
+        self.job(sender, Parts::ALL, false, move |store| {
+            store.delete_show(id)
+        });
         toast(
             &widgets.toasts,
             &gettext("Unsubscribed from {show}").replace("{show}", &title),
@@ -244,25 +390,18 @@ impl App {
         url: &Url,
         result: Result<ShowId, LibraryError>,
         widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
     ) {
         self.content.emit(ContentInput::SubscribeDone);
         match result {
             Ok(id) => {
-                self.reload(widgets);
-                self.open_show(id, widgets);
-                let title = self
-                    .library
-                    .as_ref()
-                    .and_then(|l| l.with_store(|store| store.show(id)).ok().flatten())
-                    .map(|show| show.info.title)
-                    .unwrap_or_default();
-                toast(
-                    &widgets.toasts,
-                    &gettext("Subscribed to {show}").replace("{show}", &title),
-                );
+                self.last_show = Some(id);
+                // The toast names the show once its page has loaded.
+                self.subscribed_toast = Some(id);
+                self.job(sender, Parts::ALL, true, |_| Ok(()));
             }
             Err(LibraryError::AlreadySubscribed(id)) => {
-                self.open_show(id, widgets);
+                self.open_show(id, sender);
                 toast(
                     &widgets.toasts,
                     &errors::library(&LibraryError::AlreadySubscribed(id)),
@@ -283,9 +422,14 @@ impl App {
         sender.oneshot_command(async move { AppCommand::Refreshed(library.refresh_all().await) });
     }
 
-    pub(super) fn refreshed(&self, summary: &RefreshSummary, widgets: &AppWidgets) {
+    pub(super) fn refreshed(
+        &mut self,
+        summary: &RefreshSummary,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) {
         self.refresh.set_enabled(true);
-        self.reload(widgets);
+        self.reload(sender, Parts::ALL);
         for (show, err) in &summary.failed {
             tracing::warn!("could not refresh show {show:?}: {err}");
         }

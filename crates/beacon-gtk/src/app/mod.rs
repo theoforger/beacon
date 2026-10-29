@@ -8,11 +8,12 @@
 mod library;
 mod window;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use beacon_core::LibraryError;
 use beacon_core::model::{EpisodeId, ShowId};
 use beacon_core::services::library::{Library, RefreshSummary};
+use beacon_core::{LibraryError, StoreError};
 use gettextrs::gettext;
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::adw::prelude::*;
@@ -58,6 +59,7 @@ pub enum AppMsg {
 
 #[derive(Debug)]
 pub enum AppCommand {
+    Loaded(Box<Result<library::Loaded, StoreError>>),
     Subscribed(Url, Result<ShowId, LibraryError>),
     Refreshed(RefreshSummary),
 }
@@ -68,8 +70,15 @@ pub struct App {
     /// The podcast page last opened, refreshed with the rest when data
     /// changes. Harmless if the page has since been closed.
     last_show: Option<ShowId>,
-    /// The episode in the details pane.
-    details_episode: Option<EpisodeId>,
+    /// The episode in the details pane, and its show.
+    details_episode: Option<(EpisodeId, ShowId)>,
+    /// The latest background request for each part of the views.
+    requests: library::Requests,
+    has_shows: bool,
+    /// Show titles as last loaded, for dialogs and toasts.
+    titles: HashMap<ShowId, String>,
+    /// A subscription whose toast waits for the show's title.
+    subscribed_toast: Option<ShowId>,
     refresh: gio::SimpleAction,
     sidebar: Controller<Sidebar>,
     content: Controller<Content>,
@@ -183,11 +192,15 @@ impl Component for App {
             tracing::error!("could not open the library: {err}");
         }
 
-        let model = App {
+        let mut model = App {
             settings: gio::Settings::new(APP_ID),
             library: library.ok().map(Arc::new),
             last_show: None,
             details_episode: None,
+            requests: library::Requests::default(),
+            has_shows: false,
+            titles: HashMap::new(),
+            subscribed_toast: None,
             refresh: refresh_action,
             sidebar,
             content,
@@ -219,7 +232,7 @@ impl Component for App {
         model.refresh.set_enabled(model.library.is_some());
         match open_error {
             Some(message) => toast(&widgets.toasts, &message),
-            None => model.reload(&widgets),
+            None => model.reload(&sender, library::Parts::ALL),
         }
 
         ComponentParts { model, widgets }
@@ -250,7 +263,7 @@ impl Component for App {
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
             AppMsg::Refresh => self.start_refresh(&sender),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
-            AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets),
+            AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
         }
     }
 
@@ -258,12 +271,15 @@ impl Component for App {
         &mut self,
         widgets: &mut Self::Widgets,
         message: Self::CommandOutput,
-        _sender: ComponentSender<Self>,
+        sender: ComponentSender<Self>,
         _root: &Self::Root,
     ) {
         match message {
-            AppCommand::Subscribed(url, result) => self.subscribed(&url, result, widgets),
-            AppCommand::Refreshed(summary) => self.refreshed(&summary, widgets),
+            AppCommand::Loaded(result) => self.loaded(*result, widgets),
+            AppCommand::Subscribed(url, result) => {
+                self.subscribed(&url, result, widgets, &sender);
+            }
+            AppCommand::Refreshed(summary) => self.refreshed(&summary, widgets, &sender),
         }
     }
 }
