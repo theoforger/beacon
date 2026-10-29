@@ -12,9 +12,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ---
 
-## M0 Setup
+## M0 Setup ✓
 
 **Done when:** the app starts from `flatpak run` and CI is green.
+
+**Finished 2026-10-28.**
 
 ### Deliverables
 
@@ -51,7 +53,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Accessibility and translation: gettext, labels and tooltips done; Ctrl+Q, Ctrl+W, F10 and menu arrow keys verified headless; Orca, large text and Ctrl+? deferred to the checkpoint after M3 (logged in `pending-accessibility.md`)
 - [x] Tests: no logic in M0; `cargo test` and the Meson validation tests run in CI
 - [x] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] Human review of the running app (2026-10-28)
 
 ## M1 Data and feeds
 

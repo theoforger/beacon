@@ -4,4 +4,3 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-10-28 | `ui/dialogs/about.rs`: developer name now TheoForger | About dialog shows "TheoForger" under the name and in Credits and Legal, without truncation | 1440×900 light; 360×640 light | Main menu → About Beacon (F10, Down, Return) |
