@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<component type="desktop-application">
+  <id>com.theoforger.Beacon</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>Beacon</name>
+  <summary>Listen to podcasts</summary>
+  <description>
+    <p>Beacon is a podcast app for GNOME. Subscribe to shows, keep a queue of episodes and pick up where you left off.</p>
+  </description>
+
+  <developer id="com.theoforger">
+    <name translate="no">Theo</name>
+  </developer>
+
+  <url type="homepage">https://github.com/theoforger/beacon</url>
+  <url type="bugtracker">https://github.com/theoforger/beacon/issues</url>
+  <url type="vcs-browser">https://github.com/theoforger/beacon</url>
+
+  <launchable type="desktop-id">com.theoforger.Beacon.desktop</launchable>
+  <provides>
+    <binary>beacon</binary>
+  </provides>
+  <translation type="gettext">beacon</translation>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="0.1.0" date="2026-10-28">
+      <description>
+        <p>Project setup.</p>
+      </description>
+    </release>
+  </releases>
+</component>

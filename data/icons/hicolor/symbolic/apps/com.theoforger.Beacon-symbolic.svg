@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="none" stroke="#2e3436" stroke-width="1.5" stroke-linecap="round">
+    <path d="M4 3a6.5 6.5 0 0 0 0 10"/>
+    <path d="M12 3a6.5 6.5 0 0 1 0 10"/>
+    <path d="M6.2 5.5a3.5 3.5 0 0 0 0 5"/>
+    <path d="M9.8 5.5a3.5 3.5 0 0 1 0 5"/>
+  </g>
+  <circle cx="8" cy="8" r="1.5" fill="#2e3436"/>
+</svg>

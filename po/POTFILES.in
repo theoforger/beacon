@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Files with translatable strings. Keep sorted.
+crates/beacon-gtk/src/app.rs
+crates/beacon-gtk/src/main.rs
+crates/beacon-gtk/src/ui/dialogs/about.rs
+data/com.theoforger.Beacon.desktop.in
+data/com.theoforger.Beacon.gschema.xml
+data/com.theoforger.Beacon.metainfo.xml.in
+data/shortcuts-dialog.ui

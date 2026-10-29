@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "beacon-gtk"
+description = "Beacon, a podcast app for GNOME"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "beacon"
+path = "src/main.rs"
+
+[dependencies]
+beacon-core = { path = "../beacon-core" }
+gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
+relm4 = { version = "0.11.0", features = ["libadwaita", "gnome_50"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[build-dependencies]
+glib-build-tools = "0.22.8"

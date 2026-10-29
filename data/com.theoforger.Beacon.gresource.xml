@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<gresources>
+  <gresource prefix="/com/theoforger/Beacon">
+    <file>style.css</file>
+    <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
+    <file alias="icons/scalable/apps/com.theoforger.Beacon-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/com.theoforger.Beacon-symbolic.svg</file>
+  </gresource>
+</gresources>

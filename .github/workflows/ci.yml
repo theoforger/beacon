@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  rust:
+    name: Clippy, tests and data validation
+    runs-on: ubuntu-latest
+    # Fedora 44 ships GNOME 50 (GTK 4.22, libadwaita 1.9), matching the Flatpak runtime.
+    container: fedora:44
+    steps:
+      - name: Install build dependencies
+        run: >
+          dnf install -y --setopt=install_weak_deps=False
+          gcc git gettext gettext-devel glib2-devel gtk4-devel libadwaita-devel
+          desktop-file-utils appstream meson ninja-build
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Validate desktop file, metainfo and GSettings schema
+        run: |
+          meson setup _build
+          meson compile -C _build com.theoforger.Beacon.desktop com.theoforger.Beacon.metainfo.xml
+          meson test -C _build --no-rebuild validate-desktop validate-metainfo validate-schema || \
+            (cat _build/meson-logs/testlog.txt && exit 1)
+
+  deny:
+    name: Cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  flatpak:
+    name: Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: beacon.flatpak
+          manifest-path: build-aux/com.theoforger.Beacon.json
+          cache-key: flatpak-builder-${{ github.sha }}

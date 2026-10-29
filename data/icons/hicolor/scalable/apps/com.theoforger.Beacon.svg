@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Placeholder icon; replace before release (M8). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect x="8" y="12" width="112" height="104" rx="24" fill="#1c71d8"/>
+  <rect x="8" y="12" width="112" height="96" rx="24" fill="#3584e4"/>
+  <g fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round">
+    <path d="M38 34a36 36 0 0 0 0 52"/>
+    <path d="M90 34a36 36 0 0 1 0 52"/>
+    <path d="M50 46a20 20 0 0 0 0 28"/>
+    <path d="M78 46a20 20 0 0 1 0 28"/>
+  </g>
+  <circle cx="64" cy="60" r="9" fill="#ffffff"/>
+</svg>

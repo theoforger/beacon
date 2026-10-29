@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Weekly check: fails (and GitHub emails you) once the latest relm4 release
+# has a `gnome_51` feature, which is the signal to migrate to the GNOME 51
+# runtime. Delete this workflow after migrating.
+
+name: Watch relm4 for GNOME 51
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check relm4 features on crates.io
+        run: |
+          curl -fsSL -A 'beacon-ci (https://github.com/${{ github.repository }})' \
+            https://crates.io/api/v1/crates/relm4 | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)
+          v = d["crate"]["max_stable_version"]
+          features = next(x for x in d["versions"] if x["num"] == v)["features"]
+          if "gnome_51" in features:
+              print(f"::error::relm4 {v} supports gnome_51. Time to migrate Beacon to the GNOME 51 runtime.")
+              sys.exit(1)
+          print(f"relm4 {v}: no gnome_51 feature yet.")
+          '

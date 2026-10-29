@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "beacon-core"
+description = "Podcast library, feeds and services for Beacon, with no GTK dependency"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
