@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The window: three columns (sidebar, content, details pane) over a
-//! full-width player bar, the navigation trail, and the narrow layout.
+//! full-width player bar, and the narrow layout.
 
 use gettextrs::gettext;
 use relm4::actions::{RelmAction, RelmActionGroup};
@@ -12,8 +12,8 @@ use relm4::{
 };
 
 use crate::config::APP_ID;
-use crate::navigation::{Location, Trail};
-use crate::ui::content::{Content, ContentInput, ContentOutput};
+use crate::navigation::Location;
+use crate::ui::content::{Content, ContentInput};
 use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
 use crate::ui::dialogs::about;
 use crate::ui::labels;
@@ -34,8 +34,6 @@ relm4::new_stateless_action!(BackAction, WindowActionGroup, "back");
 pub enum AppMsg {
     Navigate(Location),
     AddPodcast,
-    /// The content pane left a deeper page by itself (Back, swipe).
-    Popped,
     CloseDetails,
     ToggleSearch,
     /// Alt+Left or the Back key, wherever the focus is.
@@ -44,7 +42,6 @@ pub enum AppMsg {
 
 pub struct App {
     settings: gio::Settings,
-    trail: Trail,
     sidebar: Controller<Sidebar>,
     content: Controller<Content>,
     details: Controller<DetailsPane>,
@@ -88,7 +85,7 @@ impl Component for App {
                         #[wrap(Some)]
                         #[name = "content_page"]
                         set_content = &adw::NavigationPage {
-                            set_title: &labels::view_title(model.trail.view()),
+                            set_title: &labels::title(Location::ALL[0]),
                             set_tag: Some("content"),
                             set_child: Some(model.content.widget()),
                         },
@@ -114,12 +111,7 @@ impl Component for App {
                 SidebarOutput::Activated(location) => AppMsg::Navigate(location),
                 SidebarOutput::AddPodcast => AppMsg::AddPodcast,
             });
-        let content = Content::builder()
-            .launch(())
-            .forward(sender.input_sender(), |output| match output {
-                ContentOutput::Popped => AppMsg::Popped,
-                ContentOutput::AddPodcast => AppMsg::AddPodcast,
-            });
+        let content = Content::builder().launch(()).detach();
         let details = DetailsPane::builder()
             .launch(())
             .forward(sender.input_sender(), |DetailsPaneOutput::Close| {
@@ -129,7 +121,6 @@ impl Component for App {
 
         let model = App {
             settings: gio::Settings::new(APP_ID),
-            trail: Trail::default(),
             sidebar,
             content,
             details,
@@ -148,7 +139,7 @@ impl Component for App {
             .build();
 
         root.add_breakpoint(model.narrow_breakpoint(&widgets));
-        model.content.widgets().capture_typing(Some(&root));
+        model.content.widgets().capture_typing(&root);
 
         model.restore_window_state(&root);
         let settings = model.settings.clone();
@@ -180,53 +171,29 @@ impl Component for App {
         widgets: &mut Self::Widgets,
         message: Self::Input,
         _sender: ComponentSender<Self>,
-        root: &Self::Root,
+        _root: &Self::Root,
     ) {
         tracing::debug!(?message, "app message");
         match message {
             AppMsg::Navigate(location) => {
-                if self.trail.go(location) {
-                    self.show_current(widgets, root);
-                }
+                widgets.content_page.set_title(&labels::title(location));
+                self.content.emit(ContentInput::ShowSection(location));
+                self.sidebar.emit(SidebarInput::Select(location));
                 // In the narrow layout, choosing anything pushes the content.
                 widgets.split_view.set_show_content(true);
             }
             AppMsg::AddPodcast => {
-                if self.trail.open_add() {
-                    self.show_current(widgets, root);
-                }
+                self.content.emit(ContentInput::OpenAdd);
                 widgets.split_view.set_show_content(true);
-            }
-            AppMsg::Popped => {
-                // Popping that the window asked for (switching sections)
-                // has already cleared the trail, so back() is a no-op then.
-                if self.trail.back() {
-                    self.show_current(widgets, root);
-                }
             }
             AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
             AppMsg::GoBack => self.content.widgets().go_back(),
-            AppMsg::ToggleSearch => {
-                if self.trail.view().has_search() {
-                    self.content.widgets().toggle_search();
-                }
-            }
+            AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
         }
     }
 }
 
 impl App {
-    fn show_current(&self, widgets: &AppWidgets, window: &adw::ApplicationWindow) {
-        let view = self.trail.view();
-        widgets.content_page.set_title(&labels::view_title(view));
-        self.content
-            .widgets()
-            .capture_typing(view.has_search().then_some(window));
-        self.content.emit(ContentInput::Show(view));
-        self.sidebar
-            .emit(SidebarInput::Select(self.trail.section()));
-    }
-
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.

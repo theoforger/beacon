@@ -29,7 +29,7 @@ beacon/
       src/store/            SQLite, migrations/, queries
       src/services/         feeds, itunes, downloads, cleanup, opml
     beacon-gtk/             the app
-      src/main.rs, app.rs   window, navigation history, breakpoints
+      src/main.rs, app.rs   window, sections, breakpoints
       src/ui/               sidebar, content pages, details pane, player bar
       src/ui/widgets/       episode row, cover, category tile
       src/ui/dialogs/       preferences, about, shortcuts, opml import
@@ -39,7 +39,7 @@ beacon/
 
 ## Components and services
 
-`App` owns the window and navigation history. `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components. Services run as relm4 workers or commands: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService` and `OpmlService`. Views never talk to the network or database directly; they send messages and render state. Use `FactoryVecDeque` only for short lists such as the queue and chapters.
+`App` owns the window and switches sections; deeper pages live in the content pane's `AdwNavigationView`. `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components. Services run as relm4 workers or commands: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService` and `OpmlService`. Views never talk to the network or database directly; they send messages and render state. Use `FactoryVecDeque` only for short lists such as the queue and chapters.
 
 ## Widget map
 
@@ -87,10 +87,10 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 
 ### M2
 
-- `navigation.rs`: `Location` (the sections: Shows, New, Queue, Favorites, Downloaded), `Subpage` (deeper pages: Add, and podcast pages from M3), `View` (a section or a subpage) and `Trail`, a breadcrumb: a section plus the deeper pages opened from it. Back returns to the parent; switching sections clears the deeper pages; Add always opens under Shows. No GTK; unit-tested.
-- `app.rs`: an outer `AdwToolbarView` holds the player bar as its bottom bar, so it spans the full width. Its content is an `AdwOverlaySplitView` (details pane at the end) around an `AdwNavigationSplitView` (sidebar and content). One `AdwBreakpoint` at 760sp collapses both, makes the details pane full width with its own Back, hides the details toggle, and switches the sidebars to page mode. `App` keeps the trail and keeps the sidebar selection, content page title and Back in step with it.
+- `navigation.rs`: `Location`, the five sections, and which of them offer Refresh. Deeper pages are not modelled here: the content pane's `AdwNavigationView` owns them.
+- `app.rs`: an outer `AdwToolbarView` holds the player bar as its bottom bar, so it spans the full width. Its content is an `AdwOverlaySplitView` (details pane at the end) around an `AdwNavigationSplitView` (sidebar and content). One `AdwBreakpoint` at 760sp collapses both, makes the details pane full width with its own Back, hides the details toggle, and switches the sidebars to page mode. `App` passes section changes from the sidebar to the content pane and the window title.
 - `ui/sidebar.rs`: header with Add Podcast and the main menu (Refresh Feeds, Import, Export; Preferences, Keyboard Shortcuts, About), and the library `AdwSidebar` with count badges.
-- `ui/content.rs`: an `AdwNavigationView`. The root page holds the section: header (Refresh Feeds in Shows and New, Search toggle, details toggle), a `GtkSearchBar` (toggle, Ctrl+F, type to search) and a `GtkStack` with one empty state per section. Deeper pages (Add now, podcast pages in M3) are pushed on top with their own header, which gets Back automatically; each has a details toggle that follows the root page's. The view's `popped` signal tells `App` when the user went back.
+- `ui/content.rs`: an `AdwNavigationView`. The root page holds the section: header (Refresh Feeds in Shows and New, Search toggle, details toggle), a `GtkSearchBar` (toggle, Ctrl+F, type to search while the root page shows) and a `GtkStack` with one empty state per section. Deeper pages (Add now, podcast pages in M3) are pushed over the current section with their own header, which gets Back automatically; each has a details toggle that follows the root page's. Choosing a section replaces any deeper pages without a slide.
 - `ui/details_pane.rs`, `ui/player_bar.rs`: placeholders for M4.
 - Actions: `win.about`, `win.search` (Ctrl+F), `win.back` (Alt+Left, Back key). `win.refresh`, `win.import`, `win.export` and `win.preferences` are referenced but not registered yet, which leaves their buttons and menu items insensitive until they land.
 

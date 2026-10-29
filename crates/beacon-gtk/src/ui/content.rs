@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The centre pane, an `AdwNavigationView`. Its root page shows the current
-//! section: header (title, Search, details toggle), the search bar, and one
-//! page per section. Deeper pages slide in from the right on top of it and
-//! go back with the header's Back, a two-finger swipe, the mouse's back
-//! button or Alt+Left. Until the views land (M3 onwards) every page is its
-//! empty state.
+//! section: header (Refresh in Shows and New, title, Search, details
+//! toggle), the search bar, and one page per section. Deeper pages slide in
+//! from the right over whatever section is showing; the view owns that
+//! stack and its Back, two-finger swipe, mouse back button and Alt+Left.
+//! Until the views land (M3 onwards) every page is its empty state.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
 
-use crate::navigation::{Location, Subpage, View};
+use crate::navigation::Location;
 use crate::ui::labels;
 
 const ROOT_TAG: &str = "root";
@@ -19,14 +19,10 @@ const ADD_TAG: &str = "add";
 
 #[derive(Debug)]
 pub enum ContentInput {
-    Show(View),
-}
-
-#[derive(Debug)]
-pub enum ContentOutput {
-    /// The user left a deeper page (Back, swipe, mouse back button).
-    Popped,
-    AddPodcast,
+    /// Show a section at its top level, leaving any deeper pages.
+    ShowSection(Location),
+    /// Slide the Add page in over the current section.
+    OpenAdd,
 }
 
 pub struct Content {
@@ -37,14 +33,20 @@ pub struct Content {
 impl Component for Content {
     type Init = ();
     type Input = ContentInput;
-    type Output = ContentOutput;
+    type Output = ();
     type CommandOutput = ();
 
     view! {
         #[name = "navigation"]
         adw::NavigationView {
-            connect_popped[sender] => move |_, _| {
-                let _ = sender.output(ContentOutput::Popped);
+            // Type to search only where the search bar is: the root page.
+            connect_visible_page_notify[search_bar] => move |navigation| {
+                let on_root = navigation.visible_page_tag().as_deref() == Some(ROOT_TAG);
+                let window = on_root.then(|| search_bar.root()).flatten();
+                search_bar.set_key_capture_widget(window.as_ref());
+                if !on_root {
+                    search_bar.set_search_mode(false);
+                }
             },
 
             #[name = "root_page"]
@@ -150,29 +152,25 @@ impl Component for Content {
         _sender: ComponentSender<Self>,
         _root: &Self::Root,
     ) {
-        let ContentInput::Show(view) = message;
         let navigation = &widgets.navigation;
-        match view {
-            View::Section(location) => {
+        match message {
+            ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
-                widgets
-                    .refresh
-                    .set_visible(matches!(location, Location::Shows | Location::New));
+                widgets.refresh.set_visible(location.has_refresh());
                 widgets.root_page.set_title(&labels::title(location));
-                // Leaving a section's deeper pages for another section: no
-                // slide, the section simply changes.
+                // Leaving deeper pages for a section: no slide, the section
+                // simply changes.
                 if navigation.visible_page_tag().as_deref() != Some(ROOT_TAG) {
                     navigation.replace(std::slice::from_ref(&widgets.root_page));
                 }
             }
-            View::Subpage(Subpage::Add) => {
-                widgets.search_bar.set_search_mode(false);
-                if navigation.visible_page_tag().as_deref() != Some(ADD_TAG) {
-                    navigation.push(&self.add_page);
+            ContentInput::OpenAdd => match navigation.find_page(ADD_TAG) {
+                None => navigation.push(&self.add_page),
+                Some(page) if navigation.visible_page().as_ref() != Some(&page) => {
+                    navigation.pop_to_page(&page);
                 }
-            }
-            // Podcast pages arrive in M3.
-            View::Subpage(Subpage::Show(_)) => {}
+                Some(_) => {}
+            },
         }
     }
 }
@@ -183,20 +181,23 @@ impl ContentWidgets {
         &self.details_toggle
     }
 
-    /// Type to search: typing anywhere in `window` opens the search bar, in
-    /// the views that have search.
-    pub fn capture_typing(&self, window: Option<&impl IsA<gtk::Widget>>) {
-        self.search_bar.set_key_capture_widget(window);
+    /// Type to search: typing anywhere in `window` opens the search bar
+    /// while the root page shows.
+    pub fn capture_typing(&self, window: &impl IsA<gtk::Widget>) {
+        self.search_bar.set_key_capture_widget(Some(window));
     }
 
-    /// Leave the deeper page, as its Back button does. The navigation view
-    /// reports the pop like any other.
+    /// Leave the deeper page, as its Back button does.
     pub fn go_back(&self) {
         self.navigation.pop();
     }
 
-    /// Ctrl+F: open the search bar, or close it if it is open.
+    /// Ctrl+F: open the search bar, or close it if it is open. Only the root
+    /// page has one.
     pub fn toggle_search(&self) {
+        if self.navigation.visible_page_tag().as_deref() != Some(ROOT_TAG) {
+            return;
+        }
         self.search_toggle
             .set_active(!self.search_toggle.is_active());
     }
@@ -238,7 +239,7 @@ fn add_page(details_toggle: &gtk::ToggleButton) -> adw::NavigationPage {
 
     adw::NavigationPage::builder()
         .tag(ADD_TAG)
-        .title(labels::view_title(View::Subpage(Subpage::Add)))
+        .title(gettext("Add Podcast"))
         .child(&toolbar)
         .build()
 }
@@ -276,7 +277,7 @@ fn section_empty_state(location: Location, sender: &ComponentSender<Content>) ->
             .build();
         let sender = sender.clone();
         add.connect_clicked(move |_| {
-            let _ = sender.output(ContentOutput::AddPodcast);
+            sender.input(ContentInput::OpenAdd);
         });
         page.set_child(Some(&add));
     }

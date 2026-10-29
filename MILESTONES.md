@@ -96,11 +96,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [x] Three columns: `AdwNavigationSplitView` (sidebar and content) inside `AdwOverlaySplitView` (details pane)
 - [x] Sidebar header: Add Podcast (+), the app title and Main Menu; no group title. Refresh Feeds is in the main menu, and a button at the start of the Shows and New headers (changed 2026-10-29)
-- [x] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, plus count badges (shown once M3 feeds them). Add is a page under Shows, opened from the + in the sidebar header (changed 2026-10-29)
-- [x] Content header: Back only on deeper pages (breadcrumb, not history), which slide in from the right and go back by swipe, mouse back button or Alt+Left too, the view title, Search, and the details-pane toggle (darker background while on); no Forward
+- [x] `AdwSidebar` items Shows, New, Queue, Favorites and Downloaded, plus count badges (shown once M3 feeds them). Add is a page that slides in over the current section, opened from the + in the sidebar header (changed 2026-10-29)
+- [x] Content header: Back only on deeper pages, which slide in from the right and go back by Back, swipe, mouse back button or Alt+Left; the view title; Search; the details-pane toggle (darker background while on); no Forward
 - [x] Details pane header "Episode Details"; the close button moves between the pane header and the content header
 - [x] Narrow layout: sidebar as a page, content pushed on top, details pane as a full page with its own Back, starting closed, toggle hidden
-- [x] Navigation trail in `App` (a section plus deeper pages; Back returns to the parent)
+- [x] Navigation: `App` switches sections; the content pane's `AdwNavigationView` owns deeper pages (simplified 2026-10-29 from a breadcrumb trail that duplicated the view's stack)
 - [x] Empty-state status pages for every view; the Shows placeholder says how to add a podcast and offers an Add Podcast button (deferred from the M0 HIG review)
 - [x] Main menu shell (Refresh Feeds, Import and Export Subscriptions, Preferences, Keyboard Shortcuts, About), with items disabled until their features land
 - [x] Persistent bottom player bar placeholder across the full width
@@ -108,7 +108,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Tests
 
-- [x] Unit: navigation trail (`navigation.rs`, 6 tests). `App::update` only forwards to `Trail` and widgets, so its rules are tested there
+- [x] Unit: none left for navigation. After the simplification `App` only forwards section changes to widgets and libadwaita owns the page stack, so there is no app logic to test; the behaviour was checked headless (see `docs/hig-reviews/m2.md`)
 
 ### Exit gate
 
@@ -227,7 +227,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] `GtkSearchBar` under the header, toggled from the header and by Ctrl+F; hidden on the Add page
 - [ ] On a podcast page, a This Show / Everywhere toggle; This Show filters the page in place
 - [ ] Results for matching shows and episodes (FTS5); with no results, a suggested Search Online button that opens Add with the query (not shown in the This Show scope)
-- [ ] Add page (under Shows): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
+- [ ] Add page (over the current section): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
 - [ ] iTunes client: search on Enter or after a pause, cached results, `country` from the locale and as a setting, about 20 calls per minute
 - [ ] Artwork-terms decision applied to the result covers
 - [ ] Categories and charts stay out until there is a verified source

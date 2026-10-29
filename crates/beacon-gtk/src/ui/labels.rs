@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Translated names and icons for sections and pages.
+//! Translated names and icons for the sections.
 
 use gettextrs::gettext;
 
-use crate::navigation::{Location, Subpage, View};
+use crate::navigation::Location;
 
 pub fn title(location: Location) -> String {
     match location {
@@ -13,16 +13,6 @@ pub fn title(location: Location) -> String {
         Location::Queue => gettext("Queue"),
         Location::Favorites => gettext("Favorites"),
         Location::Downloaded => gettext("Downloaded"),
-    }
-}
-
-/// The content header title.
-pub fn view_title(view: View) -> String {
-    match view {
-        View::Section(location) => title(location),
-        View::Subpage(Subpage::Add) => gettext("Add Podcast"),
-        // Replaced by the podcast's own title in M3.
-        View::Subpage(Subpage::Show(_)) => gettext("Podcast"),
     }
 }
 

@@ -1,6 +1,6 @@
 # Add page and iTunes
 
-Milestone M6. Add is a page under Shows, opened from the + in the sidebar header or the Add Podcast tile. The mockup's Add view is reference only. Build the real one around what the iTunes Search API returns, and drop mockup features it cannot support.
+Milestone M6. Add is a page that slides in over the current section, opened from the + in the sidebar header or the Add Podcast tile. The mockup's Add view is reference only. Build the real one around what the iTunes Search API returns, and drop mockup features it cannot support.
 
 ## What Apple documents
 
