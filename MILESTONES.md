@@ -36,7 +36,7 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 - [x] `LICENSE` (GPL-3.0-or-later) and SPDX headers in every source file
 - [x] `CLAUDE.md` with commands, architecture, rules, requirements and the HIG gate
 - [x] `docs/decisions.md`, `docs/architecture.md` and `docs/hig-checklist.md`
-- [ ] Mockup exported into `docs/design/`
+- [x] Mockup exported into `docs/design/` (bundle, decoded source, and renders at 1440×900 and 360×640)
 - [x] `/hig-review` skill written (`.claude/skills/hig-review/`) and `build-aux/screenshots.sh` for the four screenshots
 - [x] Headless screenshots verified at 1440×900 and 360×640, light and dark
 - [x] HIG gate for the M0 window: pass (see `docs/hig-reviews/m0.md`)

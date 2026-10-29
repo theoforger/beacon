@@ -42,7 +42,7 @@ If a URL has moved, find the page from the HIG index instead of guessing.
 
 ## 4. Screenshots
 
-Run `build-aux/screenshots.sh`. Open all four images (1440×900 and 360×640, light and dark) with the Read tool and look at them: alignment, spacing, truncation, contrast in dark mode, the collapsed layout at 360px. Compare with the mockup.
+Run `build-aux/screenshots.sh`. Open all four images (1440×900 and 360×640, light and dark) with the Read tool and look at them: alignment, spacing, truncation, contrast in dark mode, the collapsed layout at 360px. Compare with `docs/design/mockup-1440x900.png` and `docs/design/mockup-360x640.png`, and read `docs/design/mockup-source.html` for states the renders do not show.
 
 If the change is only reachable after interaction (a dialog, a popover, a narrow-mode page), say so and describe what still needs a human look.
 

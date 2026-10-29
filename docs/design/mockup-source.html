@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Beacon</title>
+<script src="6c94c38d-0e17-4db1-b9f2-006259788e7c"></script>
+<meta name="hz:slide-selector" content="[data-canvas-width]"><meta name="hz:canvas-width" content="1440"><meta name="hz:canvas-height" content="900"></head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("12f5fb8f-c056-48a1-b88b-536118479ff6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2fb73af2-fcbf-4bd5-a446-413a50e5242a") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c554cace-490e-486e-b39c-baed702b9097") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("cec145cb-e6f4-4ace-9ea9-5da8acf11ae7") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c42a1758-429a-4479-a455-38b36886110e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d6cb9153-54bb-438d-890e-d7ffbe4eb58d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("02a4eb5f-e060-4a2a-88ae-02e5011aab37") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("12f5fb8f-c056-48a1-b88b-536118479ff6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2fb73af2-fcbf-4bd5-a446-413a50e5242a") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c554cace-490e-486e-b39c-baed702b9097") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("cec145cb-e6f4-4ace-9ea9-5da8acf11ae7") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c42a1758-429a-4479-a455-38b36886110e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d6cb9153-54bb-438d-890e-d7ffbe4eb58d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("02a4eb5f-e060-4a2a-88ae-02e5011aab37") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("12f5fb8f-c056-48a1-b88b-536118479ff6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2fb73af2-fcbf-4bd5-a446-413a50e5242a") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("c554cace-490e-486e-b39c-baed702b9097") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("cec145cb-e6f4-4ace-9ea9-5da8acf11ae7") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("c42a1758-429a-4479-a455-38b36886110e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("d6cb9153-54bb-438d-890e-d7ffbe4eb58d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("02a4eb5f-e060-4a2a-88ae-02e5011aab37") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("12f5fb8f-c056-48a1-b88b-536118479ff6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("2fb73af2-fcbf-4bd5-a446-413a50e5242a") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c554cace-490e-486e-b39c-baed702b9097") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("cec145cb-e6f4-4ace-9ea9-5da8acf11ae7") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c42a1758-429a-4479-a455-38b36886110e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d6cb9153-54bb-438d-890e-d7ffbe4eb58d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("02a4eb5f-e060-4a2a-88ae-02e5011aab37") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("12f5fb8f-c056-48a1-b88b-536118479ff6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("2fb73af2-fcbf-4bd5-a446-413a50e5242a") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("c554cace-490e-486e-b39c-baed702b9097") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("cec145cb-e6f4-4ace-9ea9-5da8acf11ae7") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("c42a1758-429a-4479-a455-38b36886110e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("d6cb9153-54bb-438d-890e-d7ffbe4eb58d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("02a4eb5f-e060-4a2a-88ae-02e5011aab37") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0}
+.win{
+  --bg:#fafafb;--view:#ffffff;--head:#ffffff;--side:#ebebed;--card:#ffffff;
+  --fg:#2e2e32;--dim:#5c5c61;--border:rgba(0,0,6,.12);--hover:rgba(0,0,6,.07);--sel:rgba(0,0,6,.11);--trough:rgba(0,0,6,.22);
+  --acc:#1c71d8;--acc-text:#1c71d8;
+  display:flex;flex-direction:column;height:100vh;min-height:640px;position:relative;overflow:hidden;
+  background:var(--bg);color:var(--fg);
+  font-family:"Adwaita Sans","Inter",system-ui,sans-serif;font-size:14px;line-height:1.4;
+}
+.win[data-accent=green]{--acc:#26793a;--acc-text:#26793a}
+.win[data-accent=orange]{--acc:#c64600;--acc-text:#b13d00}
+.win[data-accent=purple]{--acc:#9141ac;--acc-text:#9141ac}
+.win[data-theme=dark]{
+  --bg:#222226;--view:#1d1d20;--head:#2e2e32;--side:#2e2e32;--card:#2f2f33;
+  --fg:#ffffff;--dim:#b8b8be;--border:rgba(255,255,255,.12);--hover:rgba(255,255,255,.08);--sel:rgba(255,255,255,.14);--trough:rgba(255,255,255,.25);
+  --acc:#1a5fb4;--acc-text:#78aeed;
+}
+.win[data-theme=dark][data-accent=green]{--acc:#26793a;--acc-text:#8ff0a4}
+.win[data-theme=dark][data-accent=orange]{--acc:#a5400c;--acc-text:#ffa348}
+.win[data-theme=dark][data-accent=purple]{--acc:#813d9c;--acc-text:#dc8add}
+.win *{box-sizing:border-box}
+.win :focus-visible{outline:2px solid var(--acc-text);outline-offset:-2px}
+.win .cover:focus-visible,.win .showcard:focus-visible{outline-offset:2px}
+.win h1,.win h2,.win h3,.win p,.win ul,.win ol{margin:0;padding:0}
+.win button{font:inherit;color:inherit}
+
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+svg.i.f{fill:currentColor}
+svg.i.lg{width:20px;height:20px}
+svg.i.xl{width:26px;height:26px}
+
+.cols{flex:1;min-height:0;display:flex;position:relative}
+.dinner>.hdr{background:transparent;border-bottom:0}
+.btn.mback,.btn.mnavback{display:none}
+.status{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:56px 16px;max-width:420px;margin:0 auto}
+.status .btn{margin-top:12px}
+.status svg.i{width:64px;height:64px;stroke-width:1;color:var(--dim);opacity:.6;margin-bottom:8px}
+.content{flex:1;min-width:0;display:flex;flex-direction:column}
+.body{flex:1;min-height:0;display:flex;position:relative}
+.side .hdr{background:transparent;border-bottom:0}
+.content>.hdr{background:var(--bg);border-bottom:0}
+
+/* header bars */
+.hdr{height:52px;flex:none;display:grid;grid-template-columns:1fr minmax(0,auto) 1fr;align-items:center;gap:8px;padding:0 4px;background:var(--head);border-bottom:1px solid var(--border)}
+.hl{display:flex;align-items:center;gap:2px}
+.hrr{display:flex;align-items:center;gap:2px;justify-content:flex-end}
+.ttl{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;min-width:0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 14px;border:0;border-radius:10px;background:transparent;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn:active{background:var(--sel)}
+.btn:disabled{opacity:.35;cursor:default;background:transparent}
+.btn.circ{width:44px;padding:0;border-radius:10px}
+.pbtns .btn.circ{border-radius:50%}
+.btn.pill{border-radius:22px;padding:0 20px}
+.btn.def{background:var(--hover)}
+.btn.def:hover{background:var(--sel)}
+.btn.sug{background:var(--acc);color:#fff;font-weight:700}
+.btn.sug:hover{background:var(--acc);filter:brightness(1.12)}
+.wc{padding:0}
+.wcc{width:24px;height:24px;border-radius:50%;background:var(--hover);display:grid;place-items:center}
+.wc:hover .wcc{background:var(--sel)}
+.link{border:0;background:transparent;padding:0;cursor:pointer;color:var(--acc-text);font-weight:600;text-align:left}
+.link:hover{text-decoration:underline}
+
+/* sidebar */
+.side{width:264px;flex:none;background:var(--side);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.top{padding:0 6px;position:relative;z-index:6}
+.navlist{list-style:none;display:flex;flex-direction:column;gap:2px;padding:0}
+.sidesearch{padding:8px 8px 4px;flex:none}
+.sidescroll{flex:1;min-height:0;overflow:auto;padding:0 8px 8px}
+.sbsec{margin-top:4px}
+.sbhead{font-size:12px;font-weight:700;color:var(--dim);padding:4px 12px 6px}
+.sidefoot{flex:none;padding:8px;border-top:1px solid var(--border)}
+.sbempty{padding:16px 12px}
+.cover.mini{width:28px;height:28px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.feedcard{display:flex;align-items:center;gap:14px;padding:12px 12px 12px 14px}
+.feedico{width:56px;height:56px;border-radius:8px;background:var(--acc);color:#fff;display:grid;place-items:center;flex:none}
+.navrow{display:flex;align-items:center;gap:12px;width:100%;height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;cursor:pointer;text-align:left}
+.navrow:hover{background:var(--hover)}
+.navrow.on{background:var(--sel);font-weight:600}
+.navrow .lbl{flex:1}
+.cnt{font-size:12px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.scroll{flex:1;min-height:0;overflow:auto}
+.page{max-width:900px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.h2{font-size:16px;font-weight:800}
+.h3{font-size:14px;font-weight:800}
+.t1{font-size:28px;line-height:1.15;font-weight:800;text-wrap:balance}
+.t2{font-size:20px;line-height:1.25;font-weight:800;text-wrap:balance}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+.desc{color:var(--fg);max-width:62ch;text-wrap:pretty}
+.dim{color:var(--dim)}
+
+.entry{display:flex;align-items:center;gap:10px;height:44px;padding:0 18px;border-radius:999px;background:var(--hover);width:100%;color:var(--dim)}
+.entry svg.i{color:var(--fg)}
+.entry:focus-within{outline:2px solid var(--acc-text);outline-offset:-2px}
+.entry input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:var(--fg);outline:none}
+.entry input::placeholder{color:var(--dim);opacity:1}
+
+/* covers */
+.cover{position:relative;flex:none;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14);background-color:#777}
+.cover.xs{width:56px;height:56px;border-radius:8px}
+.cover.sm{width:56px;height:56px;border-radius:8px}
+.cover.xl{width:200px;height:200px;border-radius:14px}
+.cover.dart{width:176px;height:176px;border-radius:14px}
+.cover.cfill{width:100%;aspect-ratio:1/1;border-radius:12px}
+.cover.addcover{display:grid;place-items:center;background:transparent;box-shadow:none;border:2px dashed var(--border);color:var(--dim)}
+.showcard:hover .addcover{color:var(--fg)}
+.badge{position:absolute;top:8px;right:8px;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.showcard{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:transparent;border:0;padding:8px;border-radius:16px;cursor:pointer}
+.showcard:hover{background:var(--hover)}
+.showcard .cover{margin-bottom:8px}
+.ct{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca{font-size:12.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dcard{display:flex;flex-direction:column;gap:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.tile{display:flex;align-items:center;justify-content:center;gap:10px;height:64px;padding:0 16px;border:0;border-radius:14px;cursor:pointer;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.win .tile{color:#fff}
+.tile:hover{filter:brightness(1.12)}
+.tile.on{outline:3px solid var(--acc-text);outline-offset:2px}
+
+/* chips + segmented */
+.toolbar{display:flex;align-items:center;gap:8px}
+.toolbar .entry{flex:1;width:auto}
+.sbar{flex:none;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 12px;background:var(--head);border-bottom:1px solid var(--border)}
+.sbar .entry{flex:1;max-width:560px;width:auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:44px;padding:0 18px;border:0;border-radius:22px;background:var(--hover);cursor:pointer;font-weight:500}
+.chip:hover{background:var(--sel)}
+.chip.on{background:var(--acc);color:#fff;font-weight:700}
+.seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;padding:4px;border-radius:999px;background:var(--hover)}
+.seg.scrolling{display:flex;align-self:flex-start;overflow-x:auto;max-width:100%;scrollbar-width:none}
+.seg.scrolling::-webkit-scrollbar{display:none}
+.segbtn{position:relative;flex:none;height:40px;min-width:88px;padding:0 20px;border:0;border-radius:999px;background:transparent;cursor:pointer;font-weight:700;white-space:nowrap}
+.segbtn:hover{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.segbtn+.segbtn::before{content:"";position:absolute;left:-0.5px;top:25%;bottom:25%;width:1px;background:var(--border)}
+.segbtn.on::before,.segbtn.on+.segbtn::before{display:none}
+.segbtn.on,.segbtn.on:hover{background:var(--card);box-shadow:0 1px 3px rgba(0,0,6,.2)}
+.win[data-theme=dark] .segbtn.on,.win[data-theme=dark] .segbtn.on:hover{background:color-mix(in srgb,#fff 20%,transparent);box-shadow:none}
+
+/* hero */
+.hero{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}
+.heroText{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+
+/* boxed lists */
+.grp{display:flex;flex-direction:column;gap:10px}
+.boxed{list-style:none;background:var(--card);border-radius:14px;box-shadow:0 0 0 1px var(--border)}
+.erow{position:relative;display:flex;align-items:center;gap:4px;padding-right:8px;border-top:1px solid var(--border)}
+.erow:first-child{border-top:0;border-radius:14px 14px 0 0}
+.erow:last-child{border-radius:0 0 14px 14px}
+.erow:only-child{border-radius:14px}
+.erow:first-child .emain{border-top-left-radius:14px}
+.erow:last-child .emain{border-bottom-left-radius:14px}
+.gbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 10px 0 8px;margin-left:-8px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:16px;font-weight:800;text-align:left;cursor:pointer}
+.gbtn:hover{background:var(--hover)}
+svg.i.rot{transform:rotate(-90deg)}
+.boxed.hide{display:none}
+.menubg{position:fixed;inset:0;z-index:20}
+.menuwrap{position:relative}
+.menuwrap .menu{right:0;top:calc(100% + 4px)}
+.menuwrap .menu.left{left:0;right:auto}
+.btn.tgl.on,.btn.tgl.on:hover{background:var(--sel)}
+.mchk{width:20px;height:20px;display:grid;place-items:center;flex:none}
+.msep{height:1px;margin:4px 6px;background:var(--border)}
+.menu{position:absolute;right:8px;top:calc(100% - 10px);z-index:30;min-width:230px;padding:6px;background:var(--card);border-radius:12px;box-shadow:0 0 0 1px var(--border),0 8px 24px rgba(0,0,0,.28)}
+.mitem{display:flex;align-items:center;gap:12px;width:100%;height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer}
+.mitem:hover{background:var(--hover)}
+.mitem:disabled{opacity:.4;cursor:default;background:transparent}
+.erow.sel{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.emain{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:10px 8px 10px 12px;border:0;background:transparent;text-align:left;cursor:pointer;border-radius:0}
+.emain:hover{background:var(--hover)}
+.etxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.etitle{font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty}
+.erow.done .etitle{font-weight:500;color:var(--dim)}
+.emeta{font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.newdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc-text);margin-right:8px;vertical-align:1px}
+.bar{height:4px;border-radius:2px;background:var(--trough);width:100%;max-width:180px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc-text);border-radius:2px}
+svg.i.tick{width:16px;height:16px;margin-left:8px;vertical-align:-3px;color:var(--dim)}
+.dlmark{display:grid;place-items:center;width:24px;color:var(--dim)}
+.playbtn{width:44px;height:44px;border-radius:10px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;flex:none}
+.playbtn.cur{background:transparent}
+.playbtn:hover,.playbtn.cur:hover{background:var(--hover)}
+.playbtn:active,.playbtn.cur:active{background:var(--sel)}
+.grip{color:var(--dim);display:grid;place-items:center;width:28px;margin-left:8px;cursor:grab}
+
+/* details pane */
+.detail{width:360px;flex:none;overflow:hidden;background:var(--bg);border-left:1px solid var(--border);transition:width .22s ease,visibility 0s}
+.detail.shut{width:0;border-left-width:0;visibility:hidden;transition:width .22s ease,visibility 0s .22s}
+.dinner{width:360px;height:100%;display:flex;flex-direction:column}
+.dscroll{flex:1;min-height:0;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.acts{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chap{list-style:none;display:flex;flex-direction:column;gap:2px}
+.chapbtn{display:flex;gap:12px;align-items:baseline;width:100%;min-height:44px;padding:8px 10px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer}
+.chapbtn:hover{background:var(--hover)}
+.chapbtn.cur{background:var(--sel);font-weight:700}
+.ts{font-variant-numeric:tabular-nums;color:var(--dim);font-size:12.5px;width:44px;flex:none}
+.chapbtn.cur .ts{color:var(--acc-text)}
+
+/* player */
+.player{flex:none;display:grid;grid-template-columns:minmax(220px,1fr) minmax(320px,560px) minmax(220px,1fr);align-items:center;gap:16px;padding:10px 16px;background:var(--head);border-top:1px solid var(--border)}
+.pnow{display:flex;align-items:center;gap:12px;min-width:0;border:0;background:transparent;text-align:left;cursor:pointer;border-radius:10px;padding:4px;margin:-4px}
+.pnow:hover{background:var(--hover)}
+.pt{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ps{display:block;font-size:12.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptxt{min-width:0}
+.pctl{display:flex;flex-direction:column;align-items:center;gap:0}
+.pbtns{display:flex;align-items:center;gap:12px}
+.pplay{width:52px;height:52px;border-radius:50%;border:0;background:var(--hover);display:grid;place-items:center;cursor:pointer}
+.pplay:hover{background:var(--sel)}
+.skip{position:relative}
+.sn{position:absolute;top:54%;font-size:9px;font-weight:800;transform:translate(-50%,-50%);pointer-events:none}
+.sn.b{left:56%}.sn.f{left:44%}
+.pseek{display:flex;align-items:center;gap:10px;width:100%}
+.time{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;width:52px;flex:none}
+.time.r{text-align:right}
+.track{position:relative;flex:1;height:20px;min-width:0}
+.trk{position:absolute;left:0;right:0;top:7px;height:6px;border-radius:3px;background:var(--trough)}
+.fill{position:absolute;left:0;top:7px;height:6px;border-radius:3px;background:var(--acc-text)}
+input.seek{position:absolute;inset:0;width:100%;height:20px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+input.seek::-webkit-slider-runnable-track{height:20px;background:transparent}
+input.seek::-moz-range-track{height:20px;background:transparent}
+input.seek::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:2px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3)}
+input.seek::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.4)}
+.pextra{display:flex;align-items:center;justify-content:flex-end;gap:2px}
+.speed{font-weight:700;font-variant-numeric:tabular-nums;min-width:64px}
+.vol{display:flex;align-items:center;gap:2px;width:140px}
+.vtrack{position:relative;flex:1;height:6px;border-radius:3px;background:var(--trough);margin-right:8px}
+.vfill{position:absolute;left:0;top:0;bottom:0;width:65%;border-radius:3px;background:var(--fg)}
+
+@media (max-width:1100px){
+  .detail{position:absolute;right:0;top:0;bottom:0;z-index:5;box-shadow:-10px 0 28px rgba(0,0,0,.2)}
+  .detail.shut{box-shadow:none}
+}
+@media (max-width:980px){
+  .vol{display:none}
+  .player{grid-template-columns:minmax(0,1fr) minmax(280px,480px) auto}
+}
+@media (max-width:760px){
+  .side{width:100%;border-right:0}
+  .cols.sidepage .content{display:none}
+  .cols:not(.sidepage) .side{display:none}
+  .btn.mnavback{display:inline-flex}
+  .btn.hback{display:none}
+  .player{grid-template-columns:1fr;gap:6px}
+  .pextra{display:none}
+  .page{padding:16px}
+  .cover.xl{width:150px;height:150px}
+  .detail{inset:0;width:100%;z-index:8;border-left-width:0;box-shadow:none;background:var(--bg)}
+  .detail.shut{width:0}
+  .dinner{width:100%}
+  .btn.mback{display:inline-flex}
+  .btn.ptog{display:none}
+}
+</style>
+</helmet>
+
+<div class="win" data-theme="{{theme}}" data-accent="{{accentName}}" data-canvas-width="1440" data-canvas-height="900" data-document-role="page" data-label="Podcasts: three-pane window">
+  <div class="cols {{colsCls}}">
+
+    <nav class="side" aria-label="Library">
+      <header class="hdr">
+        <div class="hl">
+          <button class="btn circ" aria-label="Refresh feeds" title="Refresh Feeds"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button>
+        </div>
+        <span class="ttl">Beacon</span>
+        <div class="hrr">
+          <div class="menuwrap">
+            <button class="btn circ" aria-haspopup="menu" aria-expanded="{{mainMenu}}" aria-label="Main Menu" title="Main Menu" sc-camel-on-click="{{toggleMainMenu}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.menu}}"></path></svg></button>
+            <sc-if value="{{mainMenu}}" hint-placeholder-val="{{ false }}">
+              <div class="menubg" sc-camel-on-click="{{closeMainMenu}}"></div>
+              <div class="menu" role="menu" aria-label="Main Menu">
+                <button class="mitem" role="menuitem" sc-camel-on-click="{{closeMainMenu}}">Preferences</button>
+                <button class="mitem" role="menuitem" sc-camel-on-click="{{closeMainMenu}}">Keyboard Shortcuts</button>
+                <div class="msep" role="separator"></div>
+                <button class="mitem" role="menuitem" sc-camel-on-click="{{closeMainMenu}}">About Beacon</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </header>
+      <div class="sidescroll">
+        <sc-for list="{{sections}}" as="sec" hint-placeholder-count="2">
+          <section class="sbsec">
+            <ul class="navlist">
+              <sc-for list="{{sec.items}}" as="n" hint-placeholder-count="5">
+                <li>
+                  <button class="navrow {{n.cls}}" aria-current="{{n.cur}}" aria-label="{{n.aria}}" title="{{n.label}}" sc-camel-on-click="{{n.go}}">
+                    <sc-if value="{{n.isShow}}" hint-placeholder-val="{{ false }}"><span class="cover mini" style="background: {{n.cover}}"></span></sc-if>
+                    <sc-if value="{{n.isIcon}}" hint-placeholder-val="{{ true }}"><svg class="i lg {{n.fcls}}" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{n.d}}"></path></svg></sc-if>
+                    <span class="lbl">{{n.label}}</span>
+                    <sc-if value="{{n.hasCount}}" hint-placeholder-val="{{ true }}"><span class="cnt">{{n.count}}</span></sc-if>
+                  </button>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+        </sc-for>
+        <sc-if value="{{sbEmpty}}" hint-placeholder-val="{{ false }}">
+          <p class="dim sbempty">No results</p>
+        </sc-if>
+      </div>
+      <div class="sidefoot">
+        <button class="navrow {{add.cls}}" aria-current="{{add.cur}}" aria-label="Add podcast" title="Add podcast" sc-camel-on-click="{{add.go}}">
+          <svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{add.d}}"></path></svg>
+          <span class="lbl">{{add.label}}</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="content">
+    <header class="hdr top">
+      <div class="hl">
+        <button class="btn circ mnavback" aria-label="Show sidebar" title="Back" sc-camel-on-click="{{showSide}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.back}}"></path></svg></button>
+        <sc-if value="{{canBack}}" hint-placeholder-val="{{ true }}">
+          <button class="btn circ hback" aria-label="Back" title="Back" sc-camel-on-click="{{goBack}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.back}}"></path></svg></button>
+        </sc-if>
+      </div>
+      <h1 class="ttl">{{title}}</h1>
+      <div class="hrr">
+        <sc-if value="{{canSearch}}" hint-placeholder-val="{{ true }}">
+          <button class="btn circ tgl {{searchBtnCls}}" aria-label="Search" aria-pressed="{{searchOpen}}" title="Search" sc-camel-on-click="{{toggleSearch}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.search}}"></path></svg></button>
+        </sc-if>
+        <button class="btn circ tgl ptog {{paneBtnCls}}" aria-label="Show episode details" aria-pressed="{{open}}" title="Episode Details" sc-camel-on-click="{{togglePane}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.pane}}"></path></svg></button>
+        <sc-if value="{{closeInMain}}" hint-placeholder-val="{{ false }}">
+          <button class="btn circ wc" aria-label="Close window" title="Close"><span class="wcc"><svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.close}}"></path></svg></span></button>
+        </sc-if>
+      </div>
+    </header>
+    <sc-if value="{{searchOpen}}" hint-placeholder-val="{{ false }}">
+      <div class="sbar" role="search">
+        <div class="entry">
+          <svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.search}}"></path></svg>
+          <input type="search" autofocus="" placeholder="{{searchPh}}" aria-label="{{searchPh}}" value="{{gq}}" sc-camel-on-input="{{setGq}}" sc-camel-on-key-down="{{searchKey}}">
+        </div>
+        <sc-if value="{{canScope}}" hint-placeholder-val="{{ true }}">
+          <div class="seg" role="group" aria-label="Search scope">
+            <sc-for list="{{scopeOpts}}" as="f" hint-placeholder-count="2">
+              <button class="segbtn {{f.cls}}" aria-pressed="{{f.pressed}}" sc-camel-on-click="{{f.pick}}">{{f.label}}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+    <div class="body">
+    <main class="main">
+      
+
+      <div class="scroll">
+        <div class="page">
+
+          <sc-if value="{{vShow}}" hint-placeholder-val="{{ false }}">
+            <section class="hero" aria-label="About this podcast">
+              <div class="cover xl" role="img" aria-label="Cover art for {{show.title}}" style="background: {{show.cover}}"></div>
+              <div class="heroText">
+                <p class="eyebrow">{{show.cat}}</p>
+                <h2 class="t1">{{show.title}}</h2>
+                <p class="dim">{{show.author}}</p>
+                <p class="desc">{{show.desc}}</p>
+                <div class="row">
+                  <button class="btn pill {{show.subCls}}" sc-camel-on-click="{{show.toggle}}">{{show.subLabel}}</button>
+                  <div class="menuwrap">
+                    <button class="btn circ" aria-haspopup="menu" aria-expanded="{{showMenu}}" aria-label="More options" title="More Options" sc-camel-on-click="{{toggleShowMenu}}"><svg class="i lg f" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.more}}"></path></svg></button>
+                    <sc-if value="{{showMenu}}" hint-placeholder-val="{{ false }}">
+                      <div class="menubg" sc-camel-on-click="{{closeShowMenu}}"></div>
+                      <div class="menu left" role="menu" aria-label="More options">
+                        <button class="mitem" role="menuitem" sc-camel-on-click="{{markAllPlayed}}">Mark All as Played</button>
+                        <button class="mitem" role="menuitem" sc-camel-on-click="{{downloadAll}}">Download All Episodes</button>
+                        <div class="msep" role="separator"></div>
+                        <button class="mitem" role="menuitem" sc-camel-on-click="{{closeShowMenu}}">Copy Feed Address</button>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{vShow}}" hint-placeholder-val="{{ false }}">
+            <div class="toolbar">
+              <div class="seg" role="group" aria-label="Filter episodes">
+                <sc-for list="{{showFilters}}" as="f" hint-placeholder-count="3">
+                  <button class="segbtn {{f.cls}}" aria-pressed="{{f.pressed}}" sc-camel-on-click="{{f.pick}}">{{f.label}}</button>
+                </sc-for>
+              </div>
+              <div class="menuwrap" style="margin-left: auto">
+                <button class="btn" aria-haspopup="menu" aria-expanded="{{sortOpen}}" aria-label="Sort episodes" title="Sort Episodes" sc-camel-on-click="{{toggleSortMenu}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{sortD}}"></path></svg></button>
+                <sc-if value="{{sortOpen}}" hint-placeholder-val="{{ false }}">
+                  <div class="menubg" sc-camel-on-click="{{closeSortMenu}}"></div>
+                  <div class="menu" role="menu" aria-label="Sort episodes">
+                    <button class="mitem" role="menuitemradio" aria-checked="{{sortNewest}}" sc-camel-on-click="{{pickNewest}}"><span class="mchk"><sc-if value="{{sortNewest}}" hint-placeholder-val="{{ true }}"><svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.check}}"></path></svg></sc-if></span>Newest First</button>
+                    <button class="mitem" role="menuitemradio" aria-checked="{{sortOldest}}" sc-camel-on-click="{{pickOldest}}"><span class="mchk"><sc-if value="{{sortOldest}}" hint-placeholder-val="{{ false }}"><svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.check}}"></path></svg></sc-if></span>Oldest First</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{vSubs}}" hint-placeholder-val="{{ false }}">
+            <div class="grid">
+              <sc-for list="{{subShows}}" as="s" hint-placeholder-count="8">
+                <button class="showcard" sc-camel-on-click="{{s.open}}" aria-label="{{s.aria}}">
+                  <div class="cover cfill" style="background: {{s.cover}}">
+                    <sc-if value="{{s.hasNew}}" hint-placeholder-val="{{ true }}"><span class="badge">{{s.newCount}}</span></sc-if>
+                  </div>
+                  <span class="ct">{{s.title}}</span>
+                  <span class="ca">{{s.author}}</span>
+                </button>
+              </sc-for>
+              <button class="showcard" sc-camel-on-click="{{goAdd}}" aria-label="Add podcast">
+                <div class="cover cfill addcover"><svg class="i xl" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></div>
+                <span class="ct">Add Podcast</span>
+                <span class="ca">Find a show or paste a feed</span>
+              </button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{vFeed}}" hint-placeholder-val="{{ false }}">
+            <div class="toolbar">
+            <div class="seg" role="group" aria-label="Filter episodes">
+              <sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+                <button class="segbtn {{f.cls}}" aria-pressed="{{f.pressed}}" sc-camel-on-click="{{f.pick}}">{{f.label}}</button>
+              </sc-for>
+            </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{vDisc}}" hint-placeholder-val="{{ false }}">
+            <div class="entry">
+              <svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.search}}"></path></svg>
+              <input type="search" placeholder="Search podcasts or paste an RSS feed URL" aria-label="Search podcasts or paste an RSS feed URL" value="{{q}}" sc-camel-on-input="{{setQ}}">
+            </div>
+            <sc-if value="{{isFeed}}" hint-placeholder-val="{{ false }}">
+              <section class="grp">
+                <h2 class="h2">RSS Feed</h2>
+                <div class="boxed feedcard">
+                  <span class="feedico"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.rss}}"></path></svg></span>
+                  <span class="etxt"><span class="etitle">{{feedHost}}</span><span class="emeta">{{feedUrl}}</span></span>
+                  <button class="btn pill {{feedBtnCls}}" sc-camel-on-click="{{addFeed}}">{{feedBtnLabel}}</button>
+                </div>
+              </section>
+            </sc-if>
+            <div class="tiles" role="group" aria-label="Categories">
+              <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+                <button class="tile {{c.cls}}" aria-pressed="{{c.pressed}}" style="background: {{c.bg}}" sc-camel-on-click="{{c.pick}}">{{c.label}}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{notFeed}}" hint-placeholder-val="{{ true }}"><h2 class="h2">{{discHeading}}</h2></sc-if>
+            <div class="grid">
+              <sc-for list="{{discShows}}" as="s" hint-placeholder-count="6">
+                <div class="dcard">
+                  <button class="showcard" sc-camel-on-click="{{s.open}}" aria-label="{{s.aria}}">
+                    <div class="cover cfill" style="background: {{s.cover}}"></div>
+                    <span class="ct">{{s.title}}</span>
+                    <span class="ca">{{s.author}}</span>
+                  </button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{vFound}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{hasFoundShows}}" hint-placeholder-val="{{ true }}">
+              <section class="grp">
+                <h2 class="h2">Shows</h2>
+                <div class="grid">
+                  <sc-for list="{{foundShows}}" as="s" hint-placeholder-count="3">
+                    <button class="showcard" sc-camel-on-click="{{s.open}}" aria-label="{{s.aria}}">
+                      <div class="cover cfill" style="background: {{s.cover}}"></div>
+                      <span class="ct">{{s.title}}</span>
+                      <span class="ca">{{s.author}}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </section>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{hasEmpty}}" hint-placeholder-val="{{ false }}">
+            <div class="status" role="status">
+              <svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{empty.icon}}"></path></svg>
+              <h2 class="t2">{{empty.title}}</h2>
+              <p class="dim">{{empty.desc}}</p>
+              <sc-if value="{{empty.hasAction}}" hint-placeholder-val="{{ false }}">
+                <button class="btn pill sug" sc-camel-on-click="{{searchOnline}}">Search Online</button>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{hasGroups}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+              <section class="grp">
+                <sc-if value="{{g.plain}}" hint-placeholder-val="{{ true }}"><h2 class="h2">{{g.title}}</h2></sc-if>
+                <sc-if value="{{g.collapsible}}" hint-placeholder-val="{{ false }}">
+                  <h2 class="h2"><button class="gbtn" aria-expanded="{{g.expanded}}" sc-camel-on-click="{{g.toggle}}"><svg class="i {{g.rot}}" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{g.chevD}}"></path></svg>{{g.title}}</button></h2>
+                </sc-if>
+                <ul class="boxed {{g.listCls}}">
+                  <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                    <li class="erow {{r.cls}}">
+                      <sc-if value="{{r.isQueue}}" hint-placeholder-val="{{ false }}">
+                        <span class="grip" aria-hidden="true"><svg class="i" sc-camel-view-box="0 0 16 16"><path d="{{r.ic.grip}}"></path></svg></span>
+                      </sc-if>
+                      <button class="emain" tabindex="-1" sc-camel-on-click="{{r.select}}" aria-label="{{r.selAria}}">
+                        <span class="cover sm" style="background: {{r.cover}}"></span>
+                        <span class="etxt">
+                          <span class="etitle"><sc-if value="{{r.isNew}}" hint-placeholder-val="{{ false }}"><span class="newdot" role="img" aria-label="New"></span></sc-if>{{r.title}}<sc-if value="{{r.isDone}}" hint-placeholder-val="{{ false }}"><svg class="i tick" sc-camel-view-box="0 0 16 16" role="img" aria-label="Played"><path d="{{r.ic.check}}"></path></svg></sc-if></span>
+                          <span class="emeta">{{r.meta}}</span>
+                          <sc-if value="{{r.hasBar}}" hint-placeholder-val="{{ false }}"><span class="bar"><i style="width: {{r.pct}}%"></i></span></sc-if>
+                        </span>
+                      </button>
+                      <button class="btn circ" aria-haspopup="menu" aria-expanded="{{r.menuOpen}}" aria-label="{{r.menuAria}}" title="More Options" sc-camel-on-click="{{r.toggleMenu}}"><svg class="i lg f" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.ic.more}}"></path></svg></button>
+                      <sc-if value="{{r.menuOpen}}" hint-placeholder-val="{{ false }}">
+                        <div class="menubg" sc-camel-on-click="{{r.closeMenu}}"></div>
+                        <div class="menu" role="menu" aria-label="{{r.menuAria}}">
+                          <button class="mitem" role="menuitem" sc-camel-on-click="{{r.menuDetails}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.ic.pane}}"></path></svg>Show Details</button>
+                          <div class="msep" role="separator"></div>
+                          <sc-if value="{{r.isQueue}}" hint-placeholder-val="{{ false }}">
+                            <button class="mitem" role="menuitem" disabled="{{r.upOff}}" sc-camel-on-click="{{r.moveUp}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.ic.up}}"></path></svg>Move Up</button>
+                            <button class="mitem" role="menuitem" disabled="{{r.downOff}}" sc-camel-on-click="{{r.moveDown}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.ic.chev}}"></path></svg>Move Down</button>
+                          </sc-if>
+                          <sc-if value="{{r.canQueue}}" hint-placeholder-val="{{ true }}">
+                            <button class="mitem" role="menuitem" sc-camel-on-click="{{r.menuQ}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.qD}}"></path></svg>{{r.qLabel}}</button>
+                            <div class="msep" role="separator"></div>
+                          </sc-if>
+                          <button class="mitem" role="menuitem" sc-camel-on-click="{{r.menuDl}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.dlD}}"></path></svg>{{r.dlLabel}}</button>
+                          <button class="mitem" role="menuitem" sc-camel-on-click="{{r.menuFav}}"><svg class="i lg {{r.favF}}" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.ic.star}}"></path></svg>{{r.favLabel}}</button>
+                          <button class="mitem" role="menuitem" sc-camel-on-click="{{r.menuPlayed}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.playedD}}"></path></svg>{{r.playedLabel}}</button>
+                        </div>
+                      </sc-if>
+                      <button class="playbtn {{r.playCls}}" aria-label="{{r.playAria}}" sc-camel-on-click="{{r.play}}"><svg class="i f" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{r.playD}}"></path></svg></button>
+                    </li>
+                  </sc-for>
+                </ul>
+              </section>
+            </sc-for>
+          </sc-if>
+
+        </div>
+      </div>
+    </main>
+    </div>
+    </div>
+
+    <aside class="detail {{paneCls}}" aria-label="Episode details">
+      <div class="dinner">
+        <header class="hdr">
+          <div class="hl"><button class="btn circ mback" aria-label="Back" title="Back" sc-camel-on-click="{{togglePane}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.back}}"></path></svg></button></div>
+          <span class="ttl">Episode Details</span>
+          <div class="hrr">
+            <button class="btn circ wc" aria-label="Close window" title="Close"><span class="wcc"><svg class="i" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.close}}"></path></svg></span></button>
+          </div>
+        </header>
+        <div class="dscroll">
+          <div class="cover dart" role="img" aria-label="Cover art for {{sel.showTitle}}" style="background: {{sel.cover}}"></div>
+          <div>
+            <p class="eyebrow"><button class="link" sc-camel-on-click="{{sel.openShow}}">{{sel.showTitle}}</button></p>
+          </div>
+          <h2 class="t2">{{sel.title}}</h2>
+          <p class="dim">{{sel.meta}}</p>
+          <div class="acts">
+            <button class="btn pill sug" sc-camel-on-click="{{sel.play}}">{{sel.playLabel}}</button>
+            <button class="btn circ {{sel.qCls}}" aria-label="{{sel.qAria}}" title="{{sel.qTitle}}" sc-camel-on-click="{{sel.toggleQ}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{sel.qD}}"></path></svg></button>
+            <button class="btn circ {{sel.favCls}}" aria-label="{{sel.favAria}}" aria-pressed="{{sel.isFav}}" title="{{sel.favAria}}" sc-camel-on-click="{{sel.toggleFav}}"><svg class="i lg {{sel.favF}}" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.star}}"></path></svg></button>
+            <button class="btn circ {{sel.dlCls}}" aria-label="{{sel.dlAria}}" aria-pressed="{{sel.isDl}}" title="{{sel.dlAria}}" sc-camel-on-click="{{sel.toggleDl}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{sel.dlD}}"></path></svg></button>
+            <button class="btn circ {{sel.playedCls}}" aria-label="{{sel.playedAria}}" title="{{sel.playedAria}}" sc-camel-on-click="{{sel.togglePlayed}}"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{sel.playedD}}"></path></svg></button>
+          </div>
+          <h3 class="h3">About This Episode</h3>
+          <p class="desc">{{sel.desc}}</p>
+          <sc-if value="{{sel.hasChapters}}" hint-placeholder-val="{{ true }}">
+            <h3 class="h3">Chapters</h3>
+            <ol class="chap">
+              <sc-for list="{{sel.chapters}}" as="c" hint-placeholder-count="4">
+                <li><button class="chapbtn {{c.cls}}" sc-camel-on-click="{{c.go}}"><span class="ts">{{c.ts}}</span><span>{{c.title}}</span></button></li>
+              </sc-for>
+            </ol>
+          </sc-if>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <footer class="player" aria-label="Playback controls">
+    <button class="pnow" sc-camel-on-click="{{showNow}}" aria-label="Show details for {{now.title}}">
+      <span class="cover xs" style="background: {{now.cover}}"></span>
+      <span class="ptxt">
+        <span class="pt">{{now.title}}</span>
+        <span class="ps">{{now.showTitle}}</span>
+      </span>
+    </button>
+
+    <div class="pctl">
+      <div class="pbtns">
+        <button class="btn circ {{nowFavCls}}" aria-label="{{nowFavAria}}" aria-pressed="{{nowIsFav}}" title="{{nowFavAria}}" sc-camel-on-click="{{toggleNowFav}}"><svg class="i lg {{nowFavF}}" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.star}}"></path></svg></button>
+        <button class="btn circ skip" aria-label="Back 10 seconds" title="Back 10 Seconds" sc-camel-on-click="{{back10}}"><svg class="i xl" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.back10}}"></path></svg><span class="sn b" aria-hidden="true">10</span></button>
+        <button class="pplay" aria-label="{{nowPlayLabel}}" title="{{nowPlayLabel}}" sc-camel-on-click="{{togglePlay}}"><svg class="i xl f" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{nowPlayD}}"></path></svg></button>
+        <button class="btn circ skip" aria-label="Forward 30 seconds" title="Forward 30 Seconds" sc-camel-on-click="{{fwd30}}"><svg class="i xl" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.fwd30}}"></path></svg><span class="sn f" aria-hidden="true">30</span></button>
+        <button class="btn circ" aria-label="Next episode" title="Next Episode" sc-camel-on-click="{{next}}"><svg class="i lg f" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.next}}"></path></svg></button>
+      </div>
+      <div class="pseek">
+        <span class="time">{{posLabel}}</span>
+        <div class="track">
+          <div class="trk"></div>
+          <div class="fill" style="width: {{pct}}%"></div>
+          <input class="seek" type="range" min="0" max="{{dur}}" step="1" value="{{pos}}" aria-label="Seek" aria-valuetext="{{seekText}}" sc-camel-on-input="{{seek}}">
+        </div>
+        <span class="time r">{{leftLabel}}</span>
+      </div>
+    </div>
+
+    <div class="pextra">
+      <button class="btn speed" aria-label="Playback speed {{speedLabel}}" title="Playback Speed" sc-camel-on-click="{{cycleSpeed}}">{{speedLabel}}</button>
+      <button class="btn circ" aria-label="Sleep timer" title="Sleep Timer"><svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true"><path d="{{ic.timer}}"></path></svg></button>
+      <div class="vol">
+        <svg class="i lg" sc-camel-view-box="0 0 16 16" aria-hidden="true" style="margin:0 8px"><path d="{{ic.vol}}"></path></svg>
+        <div class="vtrack" role="img" aria-label="Volume 65 percent"><div class="vfill"></div></div>
+      </div>
+      
+    </div>
+  </footer>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;blue&quot;,&quot;green&quot;,&quot;orange&quot;,&quot;purple&quot;],&quot;default&quot;:&quot;blue&quot;},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+const ICONS = {
+  menu:'M2.5 4h11M2.5 8h11M2.5 12h11',
+  plus:'M8 3v10M3 8h10',
+  search:'M7 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM10.8 10.8L14 14',
+  back:'M10 3L5 8l5 5',
+  fwd:'M6 3l5 5-5 5',
+  sortd:'M5 3v10M2.5 10.5L5 13l2.5-2.5M10 4h4M10 7h3M10 10h2',
+  sorta:'M5 13V3M2.5 5.5L5 3l2.5 2.5M10 4h2M10 7h3M10 10h4',
+  playedc:'M8 13.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM5.6 8.2l1.8 1.8 3.2-3.6',
+  circ:'M8 13.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11z',
+  chev:'M3 6l5 5 5-5',
+  rss:'M3 3.5a9.5 9.5 0 0 1 9.5 9.5M3 7.5a5.5 5.5 0 0 1 5.5 5.5M3.5 12.5h.01',
+  close:'M4 4l8 8M12 4l-8 8',
+  lib:'M9.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM8 8.5V14M5.2 9.8a4 4 0 1 1 5.6 0M3.4 12a6.6 6.6 0 1 1 9.2 0',
+  eps:'M2.5 4h.01M5.5 4h8M2.5 8h.01M5.5 8h8M2.5 12h.01M5.5 12h8',
+  queue:'M2.5 4h11M2.5 8h6M2.5 12h4.5M11 10l3.5 2.2L11 14.4z',
+  star:'M8 1.8l1.9 4 4.3.5-3.2 3 .9 4.3L8 11.4l-3.9 2.2.9-4.3-3.2-3 4.3-.5z',
+  disc:'M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM10.6 5.4L9.2 9.2 5.4 10.6l1.4-3.8z',
+  play:'M5 3l8 5-8 5z',
+  pause:'M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z',
+  back10:'M4 8.5A5 5 0 1 0 5.6 4.9M4 2.8v3.2h3.2',
+  fwd30:'M12 8.5A5 5 0 1 1 10.4 4.9M12 2.8v3.2H8.8',
+  dl:'M8 2.5v8M4.8 7.6L8 10.8l3.2-3.2M3 13.5h10',
+  dlin:'M4.6 6.6l2.6 2.6 4.4-5.2M3 13.5h10',
+  check:'M3 8.5l3.2 3.2L13 4.8',
+  timer:'M8 14a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM8 5.8V8.5l1.8 1.2M6.5 1.2h3',
+  vol:'M2.5 6h2.3L8 3.2v9.6L4.8 10H2.5zM10.5 5.8a3.2 3.2 0 0 1 0 4.4M12.2 4a5.6 5.6 0 0 1 0 8',
+  pane:'M2.5 3h11v10h-11zM10 3v10',
+  more:'M3.5 6.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM8 6.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM12.5 6.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z',
+  grip:'M3 5.5h10M3 8h10M3 10.5h10',
+  up:'M3 10l5-5 5 5',
+  next:'M3.5 3l7 5-7 5zM12.5 3v10',
+  qadd:'M2.5 4h8M2.5 8h8M2.5 12h4M12 9.5v5M9.5 12h5',
+  qin:'M2.5 4h8M2.5 8h8M2.5 12h4M9.5 12.2l1.9 1.9 3.3-3.8',
+  refresh:'M13 8a5 5 0 1 1-1.6-3.7M13 2.5v3h-3'
+};
+
+const CAT_STYLE = {
+  Science: { d:'M6 2.5h4M6.5 2.5v4L3 12.5a1 1 0 0 0 .9 1.5h8.2a1 1 0 0 0 .9-1.5L9.5 6.5v-4M5 10h6', bg:'linear-gradient(135deg,#1a5fb4,#0f7a8a)' },
+  Food: { d:'M2.5 8h11a5.5 5.5 0 0 1-11 0zM5.5 5.5c0-1 1-1 1-2M9 5.5c0-1 1-1 1-2', bg:'linear-gradient(135deg,#c64600,#a51d2d)' },
+  Design: { d:'M3 13l.7-3L10.5 3.2a1.4 1.4 0 0 1 2 0l.3.3a1.4 1.4 0 0 1 0 2L6 12.3zM9.5 4.2l2.3 2.3', bg:'linear-gradient(135deg,#813d9c,#3d1f6e)' },
+  Health: { d:'M8 13.5S2.5 10 2.5 6.2A2.9 2.9 0 0 1 8 5a2.9 2.9 0 0 1 5.5 1.2C13.5 10 8 13.5 8 13.5z', bg:'linear-gradient(135deg,#26793a,#0f5b4c)' },
+  Writing: { d:'M3.5 2.5h6.5l2.5 2.5v8.5h-9zM9.5 2.5V5.5h3M5.5 8h5M5.5 10.5h5', bg:'linear-gradient(135deg,#5e5c64,#2b2a33)' },
+  Culture: { d:'M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12', bg:'linear-gradient(135deg,#b5530e,#7a2e0a)' },
+  Other: { d:'M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12z', bg:'linear-gradient(135deg,#5e5c64,#2b2a33)' }
+};
+
+const SHOWS = [
+  { id:'s1', title:'The Long Signal', author:'Dr. Imani Okafor', cat:'Science',
+    cover:'radial-gradient(circle at 68% 32%, #ffb347 0 6%, transparent 6.5%), repeating-radial-gradient(circle at 68% 32%, transparent 0 8%, rgba(255,255,255,.28) 8% 9%), #16254a',
+    desc:'Conversations with the people who listen to the sky: radio astronomers, instrument builders and the occasional amateur with a very large dish.' },
+  { id:'s2', title:'Small Hours', author:'Odile Brandt', cat:'Stories',
+    cover:'radial-gradient(circle at 63% 42%, #2f2160 0 25%, transparent 25.5%), radial-gradient(circle at 54% 50%, #f4e6b8 0 25%, transparent 25.5%), #2f2160',
+    desc:'True stories told between midnight and dawn, by people who were awake for a reason.' },
+  { id:'s3', title:'Rooted', author:'Tomás and Priya Rao', cat:'Gardening',
+    cover:'radial-gradient(circle at 50% 108%, #f6e9c8 0 34%, transparent 34.5%), repeating-linear-gradient(135deg, #2c6a3d 0 14px, #3b8550 14px 28px)',
+    desc:'A practical, unhurried show about soil, seeds and the slow business of growing things in small spaces.' },
+  { id:'s4', title:'Ledger & Lime', author:'Hana Whitlock', cat:'Business',
+    cover:'linear-gradient(#111 0 0) 18% 62%/64% 6% no-repeat, repeating-linear-gradient(0deg, transparent 0 19px, rgba(0,0,0,.28) 19px 20px), repeating-linear-gradient(90deg, transparent 0 19px, rgba(0,0,0,.28) 19px 20px), #c9e24b',
+    desc:'Everyday economics in twenty minutes: why prices move, who pays, and what it means for your week.' },
+  { id:'s5', title:'Merge Window', author:'Sam Achterberg', cat:'Technology',
+    cover:'linear-gradient(135deg, transparent 0 50%, #99c1f1 50% 100%), #1c71d8',
+    desc:'Weekly news and interviews from the free software world: kernels, desktops and the people who maintain them.' },
+  { id:'s6', title:'Overtone', author:'Lucía Ferreira', cat:'Music',
+    cover:'conic-gradient(from 20deg at 50% 50%, #d92d3a 0 25%, #f6a35c 25% 50%, #d92d3a 50% 75%, #f6a35c 75% 100%)',
+    desc:'Music theory without the gatekeeping. One song, one idea, taken apart at the piano.' },
+  { id:'s7', title:'Slow Roads', author:'Ewan Kerr', cat:'Travel',
+    cover:'radial-gradient(circle at 50% 58%, #fff1c9 0 20%, transparent 20.5%), linear-gradient(180deg, #ee8a4e 0 58%, #1d7a8c 58% 100%)',
+    desc:'Audio postcards from long bike rides, ferries and the cheaper end of the departure board.' },
+  { id:'s8', title:'Paper Trails', author:'Dr. Nadia Rosen', cat:'History',
+    cover:'radial-gradient(circle at 50% 50%, transparent 0 25%, #7a3b1d 25% 28%, transparent 28.5%), repeating-linear-gradient(0deg, transparent 0 11px, rgba(90,50,20,.2) 11px 12px), #e9d7b2',
+    desc:'Archive-driven history: one document, one afternoon, and everything it can tell us.' },
+  { id:'d1', disc:true, title:'Tidewater', author:'Prof. Kofi Mensah', cat:'Science',
+    cover:'repeating-linear-gradient(180deg, #0a5c78 0 12px, #0f7fa3 12px 24px)',
+    desc:'Oceanographers explain one strange measurement at a time, from tide gauges to the sound of ice breaking.' },
+  { id:'d2', disc:true, title:'The Quiet Kitchen', author:'Mei Lindqvist', cat:'Food',
+    cover:'radial-gradient(circle at 50% 50%, #fff 0 32%, transparent 32.5%), radial-gradient(circle at 50% 50%, #e8b4a8 0 40%, transparent 40.5%), #cf4a3f',
+    desc:'Home cooking at a whisper: small recipes, honest failures and the stories that pots tell.' },
+  { id:'d3', disc:true, title:'Pattern Language', author:'Jonas Aalto', cat:'Design',
+    cover:'conic-gradient(#202024 25%, #f1f1f3 0 50%, #202024 0 75%, #f1f1f3 0) 0 0/40% 40%',
+    desc:'How everyday things get their shape, from signage to door handles, with the people who drew them.' },
+  { id:'d4', disc:true, title:'Bedside Manner', author:'Dr. Rafaela Costa', cat:'Health',
+    cover:'linear-gradient(#fff 0 0) 50% 50%/14% 56% no-repeat, linear-gradient(#fff 0 0) 50% 50%/56% 14% no-repeat, #23897d',
+    desc:'Clinicians talk about the parts of medicine that never make it into the textbooks.' },
+  { id:'d5', disc:true, title:'Second Draft', author:'Teodor Wren', cat:'Writing',
+    cover:'linear-gradient(90deg, transparent 0 20%, #d92d3a 20% 22%, transparent 22%), repeating-linear-gradient(0deg, #fff 0 15px, #c5d0e6 15px 16px)',
+    desc:'Working writers read their first drafts aloud, then show you what they did to fix them.' },
+  { id:'d6', disc:true, title:'Fieldwork', author:'Dr. Amara Singh', cat:'Culture',
+    cover:'radial-gradient(circle at 30% 70%, #eac55f 0 20%, transparent 20.5%), radial-gradient(circle at 70% 34%, #e76f51 0 13%, transparent 13.5%), #234a59',
+    desc:'Anthropologists on long stays in short places, and what they brought back.' }
+];
+const SHOW = {};
+SHOWS.forEach(s => { SHOW[s.id] = s; });
+
+// [id, show, day of October, group, minutes, extra seconds, status, progress, downloaded, title, description]
+const EP_ROWS = [
+  ['e1','s5',28,'Today',54,0,'new',0,true,'Merge Window 412: A quieter release candidate','The release candidate lands with fewer surprises than usual. We go through the scheduler fixes, a long-overdue graphics driver cleanup, and what maintainers mean when they call a release boring.'],
+  ['e2','s4',28,'Today',22,0,'new',0,false,'Why your coffee costs what it costs, again','Futures prices, shipping lanes and the café down the street: a short walk from a farm gate in Huila to the number on your receipt.'],
+  ['e3','s1',27,'Yesterday',52,10,'part',0.3585,true,'A dish in the desert: listening to the quietest place on Earth','Hundreds of kilometres from the nearest city, a ring of antennas listens for signals fainter than a whisper. We spend a day with the site wardens who keep the surrounding land radio silent, and find out why one faulty electric fence can ruin a month of observing.'],
+  ['e4','s2',27,'Yesterday',38,0,'new',0,false,'The Night Bakery','At 2 a.m. the only lit window on the street belongs to a bakery with no sign. Four people who work there tell us why they never left.'],
+  ['e5','s6',27,'Yesterday',27,0,'new',0,true,'Why this chord feels like coming home','One suspended chord, resolved three different ways. Lucía plays them all and explains why your ear keeps asking for the last one.'],
+  ['e6','s3',26,'Monday',31,0,'new',0,false,'Winter sowing for impatient people','Milk jugs, a sunny fence and a pocketful of hardy seeds: how to start your garden while it is still freezing outside.'],
+  ['e7','s7',25,'Last week',44,0,'done',1,true,'The 6:10 ferry to nowhere in particular','A foot passenger’s guide to the slowest crossing on the map, with a detour through a harbour café that only opens when the boat does.'],
+  ['e8','s8',25,'Last week',49,0,'new',0,false,'The clerk who kept every receipt','A trunk of receipts from a provincial shop, 1871 to 1903, and the town they quietly describe.'],
+  ['e9','s5',21,'Last week',61,0,'done',1,false,'Merge Window 411: Wayland, one more time','Another year, another round of the display server question. This time with actual numbers from the people who run it in production.'],
+  ['e10','s1',20,'Last week',47,0,'done',1,true,'Counting pulsars with a bicycle wheel','An amateur builds a working pulsar receiver from scrap in a garden shed, and our host checks the maths.'],
+  ['e11','s4',19,'Last week',24,0,'done',1,false,'The quiet economics of waiting in line','Who pays when a queue gets longer, and why some queues are designed to be long.'],
+  ['e12','s2',18,'Earlier in October',41,0,'part',0.6,false,'Static','A radio host reads out the last letters received before the station closes for good.'],
+  ['e13','s3',16,'Earlier in October',36,0,'done',1,false,'What your compost is trying to tell you','Smell, colour, steam: reading a heap the way a cook reads a pan.'],
+  ['e14','s6',15,'Earlier in October',33,0,'done',1,false,'The ninth chord nobody names','A chord every songwriter uses and almost nobody can label, played in six well-known places.'],
+  ['e15','s1',13,'Earlier in October',58,0,'done',1,true,'Interferometry for the impatient','How a dozen small dishes behave like one enormous one, explained with a swimming pool and two garden hoses.'],
+  ['e16','s2',12,'Earlier in October',45,0,'done',1,false,'The Lighthouse Relief Crew','Three weeks on a rock with two strangers and a barometer.'],
+  ['e17','s7',11,'Earlier in October',40,0,'done',1,false,'Gravel, headwinds and a very good sandwich','Day nine of a coast-to-coast ride, told mostly through lunch.'],
+  ['e18','s8',9,'Earlier in October',52,0,'done',1,false,'A map that was wrong on purpose','Cartographers sometimes plant fake towns. This one planted a whole river.'],
+  ['e19','s5',7,'Earlier in October',58,0,'done',1,false,'Merge Window 410: Stable means stable','A maintainer on why they refuse to merge exciting things on Fridays.'],
+  ['e20','s4',5,'Earlier in October',26,0,'done',1,false,'Interest rates, explained with a bus timetable','If the bus is late, who waits? A surprisingly good model of a central bank.'],
+  ['e21','d1',27,'Yesterday',35,0,'new',0,false,'What the tide table doesn’t say','Why the same harbour can have two very different high tides on the same afternoon.'],
+  ['e22','d2',26,'Monday',28,0,'new',0,false,'Soup for one, in four ways','A single onion, four pans, and the argument about whether to blend.'],
+  ['e23','d3',24,'Last week',41,0,'new',0,false,'Why every airport sign looks the same','The typographer who decided what “Exit” should look like, and what happened next.'],
+  ['e24','d4',23,'Last week',46,0,'new',0,false,'The last shift before the holidays','Four nurses on what the ward sounds like at 4 a.m. in December.'],
+  ['e25','d5',22,'Last week',33,0,'new',0,false,'Cutting your favourite line','A novelist reads the sentence she loved most, then explains why it had to go.'],
+  ['e26','d6',20,'Last week',55,0,'new',0,false,'A year in a village with one road','What a field season looks like when the field is mostly a bus stop.']
+];
+const EPS = EP_ROWS.map(r => ({ id:r[0], s:r[1], day:r[2], group:r[3], min:r[4], x:r[5], status:r[6], prog:r[7], dl:r[8], title:r[9], desc:r[10] }));
+EPS.sort((a, b) => b.day - a.day);
+const EPM = {};
+EPS.forEach(e => { EPM[e.id] = e; });
+
+// [season, episode in season] — only some feeds provide this (itunes:season / itunes:episode)
+const SEASON = { e3:[3,2], e10:[3,1], e15:[2,10], e4:[2,2], e12:[2,1], e16:[1,8] };
+const SEASON_NAMES = { s1: { 3: 'The Quiet Zone', 2: 'First Light' } };
+
+const CHAPTERS = {
+  e3: [[0,'Cold open'],[192,'Why quiet is hard to protect'],[725,'Inside the shielded lab'],[1110,'A day with the site wardens'],[1908,'The electric fence problem'],[2540,'Listening back'],[2995,'Credits and corrections']],
+  e1: [[0,'Headlines'],[750,'The release candidate'],[1870,'Interview: the scheduler maintainers'],[2940,'Picks of the week']]
+};
+
+const GROUP_ORDER = ['Today','Yesterday','Monday','Last week','Earlier in October'];
+const TITLES = { subs:'Shows', eps:'New', queue:'Queue', favs:'Favorites', dl:'Downloaded', disc:'Add' };
+const SPEEDS = ['1.0×','1.25×','1.5×','2.0×','0.75×'];
+
+const dur = e => e.min * 60 + e.x;
+const pad = n => (n < 10 ? '0' : '') + n;
+const fmt = sec => {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h ? h + ':' + pad(m) + ':' + pad(s) : m + ':' + pad(s);
+};
+const human = sec => {
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  if (h && m === 60) return (h + 1) + ' h';
+  return h ? h + ' h ' + m + ' min' : m + ' min';
+};
+
+const startPos = e => (e.status === 'part' ? Math.round(e.prog * dur(e)) : 0);
+const ctxIds = (ctx, s) => {
+  if (ctx === 'eps') return EPS.filter(e => s.subs.includes(e.s)).map(e => e.id);
+  if (ctx === 'favs') return EPS.filter(e => s.favs.includes(e.id)).map(e => e.id);
+  if (ctx === 'dl') return EPS.filter(e => s.dls.includes(e.id)).map(e => e.id);
+  const r = EPS.filter(e => e.s === ctx).map(e => e.id);
+  return s.sasc ? r.reverse() : r;
+};
+const ctxName = ctx => ({ eps: 'New', favs: 'Favorites', dl: 'Downloaded' }[ctx] || SHOW[ctx].title);
+// episodes that follow the current one in the list it was started from, minus anything already in the manual queue
+const autoNext = s => {
+  const ids = ctxIds(s.ctx, s);
+  const i = ids.indexOf(s.playId);
+  return (i < 0 ? ids : ids.slice(i + 1)).filter(id => !s.queue.includes(id) && id !== s.playId);
+};
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const mob = typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width:760px)').matches;
+    this.state = {
+      mainMenu: false, side: mob, sfm: {}, showMenu: false,
+      tab: 'subs', showId: null, selId: 'e3', open: !mob,
+      playId: 'e3', playing: true, pos: 1122, si: 0, ctx: 'eps', seen: [], sf: 'all', sfq: '', sasc: false, menuId: null, ovr: {}, collapsed: [], feedAdded: '', nq: '', sortOpen: false, searchOpen: false, gq: '', gScope: 'show',
+      hist: [{ tab: 'subs', showId: null }], hi: 0,
+      filter: 'all', cat: 'All', q: '', sq: '',
+      favs: ['e3','e7','e10','e15'],
+      queue: ['e1','e5','e6','e4'],
+      dls: EPS.filter(e => e.dl).map(e => e.id),
+      subs: ['s1','s2','s3','s4','s5','s6','s7','s8']
+    };
+  }
+
+  playEp(e, ctx) {
+    this.setState(s => {
+      if (s.playId === e.id) return { playing: !s.playing };
+      return { playId: e.id, playing: true, pos: startPos(e), queue: s.queue.filter(x => x !== e.id), ctx: ctx || s.ctx, seen: s.seen.includes(e.id) ? s.seen : [...s.seen, e.id] };
+    });
+  }
+
+  goTo(tab, showId) {
+    this.setState({ side: false });
+    this.setState(s => {
+      const cur = s.hist[s.hi];
+      if (cur.tab === tab && cur.showId === showId) return null;
+      const hist = s.hist.slice(0, s.hi + 1).concat([{ tab, showId }]);
+      return { tab, showId, hist, hi: hist.length - 1, sf: 'all', sfq: '', searchOpen: false, gq: '' };
+    });
+  }
+
+  histMove(d) {
+    this.setState(s => {
+      const i = s.hi + d;
+      if (i < 0 || i >= s.hist.length) return null;
+      return { tab: s.hist[i].tab, showId: s.hist[i].showId, hi: i, sf: 'all', sfq: '', searchOpen: false, gq: '' };
+    });
+  }
+
+  // manual queue first, then keep going through the list the episode was started from
+  advance() {
+    this.setState(s => {
+      if (s.queue.length) {
+        const id = s.queue[0];
+        return { playId: id, playing: true, pos: startPos(EPM[id]), queue: s.queue.slice(1) };
+      }
+      const a = autoNext(s);
+      if (a.length) return { playId: a[0], playing: true, pos: startPos(EPM[a[0]]) };
+      return { playing: false, pos: dur(EPM[s.playId]) };
+    });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const subs = st.subs;
+    const theme = this.props.dark ? 'dark' : 'light';
+    const accentName = this.props.accent ?? 'blue';
+    const now = EPM[st.playId];
+    const nowShow = SHOW[now.s];
+    const nowDur = dur(now);
+
+    const ST = id => st.ovr[id] || EPM[id].status;
+    const PR = e => (st.ovr[e.id] ? (st.ovr[e.id] === 'done' ? 1 : 0) : e.prog);
+    const togglePlayed = id => () => this.setState(s => {
+      const done = (s.ovr[id] || EPM[id].status) === 'done';
+      return { ovr: { ...s.ovr, [id]: done ? 'new' : 'done' }, seen: s.seen.includes(id) ? s.seen : [...s.seen, id] };
+    });
+    const toggleFav = id => () => this.setState(s => ({ favs: s.favs.includes(id) ? s.favs.filter(x => x !== id) : [...s.favs, id] }));
+    const toggleDl = id => () => this.setState(s => ({ dls: s.dls.includes(id) ? s.dls.filter(x => x !== id) : [...s.dls, id] }));
+    const toggleQ = id => () => this.setState(s => {
+      if (s.playId === id) return null;
+      return { queue: s.queue.includes(id) ? s.queue.filter(x => x !== id) : [...s.queue, id] };
+    });
+    const toggleSub = id => () => this.setState(s => ({ subs: s.subs.includes(id) ? s.subs.filter(x => x !== id) : [...s.subs, id] }));
+    const openShow = id => () => this.goTo(SHOW[id].disc && !subs.includes(id) ? 'disc' : (st.tab === 'disc' ? 'disc' : 'subs'), id);
+
+    const rowOf = (e, o) => {
+      o = o || {};
+      const sh = SHOW[e.s];
+      const total = dur(e);
+      const isCur = st.playId === e.id;
+      const playing = isCur && st.playing;
+      const at = isCur ? st.pos : Math.round(PR(e) * total);
+      const part = isCur ? (st.pos > 0 && st.pos < total) : ST(e.id) === 'part';
+      const inQ = st.queue.includes(e.id) || isCur;
+      const isDl = st.dls.includes(e.id);
+      const isFav = st.favs.includes(e.id);
+      const closeMenu = () => this.setState({ menuId: null });
+      const qi = st.queue.indexOf(e.id);
+      const moveBy = d => () => this.setState(s => {
+        const q = s.queue.slice();
+        const i = q.indexOf(e.id);
+        const j = i + d;
+        if (i < 0 || j < 0 || j >= q.length) return { menuId: null };
+        [q[i], q[j]] = [q[j], q[i]];
+        return { queue: q, menuId: null };
+      });
+      const sn = SEASON[e.id];
+      let meta = (o.noShow ? '' : sh.title + ' · ') + (sn ? (o.noShow ? '' : 'S' + sn[0] + ' ') + 'E' + sn[1] + ' · ' : '') + 'Oct ' + e.day + ' · ' + human(total);
+      return {
+        id: e.id, title: e.title, meta, cover: sh.cover, ic: ICONS,
+        isNew: ST(e.id) === 'new' && !isCur && !st.seen.includes(e.id), isDone: ST(e.id) === 'done' && !isCur, hasBar: part, pct: Math.round((at / total) * 1000) / 10,
+        dl: st.dls.includes(e.id),
+        cls: (st.selId === e.id ? 'sel ' : '') + (ST(e.id) === 'done' && !isCur ? 'done' : ''),
+        selAria: 'Show details for ' + e.title,
+        select: () => this.setState(s => ({ selId: e.id, open: true, seen: s.seen.includes(e.id) ? s.seen : [...s.seen, e.id] })),
+        playCls: isCur ? 'cur' : '', playD: playing ? ICONS.pause : ICONS.play,
+        playAria: (playing ? 'Pause ' : 'Play ') + e.title,
+        play: () => this.playEp(e, o.ctx),
+        isQueue: !!o.queue, canQueue: !isCur,
+        menuOpen: st.menuId === e.id,
+        menuAria: 'More options for ' + e.title,
+        toggleMenu: () => this.setState(s => ({ menuId: s.menuId === e.id ? null : e.id })),
+        closeMenu,
+        qD: inQ ? ICONS.qin : ICONS.qadd, qLabel: inQ ? 'Remove From Queue' : 'Add to Queue',
+        menuQ: () => { toggleQ(e.id)(); closeMenu(); },
+        dlD: isDl ? ICONS.dlin : ICONS.dl, dlLabel: isDl ? 'Delete Download' : 'Download',
+        menuDl: () => { toggleDl(e.id)(); closeMenu(); },
+        favF: isFav ? 'f' : '', favLabel: isFav ? 'Remove From Favorites' : 'Add to Favorites',
+        menuFav: () => { toggleFav(e.id)(); closeMenu(); },
+        playedD: ST(e.id) === 'done' ? ICONS.circ : ICONS.playedc,
+        playedLabel: ST(e.id) === 'done' ? 'Mark as Unplayed' : 'Mark as Played',
+        menuPlayed: () => { togglePlayed(e.id)(); closeMenu(); },
+        menuDetails: () => this.setState(s => ({ selId: e.id, open: true, menuId: null, seen: s.seen.includes(e.id) ? s.seen : [...s.seen, e.id] })),
+        upOff: qi <= 0, downOff: qi < 0 || qi >= st.queue.length - 1,
+        moveUp: moveBy(-1), moveDown: moveBy(1)
+      };
+    };
+
+    // navigation
+    const newCount = EPS.filter(e => subs.includes(e.s) && ST(e.id) === 'new' && !st.seen.includes(e.id)).length;
+    // sidebar: titled sections, icon or cover per row, count suffix, built-in filter
+    const nq = '';
+    const showOn = !!st.showId && subs.includes(st.showId);
+    const mkItem = n => ({
+      label: n.label, d: n.d, cover: n.cover, isShow: !!n.cover, isIcon: !n.cover, fcls: '',
+      cls: n.on ? 'on' : '', cur: n.on ? 'page' : undefined,
+      hasCount: n.count > 0, count: n.count,
+      aria: n.label + (n.count > 0 ? ', ' + n.count + ' new' : ''),
+      go: n.go
+    });
+    const libDefs = [
+      { id:'subs', label:'Shows', d:ICONS.lib, count: subs.filter(id => EPS.some(e => e.s === id && ST(e.id) === 'new' && !st.seen.includes(e.id))).length },
+      { id:'eps', label:'New', d:ICONS.eps, count:newCount },
+      { id:'queue', label:'Queue', d:ICONS.queue, count:st.queue.length },
+      { id:'favs', label:'Favorites', d:ICONS.star, count:0 },
+      { id:'dl', label:'Downloaded', d:ICONS.dl, count:0 }
+    ].map(n => ({ ...n, on: n.id === 'subs' ? st.tab === 'subs' : (st.tab === n.id && !showOn), go: () => this.goTo(n.id, null) }));
+    const lastDay = id => Math.max(...EPS.filter(e => e.s === id).map(e => e.day));
+    const showDefs = subs.slice().sort((a, b) => lastDay(b) - lastDay(a)).map(id => ({
+      label: SHOW[id].title, cover: SHOW[id].cover,
+      count: EPS.filter(e => e.s === id && ST(e.id) === 'new' && !st.seen.includes(e.id)).length,
+      on: st.showId === id, go: () => this.goTo('subs', id)
+    }));
+    const match = n => !nq || n.label.toLowerCase().includes(nq);
+    const sections = [
+      { title: 'Library', items: libDefs.filter(match).map(mkItem) }
+    ].filter(sec => sec.items.length);
+    const add = mkItem({ label: 'Add', d: ICONS.plus, count: 0, on: st.tab === 'disc' && !showOn, go: () => this.goTo('disc', null) });
+
+    // views
+    const inShow = !!st.showId;
+    const gqq = st.searchOpen ? st.gq.trim().toLowerCase() : '';
+    const localShow = inShow && st.gScope === 'show';
+    const searching = !!gqq && !localShow;
+    const vSubs = st.tab === 'subs' && !inShow && !searching;
+    const vFeed = st.tab === 'eps' && !inShow && !searching;
+    const vQueueV = st.tab === 'queue' && !inShow && !searching;
+    const vFavs = st.tab === 'favs' && !inShow && !searching;
+    const vDl = st.tab === 'dl' && !inShow && !searching;
+    const vDisc = st.tab === 'disc' && !inShow && !searching;
+
+    const card = s => ({
+      id: s.id, title: s.title, author: s.author, cover: s.cover,
+      newCount: EPS.filter(e => e.s === s.id && ST(e.id) === 'new' && !st.seen.includes(e.id)).length,
+      hasNew: EPS.some(e => e.s === s.id && ST(e.id) === 'new' && !st.seen.includes(e.id)),
+      aria: s.title + ' by ' + s.author,
+      open: openShow(s.id), toggle: toggleSub(s.id)
+    });
+    const subShows = subs.map(id => SHOW[id]).map(card);
+
+    const feedUrl = st.q.trim();
+    const isUrl = /^https?:\/\/\S+$/i.test(feedUrl);
+    const q = st.q.trim().toLowerCase();
+    const discShows = SHOWS.filter(s => s.disc && !subs.includes(s.id))
+      .filter(s => st.cat === 'All' || s.cat === st.cat)
+      .filter(s => !q || (s.title + ' ' + s.author + ' ' + s.desc).toLowerCase().includes(q))
+      .map(card);
+    const catNames = Array.from(new Set(SHOWS.filter(s => s.disc).map(s => s.cat)));
+    const cats = catNames.map(c => { const cs = CAT_STYLE[c] || CAT_STYLE.Other; return { label: c, d: cs.d, bg: cs.bg, cls: st.cat === c ? 'on' : '', pressed: st.cat === c, pick: () => this.setState(s => ({ cat: s.cat === c ? 'All' : c })) }; });
+
+    const filters = [['all','All'],['new','Unplayed']].map(f => ({
+      label: f[1], cls: st.filter === f[0] ? 'on' : '', pressed: st.filter === f[0], pick: () => this.setState({ filter: f[0] })
+    }));
+
+    // lists
+    let groups = [];
+    const inShowV = inShow && !searching;
+    let foundShows = [];
+    if (searching) {
+      foundShows = subs.map(id => SHOW[id]).filter(s => (s.title + ' ' + s.author).toLowerCase().includes(gqq)).map(card);
+      const list = EPS.filter(e => subs.includes(e.s) && (e.title + ' ' + e.desc + ' ' + SHOW[e.s].title).toLowerCase().includes(gqq));
+      if (list.length) groups = [{ title: list.length + (list.length === 1 ? ' Episode' : ' Episodes'), rows: list.map(e => rowOf(e, { ctx: 'eps' })) }];
+    } else if (vFeed) {
+      let list = EPS.filter(e => subs.includes(e.s));
+      if (st.filter === 'new') list = list.filter(e => ST(e.id) !== 'done');
+      if (st.filter === 'dl') list = list.filter(e => st.dls.includes(e.id));
+      groups = GROUP_ORDER.map(g => ({ title: g, rows: list.filter(e => e.group === g).map(e => rowOf(e, { ctx: 'eps' })) })).filter(g => g.rows.length);
+    } else if (vQueueV) {
+      const up = st.queue.map(id => EPM[id]);
+      groups = [{ title: 'Now Playing', rows: [rowOf(now, { queue: false })] }];
+      if (up.length) {
+        const total = up.reduce((a, e) => a + dur(e), 0);
+        groups.push({ title: 'Next in Queue · ' + up.length + (up.length === 1 ? ' Episode' : ' Episodes') + ' · ' + human(total), rows: up.map(e => rowOf(e, { queue: true })) });
+      }
+      const auto = autoNext(st).slice(0, 10).map(id => EPM[id]);
+      if (auto.length) groups.push({ title: 'Next from ' + ctxName(st.ctx), rows: auto.map(e => rowOf(e)) });
+    } else if (vDl) {
+      const list = EPS.filter(e => st.dls.includes(e.id));
+      if (list.length) {
+        const total = list.reduce((a, e) => a + dur(e), 0);
+        groups = [{ title: list.length + (list.length === 1 ? ' Episode' : ' Episodes') + ' · ' + human(total), rows: list.map(e => rowOf(e, { ctx: 'dl' })) }];
+      }
+    } else if (vFavs) {
+      const list = EPS.filter(e => st.favs.includes(e.id));
+      groups = list.length ? [{ title: list.length + (list.length === 1 ? ' Favorite' : ' Favorites'), rows: list.map(e => rowOf(e, { ctx: 'favs' })) }] : [];
+    } else if (inShowV) {
+      let list = EPS.filter(e => e.s === st.showId);
+      if ((st.sfm[st.showId] || 'all') === 'new') list = list.filter(e => ST(e.id) !== 'done');
+      if (st.sf === 'dl') list = list.filter(e => st.dls.includes(e.id));
+      const fq = localShow ? gqq : '';
+      if (fq) list = list.filter(e => (e.title + ' ' + e.desc).toLowerCase().includes(fq));
+      if (st.sasc) list = list.slice().reverse();
+      if (list.length) {
+        const mk = e => rowOf(e, { noShow: true, ctx: st.showId });
+        const seasoned = EPS.filter(e => e.s === st.showId).every(e => SEASON[e.id]);
+        if (seasoned) {
+          const order = [];
+          const byS = {};
+          list.forEach(e => { const n = SEASON[e.id][0]; if (!byS[n]) { byS[n] = []; order.push(n); } byS[n].push(e); });
+          groups = order.map(n => {
+            const key = st.showId + ':' + n;
+            const open = !st.collapsed.includes(key);
+            const nm = (SEASON_NAMES[st.showId] || {})[n];
+            const c = byS[n].length;
+            return {
+              title: 'Season ' + n + (nm ? ' · ' + nm : '') + ' · ' + c + (c === 1 ? ' Episode' : ' Episodes'),
+              collapsible: true, plain: false, expanded: open, listCls: open ? '' : 'hide', rot: open ? '' : 'rot', chevD: ICONS.chev,
+              toggle: () => this.setState(s => ({ collapsed: s.collapsed.includes(key) ? s.collapsed.filter(x => x !== key) : [...s.collapsed, key] })),
+              rows: byS[n].map(mk)
+            };
+          });
+        } else {
+          groups = [{ title: list.length + (list.length === 1 ? ' Episode' : ' Episodes'), rows: list.map(mk) }];
+        }
+      }
+    }
+
+    let empty = null;
+    if (searching) {
+      if (!foundShows.length && !groups.length) empty = { icon: ICONS.search, title: 'No Results Found', desc: 'Try a different search term, or look for new podcasts online', hasAction: true };
+    } else if (inShowV && !groups.length) empty = gqq ? { icon: ICONS.search, title: 'No Episodes Found', desc: 'Try a different search term' } : { icon: ICONS.playedc, title: 'No Unplayed Episodes', desc: 'You are all caught up' };
+    else if (vDl && !groups.length) empty = { icon: ICONS.dl, title: 'No Downloads', desc: 'Download an episode to listen offline' };
+    else if (vFavs && !groups.length) empty = { icon: ICONS.star, title: 'No Favorites', desc: 'Mark an episode as a favorite to find it here' };
+    else if (vFeed && !groups.length) empty = st.filter === 'new' ? { icon: ICONS.playedc, title: 'No Unplayed Episodes', desc: 'You are all caught up' } : { icon: ICONS.eps, title: 'No Episodes', desc: 'Subscribe to a podcast to see its episodes here' };
+    else if (vDisc && discShows.length === 0 && !isUrl) empty = { icon: ICONS.disc, title: 'No Podcasts Found', desc: 'Try a different search, or paste an RSS feed URL' };
+
+    groups = groups.map(g => (g.collapsible ? g : { ...g, collapsible: false, plain: true, expanded: true, listCls: '' }));
+
+    // show detail
+    const sh = SHOW[st.showId || 's1'];
+    const shSub = subs.includes(sh.id);
+    const latest = EPS.find(e => e.s === sh.id);
+    const show = {
+      title: sh.title, author: sh.author, cat: sh.cat, cover: sh.cover, desc: sh.desc,
+      subLabel: shSub ? 'Unsubscribe' : 'Subscribe',
+      subD: shSub ? ICONS.check : ICONS.plus,
+      subF: '',
+      subCls: shSub ? 'def' : 'sug',
+      latestCls: shSub ? 'sug' : 'def',
+      toggle: toggleSub(sh.id),
+      playLatest: () => latest && this.playEp(latest, sh.id)
+    };
+
+    // episode details
+    const se = EPM[st.selId];
+    const sShow = SHOW[se.s];
+    const sTotal = dur(se);
+    const sIsCur = st.playId === se.id;
+    const sPlaying = sIsCur && st.playing;
+    const sAt = sIsCur ? st.pos : Math.round(PR(se) * sTotal);
+    const sPart = sIsCur ? (st.pos > 0 && st.pos < sTotal) : ST(se.id) === 'part';
+    const sInQ = st.queue.includes(se.id) || sIsCur;
+    const isFav = st.favs.includes(se.id);
+    const isDl = st.dls.includes(se.id);
+    let sMeta = (SEASON[se.id] ? 'Season ' + SEASON[se.id][0] + ', Episode ' + SEASON[se.id][1] + ' · ' : '') + 'Oct ' + se.day + ' · ' + human(sTotal);
+    if (!sPart && ST(se.id) === 'done' && !sIsCur) sMeta += ' · Played';
+    const chap = CHAPTERS[se.id] || [];
+    let curIdx = -1;
+    if (sIsCur) chap.forEach((c, i) => { if (c[0] <= st.pos) curIdx = i; });
+    const sel = {
+      title: se.title, showTitle: sShow.title, cover: sShow.cover, desc: se.desc, meta: sMeta,
+      openShow: openShow(se.s),
+      playLabel: sPlaying ? 'Pause' : (sPart || (sIsCur && st.pos > 0) ? 'Resume' : 'Play'),
+      playD: sPlaying ? ICONS.pause : ICONS.play,
+      play: () => this.playEp(se),
+      qD: sInQ ? ICONS.qin : ICONS.qadd, qCls: sInQ ? 'on' : '', qTitle: sInQ ? 'Remove From Queue' : 'Add to Queue',
+      qAria: sInQ ? 'Remove From Queue' : 'Add to Queue', toggleQ: toggleQ(se.id),
+      isFav, favF: isFav ? 'f' : '', favCls: isFav ? 'on' : '', favAria: isFav ? 'Remove From Favorites' : 'Add to Favorites',
+      toggleFav: toggleFav(se.id),
+      isDl, dlD: isDl ? ICONS.dlin : ICONS.dl, dlCls: isDl ? 'on' : '', dlAria: isDl ? 'Remove Download' : 'Download Episode',
+      toggleDl: toggleDl(se.id),
+      playedD: ST(se.id) === 'done' ? ICONS.circ : ICONS.playedc,
+      playedAria: ST(se.id) === 'done' ? 'Mark as Unplayed' : 'Mark as Played',
+      playedCls: ST(se.id) === 'done' ? 'on' : '',
+      togglePlayed: togglePlayed(se.id),
+      hasChapters: chap.length > 0,
+      chapters: chap.map((c, i) => ({
+        ts: fmt(c[0]), title: c[1], cls: i === curIdx ? 'cur' : '',
+        go: () => this.setState({ playId: se.id, playing: true, pos: c[0] })
+      }))
+    };
+
+    // player
+    const speedLabel = SPEEDS[st.si];
+    const playingNow = st.playing;
+
+    return {
+      ic: ICONS, theme, accentName,
+      sections, add, sbEmpty: sections.length === 0,
+      showMenu: st.showMenu, toggleShowMenu: () => this.setState(s => ({ showMenu: !s.showMenu })), closeShowMenu: () => this.setState({ showMenu: false }),
+      markAllPlayed: () => this.setState(s => { const o = { ...s.ovr }; EPS.filter(e => e.s === sh.id).forEach(e => { o[e.id] = 'done'; }); return { ovr: o, showMenu: false }; }),
+      downloadAll: () => this.setState(s => ({ dls: Array.from(new Set([...s.dls, ...EPS.filter(e => e.s === sh.id).map(e => e.id)])), showMenu: false })),
+      canSearch: !(st.tab === 'disc' && !inShow),
+      goAdd: () => this.goTo('disc', null),
+      colsCls: st.side ? 'sidepage' : '', showSide: () => this.setState({ side: true }),
+      mainMenu: st.mainMenu, toggleMainMenu: () => this.setState(s => ({ mainMenu: !s.mainMenu })), closeMainMenu: () => this.setState({ mainMenu: false }),
+      hasEmpty: !!empty, empty: empty ? { hasAction: false, ...empty } : { icon: '', title: '', desc: '', hasAction: false },
+      searchOnline: () => this.setState(s => ({ searchOpen: false, gq: '', q: s.gq.trim(), cat: 'All', side: false, tab: 'disc', showId: null, hist: s.hist.slice(0, s.hi + 1).concat([{ tab: 'disc', showId: null }]), hi: s.hi + 1, sf: 'all', sfq: '' })),
+      searchOpen: st.searchOpen, searchBtnCls: st.searchOpen ? 'on' : '',
+      toggleSearch: () => this.setState(s => ({ searchOpen: !s.searchOpen, gq: '' })),
+      gq: st.gq, setGq: e => this.setState({ gq: e.target.value }),
+      searchKey: e => { if (e.key === 'Escape') this.setState({ searchOpen: false, gq: '' }); },
+      searchPh: localShow ? 'Search This Show' : 'Search Shows and Episodes',
+      canScope: inShow,
+      scopeOpts: [['show', 'This Show'], ['all', 'Everywhere']].map(f => ({ label: f[1], cls: st.gScope === f[0] ? 'on' : '', pressed: st.gScope === f[0], pick: () => this.setState({ gScope: f[0] }) })),
+      vFound: searching, foundShows, hasFoundShows: foundShows.length > 0, foundEmpty: searching && foundShows.length === 0 && groups.length === 0,
+      inShow, vSubs, vFeed, vDisc, notDisc: !vDisc,
+      title: searching ? 'Search Results' : (inShow ? sh.title : TITLES[st.tab]),
+      showSearchBtn: vSubs || vFeed || vFavs,
+      vShow: inShowV,
+      goBack: () => this.histMove(-1), goForward: () => this.histMove(1),
+      canBack: st.hi > 0, backOff: st.hi <= 0, fwdOff: st.hi >= st.hist.length - 1,
+      q: st.q, setQ: e => this.setState({ q: e.target.value }),
+      sortD: st.sasc ? ICONS.sorta : ICONS.sortd, sortOpen: st.sortOpen,
+      toggleSortMenu: () => this.setState(s => ({ sortOpen: !s.sortOpen })),
+      closeSortMenu: () => this.setState({ sortOpen: false }),
+      sortNewest: !st.sasc, sortOldest: st.sasc,
+      pickNewest: () => this.setState({ sasc: false, sortOpen: false }),
+      pickOldest: () => this.setState({ sasc: true, sortOpen: false }),
+      showEmpty: inShowV && groups.length === 0,
+      showFilters: [['all', 'All'], ['new', 'Unplayed']].map(f => ({ label: f[1], cls: (st.sfm[st.showId] || 'all') === f[0] ? 'on' : '', pressed: (st.sfm[st.showId] || 'all') === f[0], pick: () => this.setState(s => ({ sfm: { ...s.sfm, [s.showId]: f[0] } })) })),
+      open: st.open,
+      paneCls: st.open ? '' : 'shut', paneBtnCls: st.open ? 'on' : '',
+      closeInMain: !st.open,
+      togglePane: () => this.setState(s => ({ open: !s.open })),
+      show, subShows, discShows, discEmpty: discShows.length === 0 && !isUrl,
+      isFeed: isUrl, notFeed: !isUrl, feedUrl, feedHost: feedUrl.replace(/^https?:\/\//i, '').split('/')[0],
+      feedBtnLabel: st.feedAdded === feedUrl ? 'Feed Added' : 'Add Feed', feedBtnCls: st.feedAdded === feedUrl ? 'def' : 'sug',
+      addFeed: () => this.setState({ feedAdded: feedUrl }), cats, filters, discHeading: st.cat === 'All' ? 'Popular This Week' : st.cat,
+      groups, hasGroups: groups.length > 0, vDlEmpty: vDl && groups.length === 0, sel,
+      now: { title: now.title, showTitle: nowShow.title, cover: nowShow.cover },
+      showNow: () => this.setState({ selId: st.playId, open: true }),
+      nowPlayLabel: playingNow ? 'Pause' : 'Play', nowPlayD: playingNow ? ICONS.pause : ICONS.play,
+      togglePlay: () => this.setState(s => ({ playing: !s.playing })),
+      back10: () => this.setState(s => ({ pos: Math.max(0, s.pos - 10) })),
+      fwd30: () => (st.pos + 30 >= nowDur ? this.advance() : this.setState(s => ({ pos: s.pos + 30 }))),
+      next: () => this.advance(),
+      nowIsFav: st.favs.includes(now.id), nowFavF: st.favs.includes(now.id) ? 'f' : '', nowFavCls: st.favs.includes(now.id) ? 'on' : '',
+      nowFavAria: st.favs.includes(now.id) ? 'Remove From Favorites' : 'Add to Favorites',
+      toggleNowFav: toggleFav(now.id),
+      dur: nowDur, pos: st.pos, pct: Math.round((st.pos / nowDur) * 1000) / 10,
+      posLabel: fmt(st.pos), leftLabel: '-' + fmt(nowDur - st.pos),
+      seekText: fmt(st.pos) + ' of ' + fmt(nowDur),
+      seek: e => { const v = Number(e.target.value); if (v >= nowDur) this.advance(); else this.setState({ pos: v }); },
+      speedLabel, cycleSpeed: () => this.setState(s => ({ si: (s.si + 1) % SPEEDS.length })),
+      openQueue: () => this.goTo('queue', null)
+    };
+  }
+}
+</script>
+
+
+</body></html>
