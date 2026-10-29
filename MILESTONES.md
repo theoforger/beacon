@@ -40,7 +40,7 @@ The checklist for building Beacon from `PLAN.md`. Tick an item only when it is m
 - [x] `/hig-review` skill written (`.claude/skills/hig-review/`) and `build-aux/screenshots.sh` for the four screenshots
 - [x] Headless screenshots verified at 1440×900 and 360×640, light and dark
 - [x] HIG gate for the M0 window: pass (see `docs/hig-reviews/m0.md`)
-- [ ] First commit
+- [x] First commit (`8ea4a3e`)
 
 ## Watch: GNOME 51
 
