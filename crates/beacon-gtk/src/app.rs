@@ -28,14 +28,18 @@ const DETAILS_WIDTH: f64 = 360.0;
 relm4::new_action_group!(WindowActionGroup, "win");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 relm4::new_stateless_action!(SearchAction, WindowActionGroup, "search");
+relm4::new_stateless_action!(BackAction, WindowActionGroup, "back");
 
 #[derive(Debug)]
 pub enum AppMsg {
     Navigate(Location),
     AddPodcast,
-    Back,
+    /// The content pane left a deeper page by itself (Back, swipe).
+    Popped,
     CloseDetails,
     ToggleSearch,
+    /// Alt+Left or the Back key, wherever the focus is.
+    GoBack,
 }
 
 pub struct App {
@@ -113,7 +117,7 @@ impl Component for App {
         let content = Content::builder()
             .launch(())
             .forward(sender.input_sender(), |output| match output {
-                ContentOutput::Back => AppMsg::Back,
+                ContentOutput::Popped => AppMsg::Popped,
                 ContentOutput::AddPodcast => AppMsg::AddPodcast,
             });
         let details = DetailsPane::builder()
@@ -162,6 +166,10 @@ impl Component for App {
         actions.add_action(RelmAction::<SearchAction>::new_stateless(move |_| {
             s.input(AppMsg::ToggleSearch);
         }));
+        let s = sender.clone();
+        actions.add_action(RelmAction::<BackAction>::new_stateless(move |_| {
+            s.input(AppMsg::GoBack);
+        }));
         actions.register_for_widget(&root);
 
         ComponentParts { model, widgets }
@@ -174,6 +182,7 @@ impl Component for App {
         _sender: ComponentSender<Self>,
         root: &Self::Root,
     ) {
+        tracing::debug!(?message, "app message");
         match message {
             AppMsg::Navigate(location) => {
                 if self.trail.go(location) {
@@ -188,13 +197,20 @@ impl Component for App {
                 }
                 widgets.split_view.set_show_content(true);
             }
-            AppMsg::Back => {
+            AppMsg::Popped => {
+                // Popping that the window asked for (switching sections)
+                // has already cleared the trail, so back() is a no-op then.
                 if self.trail.back() {
                     self.show_current(widgets, root);
                 }
             }
             AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
-            AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
+            AppMsg::GoBack => self.content.widgets().go_back(),
+            AppMsg::ToggleSearch => {
+                if self.trail.view().has_search() {
+                    self.content.widgets().toggle_search();
+                }
+            }
         }
     }
 }
@@ -207,8 +223,6 @@ impl App {
             .widgets()
             .capture_typing(view.has_search().then_some(window));
         self.content.emit(ContentInput::Show(view));
-        self.content
-            .emit(ContentInput::SetCanGoBack(self.trail.can_go_back()));
         self.sidebar
             .emit(SidebarInput::Select(self.trail.section()));
     }

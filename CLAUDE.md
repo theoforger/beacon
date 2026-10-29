@@ -31,7 +31,7 @@ flatpak run com.theoforger.Beacon
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest build-aux/com.theoforger.Beacon.json
 ```
 
-Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
+Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. To screenshot a state reached by clicks or keys, use `build-aux/headless/shot.sh SIZE SCHEME OUT key:F10 click:X,Y …` (it prints the frame's brightness; 0 means black). Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
 
 ## Architecture
 
@@ -100,7 +100,7 @@ Read the design's files from that link. Match how it looks.
 - Three columns: a left sidebar, a centre view, and an expandable right details pane. A persistent playback bar sits at the bottom across the full width.
 - The sidebar runs from the top edge of the window and has its own header: Add Podcast (+) and Refresh on the left, the app title in the centre, Main Menu on the right. It has no group title. (Add moved from the bottom of the sidebar to the header on 2026-10-29, following the HIG's header-bar guidance.)
 - Sidebar items: Shows, New, Queue, Favorites, Downloaded. Shows carries a count of podcasts that have new episodes. New shows the number of new episodes. Queue shows its length.
-- The centre header has Back on the left, the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Back follows the page hierarchy, not history (decided 2026-10-29): it appears only on a deeper page (such as a podcast page under Shows) and returns to its parent. Switching sections never adds a Back. Search is hidden on the Add page.
+- The centre header has Back on the left, the view title in the centre, then Search and the details-pane toggle on the right. There is no Forward button. Back follows the page hierarchy, not history (decided 2026-10-29): it appears only on a deeper page (such as a podcast page under Shows) and returns to its parent. Switching sections never adds a Back. Deeper pages slide in from the right over their parent, and go back with Back, a two-finger touchpad swipe, the mouse's back button, Alt+Left or the Back key. Search is hidden on the Add page.
 - The details pane also runs from the top edge. Its header says Episode Details. The window close button sits in the pane header while the pane is open, and in the centre header when it is closed.
 - On narrow windows the sidebar becomes a full page. Choosing an item pushes the content on top, and Back returns to the sidebar. The details pane becomes a full page with its own Back button, starts closed, and its header toggle is hidden.
 - The app opens on Shows. Dark mode and the accent colour follow the system.

@@ -1,94 +1,91 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The centre pane: header (Back, title, Search, details toggle), the search
-//! bar, and one page per view. Until the views land (M3 onwards) every page
-//! is its empty state.
+//! The centre pane, an `AdwNavigationView`. Its root page shows the current
+//! section: header (title, Search, details toggle), the search bar, and one
+//! page per section. Deeper pages slide in from the right on top of it and
+//! go back with the header's Back, a two-finger swipe, the mouse's back
+//! button or Alt+Left. Until the views land (M3 onwards) every page is its
+//! empty state.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
+use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
 
 use crate::navigation::{Location, Subpage, View};
 use crate::ui::labels;
 
+const ROOT_TAG: &str = "root";
+const ADD_TAG: &str = "add";
+
 #[derive(Debug)]
 pub enum ContentInput {
     Show(View),
-    /// Whether a deeper page is open, so Back leads to its parent.
-    SetCanGoBack(bool),
 }
 
 #[derive(Debug)]
 pub enum ContentOutput {
-    Back,
+    /// The user left a deeper page (Back, swipe, mouse back button).
+    Popped,
     AddPodcast,
 }
 
 pub struct Content {
-    view: View,
-    can_go_back: bool,
+    add_page: adw::NavigationPage,
 }
 
 #[relm4::component(pub)]
-impl SimpleComponent for Content {
+impl Component for Content {
     type Init = ();
     type Input = ContentInput;
     type Output = ContentOutput;
+    type CommandOutput = ();
 
     view! {
-        adw::ToolbarView {
-            add_top_bar = &adw::HeaderBar {
-                // In the narrow layout the header's own Back returns to the
-                // sidebar; on a deeper page ours replaces it.
-                #[watch]
-                set_show_back_button: !model.can_go_back,
-
-                pack_start = &gtk::Button {
-                    set_icon_name: "go-previous-symbolic",
-                    set_tooltip_text: Some(&gettext("Back")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Back"))],
-                    #[watch]
-                    set_visible: model.can_go_back,
-                    connect_clicked[sender] => move |_| {
-                        let _ = sender.output(ContentOutput::Back);
-                    },
-                },
-
-                #[name = "details_toggle"]
-                pack_end = &gtk::ToggleButton {
-                    set_icon_name: "sidebar-show-right-symbolic",
-                    set_tooltip_text: Some(&gettext("Episode Details")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Episode Details"))],
-                },
-
-                #[name = "search_toggle"]
-                pack_end = &gtk::ToggleButton {
-                    set_icon_name: "system-search-symbolic",
-                    set_tooltip_text: Some(&gettext("Search")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Search"))],
-                    #[watch]
-                    set_visible: model.view.has_search(),
-                },
+        #[name = "navigation"]
+        adw::NavigationView {
+            connect_popped[sender] => move |_, _| {
+                let _ = sender.output(ContentOutput::Popped);
             },
 
-            #[name = "search_bar"]
-            add_top_bar = &gtk::SearchBar {
+            #[name = "root_page"]
+            add = &adw::NavigationPage {
+                set_tag: Some(ROOT_TAG),
+                set_title: &labels::title(Location::Shows),
+
                 #[wrap(Some)]
-                set_child = &adw::Clamp {
-                    set_maximum_size: 400,
-                    // Results arrive with M6.
-                    #[name = "search_entry"]
-                    gtk::SearchEntry {
-                        set_hexpand: true,
-                        set_placeholder_text: Some(&gettext("Search")),
+                set_child = &adw::ToolbarView {
+                    add_top_bar = &adw::HeaderBar {
+                        #[name = "details_toggle"]
+                        pack_end = &details_toggle() -> gtk::ToggleButton {},
+
+                        #[name = "search_toggle"]
+                        pack_end = &gtk::ToggleButton {
+                            set_icon_name: "system-search-symbolic",
+                            set_tooltip_text: Some(&gettext("Search")),
+                            update_property: &[gtk::accessible::Property::Label(&gettext("Search"))],
+                        },
+                    },
+
+                    #[name = "search_bar"]
+                    add_top_bar = &gtk::SearchBar {
+                        #[wrap(Some)]
+                        set_child = &adw::Clamp {
+                            set_maximum_size: 400,
+                            // Results arrive with M6.
+                            #[name = "search_entry"]
+                            gtk::SearchEntry {
+                                set_hexpand: true,
+                                set_placeholder_text: Some(&gettext("Search")),
+                            },
+                        },
+                    },
+
+                    #[wrap(Some)]
+                    #[name = "stack"]
+                    set_content = &gtk::Stack {
+                        set_transition_type: gtk::StackTransitionType::Crossfade,
                     },
                 },
-            },
-
-            #[wrap(Some)]
-            #[name = "stack"]
-            set_content = &gtk::Stack {
-                set_transition_type: gtk::StackTransitionType::Crossfade,
             },
         }
     }
@@ -98,11 +95,25 @@ impl SimpleComponent for Content {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let add_toggle = details_toggle();
         let model = Content {
-            view: View::Section(Location::Shows),
-            can_go_back: false,
+            add_page: add_page(&add_toggle),
         };
         let widgets = view_output!();
+
+        // Every page has its own details toggle; they all follow the root
+        // page's, which the window keeps in step with the pane.
+        widgets
+            .details_toggle
+            .bind_property("active", &add_toggle, "active")
+            .bidirectional()
+            .sync_create()
+            .build();
+        widgets
+            .details_toggle
+            .bind_property("visible", &add_toggle, "visible")
+            .sync_create()
+            .build();
 
         widgets
             .search_toggle
@@ -112,39 +123,49 @@ impl SimpleComponent for Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
-        let views = Location::ALL
-            .map(View::Section)
-            .into_iter()
-            .chain([View::Subpage(Subpage::Add)]);
-        for view in views {
-            widgets
-                .stack
-                .add_named(&empty_state(view, &sender), Some(page_id(view)));
+        for location in Location::ALL {
+            widgets.stack.add_named(
+                &section_empty_state(location, &sender),
+                Some(section_id(location)),
+            );
         }
-        widgets.stack.set_visible_child_name(page_id(model.view));
 
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-        match message {
-            ContentInput::Show(view) => self.view = view,
-            ContentInput::SetCanGoBack(can) => self.can_go_back = can,
-        }
-    }
-
-    fn post_view() {
-        let id = page_id(model.view);
-        if stack.visible_child_name().as_deref() != Some(id) {
-            stack.set_visible_child_name(id);
-        }
-        if !model.view.has_search() {
-            search_bar.set_search_mode(false);
+    fn update_with_view(
+        &mut self,
+        widgets: &mut Self::Widgets,
+        message: Self::Input,
+        _sender: ComponentSender<Self>,
+        _root: &Self::Root,
+    ) {
+        let ContentInput::Show(view) = message;
+        let navigation = &widgets.navigation;
+        match view {
+            View::Section(location) => {
+                widgets.stack.set_visible_child_name(section_id(location));
+                widgets.root_page.set_title(&labels::title(location));
+                // Leaving a section's deeper pages for another section: no
+                // slide, the section simply changes.
+                if navigation.visible_page_tag().as_deref() != Some(ROOT_TAG) {
+                    navigation.replace(std::slice::from_ref(&widgets.root_page));
+                }
+            }
+            View::Subpage(Subpage::Add) => {
+                widgets.search_bar.set_search_mode(false);
+                if navigation.visible_page_tag().as_deref() != Some(ADD_TAG) {
+                    navigation.push(&self.add_page);
+                }
+            }
+            // Podcast pages arrive in M3.
+            View::Subpage(Subpage::Show(_)) => {}
         }
     }
 }
 
 impl ContentWidgets {
+    /// The root page's details toggle. The toggles on deeper pages follow it.
     pub fn details_toggle(&self) -> &gtk::ToggleButton {
         &self.details_toggle
     }
@@ -155,69 +176,86 @@ impl ContentWidgets {
         self.search_bar.set_key_capture_widget(window);
     }
 
+    /// Leave the deeper page, as its Back button does. The navigation view
+    /// reports the pop like any other.
+    pub fn go_back(&self) {
+        self.navigation.pop();
+    }
+
     /// Ctrl+F: open the search bar, or close it if it is open.
     pub fn toggle_search(&self) {
-        if self.search_toggle.is_visible() {
-            self.search_toggle
-                .set_active(!self.search_toggle.is_active());
-        }
+        self.search_toggle
+            .set_active(!self.search_toggle.is_active());
     }
 }
 
-/// Stack page names. Podcast pages arrive in M3 with their own widget.
-fn page_id(view: View) -> &'static str {
-    match view {
-        View::Section(Location::Shows) => "shows",
-        View::Section(Location::New) => "new",
-        View::Section(Location::Queue) => "queue",
-        View::Section(Location::Favorites) => "favorites",
-        View::Section(Location::Downloaded) => "downloaded",
-        View::Subpage(Subpage::Add) => "add",
-        View::Subpage(Subpage::Show(_)) => "show",
+fn details_toggle() -> gtk::ToggleButton {
+    let toggle = gtk::ToggleButton::builder()
+        .icon_name("sidebar-show-right-symbolic")
+        .tooltip_text(gettext("Episode Details"))
+        .build();
+    toggle.update_property(&[gtk::accessible::Property::Label(&gettext(
+        "Episode Details",
+    ))]);
+    toggle
+}
+
+fn section_id(location: Location) -> &'static str {
+    match location {
+        Location::Shows => "shows",
+        Location::New => "new",
+        Location::Queue => "queue",
+        Location::Favorites => "favorites",
+        Location::Downloaded => "downloaded",
     }
 }
 
-fn empty_state(view: View, sender: &ComponentSender<Content>) -> adw::StatusPage {
-    let (title, description) = match view {
-        View::Section(Location::Shows) => (
+/// The Add page. Its header gets Back from the navigation view; the search
+/// field and results arrive in M6.
+fn add_page(details_toggle: &gtk::ToggleButton) -> adw::NavigationPage {
+    let header = adw::HeaderBar::new();
+    header.pack_end(details_toggle);
+    let toolbar = adw::ToolbarView::new();
+    toolbar.add_top_bar(&header);
+    toolbar.set_content(Some(&empty_state_page(
+        "system-search-symbolic",
+        gettext("Search for Podcasts"),
+        gettext("Find a show by name, or paste the address of its feed"),
+    )));
+
+    adw::NavigationPage::builder()
+        .tag(ADD_TAG)
+        .title(labels::view_title(View::Subpage(Subpage::Add)))
+        .child(&toolbar)
+        .build()
+}
+
+fn section_empty_state(location: Location, sender: &ComponentSender<Content>) -> adw::StatusPage {
+    let (title, description) = match location {
+        Location::Shows => (
             gettext("No Podcasts"),
             gettext("Add a podcast by searching for it or pasting its feed address"),
         ),
-        View::Section(Location::New) => (
+        Location::New => (
             gettext("No Episodes"),
             gettext("Subscribe to a podcast to see its episodes here"),
         ),
-        View::Section(Location::Queue) => (
+        Location::Queue => (
             gettext("Queue Is Empty"),
             gettext("Add episodes to the queue to play them next"),
         ),
-        View::Section(Location::Favorites) => (
+        Location::Favorites => (
             gettext("No Favorites"),
             gettext("Mark an episode as a favorite to find it here"),
         ),
-        View::Section(Location::Downloaded) => (
+        Location::Downloaded => (
             gettext("No Downloads"),
             gettext("Download an episode to listen offline"),
         ),
-        View::Subpage(Subpage::Add) => (
-            gettext("Search for Podcasts"),
-            gettext("Find a show by name, or paste the address of its feed"),
-        ),
-        View::Subpage(Subpage::Show(_)) => {
-            unreachable!("podcast pages have their own widget, not an empty state")
-        }
     };
-    let icon = match view {
-        View::Section(location) => labels::icon(location),
-        View::Subpage(_) => "system-search-symbolic",
-    };
-    let page = adw::StatusPage::builder()
-        .icon_name(icon)
-        .title(title)
-        .description(description)
-        .build();
+    let page = empty_state_page(labels::icon(location), title, description);
 
-    if view == View::Section(Location::Shows) {
+    if location == Location::Shows {
         let add = gtk::Button::builder()
             .label(gettext("Add Podcast"))
             .halign(gtk::Align::Center)
@@ -230,4 +268,12 @@ fn empty_state(view: View, sender: &ComponentSender<Content>) -> adw::StatusPage
         page.set_child(Some(&add));
     }
     page
+}
+
+fn empty_state_page(icon: &str, title: String, description: String) -> adw::StatusPage {
+    adw::StatusPage::builder()
+        .icon_name(icon)
+        .title(title)
+        .description(description)
+        .build()
 }

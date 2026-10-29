@@ -61,6 +61,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 - **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Approved by the user on 2026-10-28.
 - **Seasons come only from tags** (M1, per the requirements). Some shows put seasons only in titles ("Season 6, Ep 11 - …" in Hello From The Magic Tavern); those do not group into seasons.
 - **Back follows the page hierarchy** (M2, decided by the user 2026-10-29). Back appears only on a page deeper than a section, such as a podcast page under Shows, and returns to its parent; switching sections never adds one. On a deeper page in the narrow layout, this Back replaces the header's own Back to the sidebar.
+- **Deeper pages are an `AdwNavigationView`** (M2, asked by the user 2026-10-29). The content pane is a navigation view: the section's page is its root, and deeper pages are pushed on top, sliding in from the right. The view supplies the header Back, the two-finger touchpad swipe, the mouse's back button and Alt+Left when focus is inside it; `win.back` (Alt+Left, Back key) covers focus elsewhere. Pops by any route reach `App` through the view's `popped` signal, which keeps the trail in step.
 - **Episode identity** (M1). The feed's GUID; without one, the enclosure URL, then the item link, then the title. Refreshes match on this, so it must not change between fetches.
 
 ## Custom widgets and icons

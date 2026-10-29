@@ -19,6 +19,12 @@
         </child>
         <child>
           <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Go Back</property>
+            <property name="action-name">win.back</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
             <property name="title" translatable="yes">Close Window</property>
             <property name="action-name">window.close</property>
           </object>

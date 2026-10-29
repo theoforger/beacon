@@ -82,7 +82,9 @@ impl Trail {
         }
     }
 
-    /// Back is offered only on a deeper page.
+    /// Back is offered only on a deeper page. The navigation view's header
+    /// shows it, so only the tests ask.
+    #[cfg(test)]
     pub fn can_go_back(&self) -> bool {
         !self.pages.is_empty()
     }
