@@ -68,7 +68,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Refresh: insert only new episodes (stable GUID matching, with a fallback for feeds without GUIDs), update show metadata
 - [x] Cover cache on disk, keyed by URL
 - [x] Fixture feeds in `tests/fixtures/`: with seasons, without seasons, with chapters, malformed, plus no GUIDs and a web page (hand-written, fictional shows)
-- [ ] Decide which real podcasts provide the fixtures (open question 3)
+- [x] Real-podcast fixtures: trimmed excerpts of Hello From The Magic Tavern and Hey Riddle Riddle (chosen 2026-10-28). Neither has season tags or chapters, so the hand-written fixtures cover those
 - [x] Local HTTP test server serving the fixtures (`httpmock`)
 - [x] Flatpak: add `--share=network` and record it in `docs/decisions.md`
 - [x] `docs/decisions.md` entries for every new crate
@@ -82,7 +82,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [x] HIG: no UI changes in M1; pending list still empty
 - [x] Accessibility and translation: no user-visible strings or UI in M1 (`beacon-core` has none by design)
-- [x] Tests: 15 unit tests, 9 integration tests (`crates/beacon-core/tests/library.rs`)
+- [x] Tests: 15 unit tests, 9 integration tests (`tests/library.rs`), 3 real-feed tests (`tests/real_feeds.rs`), plus an opt-in check of full downloaded feeds
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 

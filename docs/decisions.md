@@ -59,6 +59,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 ## Behaviour
 
 - **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Unconfirmed product decision; easy to change in `Library::subscribe`.
+- **Seasons come only from tags** (M1, per the requirements). Some shows put seasons only in titles ("Season 6, Ep 11 - …" in Hello From The Magic Tavern); those do not group into seasons.
 - **Episode identity** (M1). The feed's GUID; without one, the enclosure URL, then the item link, then the title. Refreshes match on this, so it must not change between fetches.
 
 ## Custom widgets

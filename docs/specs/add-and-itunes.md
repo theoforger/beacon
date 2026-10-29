@@ -15,6 +15,8 @@ From the Search API page, as read during the design:
 
 Genre browsing, top charts, and the `feedUrl` field that podcast results carry. Many apps rely on `feedUrl`, so confirm it in a live response before building on it. Subscribing then stays plain RSS.
 
+**Checked 2026-10-28:** `https://itunes.apple.com/search?term=hey+riddle+riddle&media=podcast&entity=podcast&country=US` returned `feedUrl` (`https://rss.art19.com/hey-riddle-riddle`), as did the same search for Hello From The Magic Tavern. Still to check before M6: the terms and the rate limit.
+
 ## Design consequences
 
 1. **Search first.** Add is a search field (which still accepts a pasted RSS URL) plus a results list. With no query it shows a status page, "Search for Podcasts", instead of Popular This Week.
