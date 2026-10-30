@@ -57,11 +57,18 @@ fn texture_from(pixbuf: &gdk_pixbuf::Pixbuf) -> gdk::Texture {
     .upcast()
 }
 
+/// Pixels to decode a cover drawn at `size` logical pixels. A widget not yet
+/// on screen reports scale 1, so decode at least 2x to stay sharp on HiDPI
+/// screens.
+fn decode_size(size: i32, scale: i32) -> i32 {
+    size * scale.max(2)
+}
+
 /// A square cover with a placeholder icon when there is no art.
 #[derive(Debug, Clone)]
 pub struct Cover {
     root: gtk::Overlay,
-    picture: gtk::Picture,
+    image: gtk::Image,
     placeholder: gtk::Image,
     size: i32,
     /// The cover this widget should show now; a decode that finishes after
@@ -71,18 +78,16 @@ pub struct Cover {
 
 impl Cover {
     pub fn new(size: i32) -> Self {
-        let picture = gtk::Picture::builder()
-            .content_fit(gtk::ContentFit::Cover)
-            .width_request(size)
-            .height_request(size)
-            .build();
+        // A GtkImage draws its paintable at `pixel_size` whatever the
+        // paintable's own size, so a 2x texture never doubles the layout.
+        let image = gtk::Image::builder().pixel_size(size).build();
         let placeholder = gtk::Image::builder()
             .icon_name("com.theoforger.Beacon-symbolic")
             .pixel_size(size / 3)
             .css_classes(["dim-label"])
             .build();
         let root = gtk::Overlay::builder()
-            .child(&picture)
+            .child(&image)
             .overflow(gtk::Overflow::Hidden)
             .width_request(size)
             .height_request(size)
@@ -95,7 +100,7 @@ impl Cover {
         root.set_accessible_role(gtk::AccessibleRole::Presentation);
         Self {
             root,
-            picture,
+            image,
             placeholder,
             size,
             wanted: Rc::default(),
@@ -107,8 +112,12 @@ impl Cover {
     }
 
     pub fn set(&self, path: Option<&Path>) {
-        let scale = self.root.scale_factor().max(1);
-        let key = path.map(|p| (p.to_owned(), self.size * scale));
+        let key = path.map(|p| {
+            (
+                p.to_owned(),
+                decode_size(self.size, self.root.scale_factor()),
+            )
+        });
         if *self.wanted.borrow() == key {
             return;
         }
@@ -133,12 +142,26 @@ impl Cover {
     }
 
     fn show(&self, texture: Option<&gdk::Texture>) {
-        self.picture.set_paintable(texture);
+        self.image.set_paintable(texture);
         self.placeholder.set_visible(texture.is_none());
         self.root.set_css_classes(if texture.is_some() {
             &["cover"]
         } else {
             &["cover", "cover-placeholder"]
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn covers_decode_sharp_enough_before_the_scale_is_known() {
+        // Unrealized widgets report scale 1; HiDPI screens need at least 2x.
+        assert_eq!(decode_size(48, 1), 96);
+        assert_eq!(decode_size(48, 2), 96);
+        assert_eq!(decode_size(48, 3), 144);
+        assert_eq!(decode_size(160, 0), 320);
     }
 }

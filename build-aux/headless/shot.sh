@@ -11,6 +11,8 @@
 #
 # Config, data and cache live in a temporary folder, so the user's library is
 # never touched. Set BEACON_STATE_DIR to keep them across several shots.
+# Set BEACON_SCALE=2 for a HiDPI screen: SIZE stays the window's size in
+# logical pixels, and the capture is SIZE times the scale.
 #
 # Runs on a private session bus so an open Beacon is never activated instead
 # (which leaves a black capture). Build first with `cargo build`.
@@ -21,6 +23,9 @@ size=$1 scheme=$2 out=$3
 shift 3
 width=${size%x*}
 height=${size#*x}
+scale=${BEACON_SCALE:-1}
+screen="$((width * scale))x$((height * scale))"
+export GDK_SCALE="$scale"
 
 steps=""
 for step in "$@"; do
@@ -48,7 +53,7 @@ export XDG_CONFIG_HOME="$state/config" XDG_DATA_HOME="$state/data" XDG_CACHE_HOM
 export GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1
 export ADW_DEBUG_COLOR_SCHEME="prefer-$scheme"
 
-dbus-run-session -- xvfb-run -a -s "-screen 0 ${size}x24" sh -c "
+dbus-run-session -- xvfb-run -a -s "-screen 0 ${screen}x24" sh -c "
     gsettings set com.theoforger.Beacon window-width $width
     gsettings set com.theoforger.Beacon window-height $height
     '$root/target/debug/beacon' >/dev/null 2>&1 &
