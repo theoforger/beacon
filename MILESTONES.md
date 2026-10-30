@@ -130,11 +130,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] New: episodes grouped by recency (Today, Yesterday, weekday, Last week, Earlier in the month), with an All / Unplayed `AdwToggleGroup` that is remembered in GSettings
 - [x] Podcast page: a hero (cover, category, title, author, description), Unsubscribe (neutral, confirmed), and a More Options menu (Mark All as Played, Download All Episodes disabled until M5, Copy Feed Address). The accent Subscribe arrives with show previews in M6
 - [x] Podcast page: a filter button with one menu (sort; all, played, unplayed; all, downloaded, not downloaded), remembered per show, and collapsible seasons when the feed has season tags (changed after review, 2026-10-29)
-- [x] Episode rows look like boxed lists, one per group (after review)
+- [x] Episode lists are `boxed-list` `GtkListBox`es, one per group, as in GNOME Podcasts, filled lazily (after review)
 - [x] Library work never blocks the UI: reads and writes run in the background and reload only what changed; covers decode asynchronously (after review)
 - [x] Episode row widget: cover, a two-line title, a subtitle (show, season and episode, date, length), the blue unplayed dot, the grey played check, a progress bar, and a flat play button with hover feedback
 - [x] Row menu: Show Details, queue, download, favourite and played toggles
-- [x] Episode lists use `GtkListView` over `gio::ListStore` (a `GtkTreeListModel` on podcast pages)
+- [x] Episode lists: `GtkListBox` as in GNOME Podcasts (the plan's `GtkListView` replaced at the user's request, 2026-10-30)
 - [x] Unplayed dot cleared on viewing the details, and not restored by Mark as Unplayed
 - [x] Marking played or unplayed never touches the queue, including Mark All as Played
 - [x] Carried from M2: sidebar count badges fed from the library (Shows with new episodes, new episodes, queue length), and the details pane opening as a narrow full page with its own Back, checked in screenshots

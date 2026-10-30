@@ -56,6 +56,10 @@ One maintained crate per job. Before adding each one, check it and move it to th
   - `--share=network` (M1): fetching feeds and covers.
   - `--socket=pulseaudio` comes with M4 (playback).
 
+## Reference app
+
+- **GNOME Podcasts** (https://gitlab.gnome.org/World/podcasts, GPL-3.0-or-later, read at commit 6717fe2 on 2026-10-30) is the model for UI elements it shares with Beacon (`CLAUDE.md` rule 13). Already aligned: the Shows grid (`GtkGridView`), episode rows (`GtkListBoxRow` with a `GtkImage` cover), episode lists (`boxed-list` `GtkListBox`, lazy loading), the filter menu. Not yet compared: its episode details, player, queue and discovery views, for M4 to M6.
+
 ## Behaviour
 
 - **Seen state on subscribe** (M1). A new subscription marks every episode seen except the newest, so subscribing to a show with 300 episodes brings one blue dot, not 300. Episodes found by later refreshes start unseen. Approved by the user on 2026-10-28.
@@ -76,8 +80,8 @@ One maintained crate per job. Before adding each one, check it and move it to th
 
 ## Custom widgets and icons
 
-- **Boxed-list look for list views** (M3, asked by the user 2026-10-29). The HIG keeps boxed lists (`GtkListBox`) to "relatively small static lists", and a feed can have hundreds of episodes, so episode lists stay `GtkListView`s and only look boxed: each row knows from its neighbours whether it starts or ends its group and gets `first` and `last` classes for the rounded ends (`data/style.css`, named colours only).
-- **`EpisodeRow`** (`ui/widgets/episode_row.rs`, M3), a `GtkBox` subclass holding its parts (cover, dot, title, check, subtitle, progress, play button, row menu). List rows are recycled, so each row must find its parts again when bound to another episode; a subclass does that safely, where attaching untyped data to a widget would need `unsafe`.
+- **Episode lists are `GtkListBox`es, as in GNOME Podcasts** (M3, decided by the user 2026-10-30). The HIG keeps boxed lists to "relatively small static lists" and suggests list views for large ones; the user chose `GtkListBox` anyway, following GNOME Podcasts: one `boxed-list` per recency group in New and per season on a podcast page (seasons fold in a `GtkExpander`). To keep long feeds from blocking the UI, rows are added in idle chunks of 25 (GNOME Podcasts' `lazy_load`), a newer fill cancels an older one, and a list whose episodes are unchanged is updated in place. Replaced a list view styled to look boxed.
+- **`EpisodeRow`** (`ui/widgets/episode_row.rs`, M3), a `GtkListBoxRow` subclass holding its parts (cover, dot, title, check, subtitle, progress, play button, row menu), like GNOME Podcasts' `PdEpisode`. Keeping the parts lets a row be updated in place when only the episode's state changes.
 - **Cover thumbnails** (`ui/covers.rs`, M3). Covers can be thousands of pixels wide, so each is decoded once with `gdk-pixbuf` at the size it is drawn and kept, then wrapped in a `GdkMemoryTexture` (`gdk::Texture::for_pixbuf` is deprecated since GTK 4.20). This reads image files the core has cached, which is rendering rather than the I/O rule 2 keeps out of the UI. Covers are drawn with `GtkImage` at a fixed pixel size, not `GtkPicture`: a picture takes its natural size from the texture's pixel count, so a 2x texture doubled a cover's size on HiDPI screens (found by the user on one Hello From The Magic Tavern episode, 2026-10-30). Covers decode at least 2x, since a widget not yet on screen reports scale 1.
 
 - **Queue icon** (`data/icons/scalable/actions/queue-symbolic.svg`, M2). The Adwaita icon theme in GNOME 50 has no queue or playlist icon; this one follows the mockup (three lines and a play triangle).

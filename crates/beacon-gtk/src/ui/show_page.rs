@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! A podcast page, pushed over the current section. One `GtkListView` over a
-//! `GtkTreeListModel`: the hero is the first row, seasons are collapsible
-//! rows with their episodes beneath, and a show without season tags lists
-//! its episodes directly. Long feeds stay fast because only visible rows get
-//! widgets.
+//! A podcast page, pushed over the current section, built like GNOME
+//! Podcasts' show page: the hero, then the episodes in a `boxed-list`
+//! `GtkListBox`. When the feed has season tags, each season is its own list
+//! inside a `GtkExpander`, so it can be folded; the page remembers which
+//! seasons are folded. Rows are added lazily and updated in place.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::rc::Rc;
 
-use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowId, ShowPrefs};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gdk, gio, glib, pango};
 use relm4::{Component, ComponentParts, ComponentSender, adw};
 
-use crate::ui::episode_list::{boxed, row_of};
+use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
 use crate::ui::format;
-use crate::ui::models::{EpisodeItem, RowAction, SeasonItems, ShowPageData};
+use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
 use crate::ui::show_hero::ShowHero;
 use crate::ui::widgets::episode_row::OnRowAction;
@@ -43,20 +44,24 @@ pub enum ShowPageOutput {
     FeedAddressCopied,
 }
 
-enum Entry {
-    Hero,
-    Season(SeasonItems),
-    Episode(Box<EpisodeItem>),
-    /// Shown under the hero when the filters leave nothing.
-    Empty(String),
-}
+/// A season, by number; `None` for the episodes without a season tag.
+type SeasonKey = Option<u32>;
+
+/// What a page lists: its show and each season's episodes.
+type Shape = (ShowId, Vec<(SeasonKey, Vec<EpisodeId>)>);
 
 pub struct ShowPage {
     data: Option<ShowPageData>,
-    hero: Rc<ShowHero>,
-    entries: gio::ListStore,
+    hero: ShowHero,
     /// The filter menu's radio groups, by action name.
     choices: Vec<gio::SimpleAction>,
+    on_action: OnRowAction,
+    fill: LazyFill,
+    /// What the lists show now, to update in place when only states change.
+    shown: Option<Shape>,
+    lists: Vec<gtk::ListBox>,
+    /// Folded seasons, kept while the app runs.
+    folded: Rc<RefCell<HashSet<(ShowId, SeasonKey)>>>,
 }
 
 #[relm4::component(pub)]
@@ -72,7 +77,6 @@ impl Component for ShowPage {
             set_tag: Some(SHOW_TAG),
 
             #[wrap(Some)]
-            #[name = "toolbar"]
             set_child = &adw::ToolbarView {
                 #[name = "header"]
                 add_top_bar = &adw::HeaderBar {
@@ -83,16 +87,23 @@ impl Component for ShowPage {
                 set_content = &gtk::ScrolledWindow {
                     set_hscrollbar_policy: gtk::PolicyType::Never,
 
-                    #[wrap(Some)]
-                    set_child = &adw::ClampScrollable {
+                    adw::Clamp {
                         set_maximum_size: 900,
 
-                        #[wrap(Some)]
-                        #[name = "list"]
-                        set_child = &gtk::ListView {
-                            set_single_click_activate: true,
-                            add_css_class: "flat-view",
-                            update_property: &[gtk::accessible::Property::Label(&gettext("Episodes"))],
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                            set_margin_bottom: 24,
+                            set_margin_start: 12,
+                            set_margin_end: 12,
+
+                            append: model.hero.widget(),
+
+                            #[name = "episodes"]
+                            gtk::Box {
+                                set_orientation: gtk::Orientation::Vertical,
+                                set_spacing: 6,
+                                set_margin_top: 12,
+                            },
                         },
                     },
                 },
@@ -105,11 +116,13 @@ impl Component for ShowPage {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let hero = Rc::new(ShowHero::new());
+        let s = sender.clone();
+        let on_action: OnRowAction = Rc::new(move |item, action| {
+            let _ = s.output(ShowPageOutput::Action(Box::new(item.clone()), action));
+        });
         let model = ShowPage {
             data: None,
-            hero: hero.clone(),
-            entries: gio::ListStore::new::<glib::BoxedAnyObject>(),
+            hero: ShowHero::new(),
             choices: [
                 page_filters::SORT,
                 page_filters::PLAYED,
@@ -124,6 +137,11 @@ impl Component for ShowPage {
                 )
             })
             .collect(),
+            on_action,
+            fill: LazyFill::default(),
+            shown: None,
+            lists: Vec::new(),
+            folded: Rc::default(),
         };
         let widgets = view_output!();
 
@@ -164,48 +182,10 @@ impl Component for ShowPage {
         actions.add_action(&copy);
         root.insert_action_group("show", Some(&actions));
 
-        let s = sender.clone();
-        hero.unsubscribe
-            .connect_clicked(move |_| s.input(ShowPageInput::Unsubscribe));
-
-        let tree = gtk::TreeListModel::new(model.entries.clone(), false, true, |object| {
-            let boxed = object.downcast_ref::<glib::BoxedAnyObject>()?;
-            let Entry::Season(season) = &*boxed.borrow::<Entry>() else {
-                return None;
-            };
-            let children = gio::ListStore::new::<glib::BoxedAnyObject>();
-            for episode in &season.episodes {
-                children.append(&glib::BoxedAnyObject::new(Entry::Episode(Box::new(
-                    episode.clone(),
-                ))));
-            }
-            Some(children.upcast())
-        });
-        widgets
-            .list
-            .set_model(Some(&gtk::NoSelection::new(Some(tree.clone()))));
-
-        let on_action: OnRowAction = Rc::new(move |item, action| {
-            let _ = sender.output(ShowPageOutput::Action(Box::new(item.clone()), action));
-        });
-        widgets.list.set_factory(Some(&factory(
-            hero.clone(),
-            on_action.clone(),
-            tree.upcast(),
-        )));
-        widgets.list.connect_activate(move |list, position| {
-            let item = list.model().and_then(|m| m.item(position));
-            let episode = item
-                .as_ref()
-                .and_then(boxed)
-                .and_then(|b| match &*b.borrow::<Entry>() {
-                    Entry::Episode(episode) => Some((**episode).clone()),
-                    _ => None,
-                });
-            if let Some(episode) = episode {
-                on_action(&episode, RowAction::ShowDetails);
-            }
-        });
+        model
+            .hero
+            .unsubscribe
+            .connect_clicked(move |_| sender.input(ShowPageInput::Unsubscribe));
 
         ComponentParts { model, widgets }
     }
@@ -227,8 +207,7 @@ impl Component for ShowPage {
                 {
                     choice.set_state(&value.to_variant());
                 }
-                self.entries
-                    .splice(0, self.entries.n_items(), &entries(&data));
+                self.show_episodes(&widgets.episodes, &data);
                 self.data = Some(*data);
             }
             ShowPageInput::Choose(action, value) => {
@@ -265,121 +244,107 @@ impl ShowPage {
             let _ = sender.output(ShowPageOutput::PrefsChanged(data.show.id, prefs));
         }
     }
-}
 
-fn entries(data: &ShowPageData) -> Vec<glib::BoxedAnyObject> {
-    let mut entries = vec![Entry::Hero];
-    match &data.seasons {
-        Some(seasons) => entries.extend(seasons.iter().cloned().map(Entry::Season)),
-        None => entries.extend(
-            data.episodes
+    /// Show the page's episodes: update the rows in place when the same
+    /// episodes are listed, otherwise rebuild the lists and fill them lazily.
+    fn show_episodes(&mut self, container: &gtk::Box, data: &ShowPageData) {
+        let show = data.show.id;
+        let groups: Vec<(SeasonKey, Option<String>, &[EpisodeItem])> = match &data.seasons {
+            Some(seasons) => seasons
                 .iter()
-                .cloned()
-                .map(|e| Entry::Episode(Box::new(e))),
-        ),
+                .map(|s| {
+                    let key = s.season.as_ref().map(|s| s.number);
+                    let title = format::season_title(s.season.as_ref());
+                    (key, Some(title), s.episodes.as_slice())
+                })
+                .collect(),
+            None => vec![(None, None, data.episodes.as_slice())],
+        };
+        let shape: Vec<_> = groups
+            .iter()
+            .map(|(key, _, items)| (*key, ids(*items)))
+            .collect();
+        let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, _, items)| *items).collect();
+        if self.shown.as_ref() == Some(&(show, shape.clone())) && update_in_place(&self.lists, &all)
+        {
+            return;
+        }
+
+        self.fill.cancel();
+        while let Some(child) = container.first_child() {
+            container.remove(&child);
+        }
+        self.lists.clear();
+
+        let mut work = Vec::new();
+        if all.is_empty() {
+            container.append(&empty_label(&data.prefs));
+        }
+        for (key, title, items) in groups {
+            if items.is_empty() {
+                continue;
+            }
+            let list = new_list(&self.on_action);
+            match title {
+                Some(title) => container.append(&self.season(show, key, &title, &list)),
+                None => container.append(&list),
+            }
+            work.extend(items.iter().map(|item| (list.clone(), item.clone())));
+            self.lists.push(list);
+        }
+        self.shown = Some((show, shape));
+        self.fill.start(work, self.on_action.clone());
     }
-    let nothing = match &data.seasons {
-        Some(seasons) => seasons.is_empty(),
-        None => data.episodes.is_empty(),
-    };
-    if nothing {
-        let only_unplayed = data.prefs.played == EpisodeFilter::Unplayed
-            && data.prefs.downloaded == DownloadFilter::All;
-        entries.push(Entry::Empty(if only_unplayed {
-            gettext("No unplayed episodes: you are all caught up")
-        } else if data.prefs.is_filtered() {
-            gettext("No episodes match these filters")
-        } else {
-            gettext("This podcast has no episodes yet")
-        }));
+
+    /// A season: its title in a `GtkExpander`, unfolding to its list.
+    fn season(
+        &self,
+        show: ShowId,
+        key: SeasonKey,
+        title: &str,
+        list: &gtk::ListBox,
+    ) -> gtk::Expander {
+        let label = gtk::Label::builder()
+            .label(title)
+            .xalign(0.0)
+            .ellipsize(pango::EllipsizeMode::End)
+            .css_classes(["heading"])
+            .accessible_role(gtk::AccessibleRole::Heading)
+            .build();
+        let expander = gtk::Expander::builder()
+            .label_widget(&label)
+            .child(list)
+            .expanded(!self.folded.borrow().contains(&(show, key)))
+            .margin_top(12)
+            .build();
+        list.set_margin_top(6);
+        let folded = self.folded.clone();
+        expander.connect_expanded_notify(move |expander| {
+            let mut folded = folded.borrow_mut();
+            if expander.is_expanded() {
+                folded.remove(&(show, key));
+            } else {
+                folded.insert((show, key));
+            }
+        });
+        expander
     }
-    entries.into_iter().map(glib::BoxedAnyObject::new).collect()
 }
 
-fn factory(
-    hero: Rc<ShowHero>,
-    on_action: OnRowAction,
-    model: gio::ListModel,
-) -> gtk::SignalListItemFactory {
-    let factory = gtk::SignalListItemFactory::new();
-    // The one list item holding the hero, so a rebinding elsewhere can take
-    // it back first: a widget has only one parent.
-    let holder: Rc<RefCell<glib::WeakRef<gtk::ListItem>>> = Rc::default();
-
-    let hero_widget = hero.widget().clone();
-    let releasing = holder.clone();
-    factory.connect_unbind(move |_, item| {
-        let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-            return;
-        };
-        if item.child().as_ref() == Some(hero_widget.upcast_ref()) {
-            item.set_child(None::<&gtk::Widget>);
-            releasing.replace(glib::WeakRef::new());
-        }
-    });
-
-    factory.connect_bind(move |_, item| {
-        let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-            return;
-        };
-        let Some(object) = item.item() else {
-            return;
-        };
-        let Some(entry) = boxed(&object) else {
-            return;
-        };
-        item.set_activatable(false);
-        match &*entry.borrow::<Entry>() {
-            Entry::Hero => {
-                let widget = hero.widget();
-                if let Some(old) = holder.borrow().upgrade()
-                    && old != *item
-                    && old.child().as_ref() == Some(widget.upcast_ref())
-                {
-                    old.set_child(None::<&gtk::Widget>);
-                }
-                item.set_child(Some(widget));
-                holder.replace(item.downgrade());
-            }
-            Entry::Season(season) => {
-                let label = gtk::Label::builder()
-                    .label(format::season_title(season.season.as_ref()))
-                    .xalign(0.0)
-                    .ellipsize(pango::EllipsizeMode::End)
-                    .css_classes(["heading"])
-                    .build();
-                let expander = gtk::TreeExpander::builder()
-                    .child(&label)
-                    .margin_top(12)
-                    .build();
-                expander.set_list_row(object.downcast_ref::<gtk::TreeListRow>());
-                item.set_child(Some(&expander));
-            }
-            Entry::Episode(episode) => {
-                item.set_activatable(true);
-                let row = row_of(item, &on_action);
-                row.bind(episode);
-                // A season's episodes, or a flat list, form one boxed list.
-                let is_episode = |offset: i64| {
-                    u32::try_from(i64::from(item.position()) + offset)
-                        .ok()
-                        .and_then(|p| model.item(p))
-                        .as_ref()
-                        .and_then(boxed)
-                        .is_some_and(|b| matches!(&*b.borrow::<Entry>(), Entry::Episode(_)))
-                };
-                row.set_position(!is_episode(-1), !is_episode(1));
-            }
-            Entry::Empty(message) => {
-                let label = gtk::Label::builder()
-                    .label(message)
-                    .wrap(true)
-                    .margin_top(24)
-                    .css_classes(["dim-label"])
-                    .build();
-                item.set_child(Some(&label));
-            }
-        }
-    });
-    factory
+fn empty_label(prefs: &ShowPrefs) -> gtk::Label {
+    let only_unplayed =
+        prefs.played == EpisodeFilter::Unplayed && prefs.downloaded == DownloadFilter::All;
+    let message = if only_unplayed {
+        gettext("No unplayed episodes: you are all caught up")
+    } else if prefs.is_filtered() {
+        gettext("No episodes match these filters")
+    } else {
+        gettext("This podcast has no episodes yet")
+    };
+    gtk::Label::builder()
+        .label(message)
+        .wrap(true)
+        .margin_top(24)
+        .css_classes(["dim-label"])
+        .build()
 }

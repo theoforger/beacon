@@ -51,6 +51,7 @@ Cargo workspace. `crates/beacon-core` holds the model, SQLite store and services
 10. Errors are typed in core and shown as toasts or status pages, never panics. The UI maps each error variant to its own gettext message; an error's `Display` text is for logs only, since core has no translations.
 11. Unit tests ship with every logic change; every feature ships with an integration test of its main scenario. A bug fix starts with a failing test. CI never calls live iTunes or podcast servers.
 12. Sandbox permissions stay as narrow as works; file access goes through portals (`GtkFileDialog`). Record each new permission in `docs/decisions.md`.
+13. For UI elements GNOME Podcasts also has, use the same components it uses (decided 2026-10-30). Its source, https://gitlab.gnome.org/World/podcasts (GPL-3.0-or-later, like Beacon), is the reference: read its `.ui` files and widgets before building a similar element, and record where Beacon follows or departs from it in `docs/decisions.md`.
 
 ## HIG gate
 
@@ -118,7 +119,7 @@ Read the design's files from that link. Match how it looks.
 
 **Episode rows**
 
-- Episode lists look like boxed lists, one per recency group or season (2026-10-29); they stay list views, so long feeds stay fast.
+- Episode lists are `boxed-list` `GtkListBox`es, one per recency group or season, as in GNOME Podcasts (decided 2026-10-30, despite the HIG's preference for list views on long lists). Rows are added lazily so long feeds never block the UI.
 - Cover, title (two lines at most), and a subtitle of show, season and episode, date and length. The subtitle does not show time left.
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.

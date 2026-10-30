@@ -3,7 +3,8 @@
 //! An episode in a list: cover, a title of at most two lines with the blue
 //! dot before it and the played check after it, the subtitle, a progress bar
 //! when partly played, a flat play button and the row menu. Two controls,
-//! as the HIG checklist allows; the row itself opens the details.
+//! as the HIG checklist allows; activating the row opens the details. A
+//! `GtkListBoxRow` for a `boxed-list`, as GNOME Podcasts' episode row is.
 
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
@@ -33,20 +34,20 @@ mod imp {
     impl ObjectSubclass for EpisodeRow {
         const NAME: &'static str = "BeaconEpisodeRow";
         type Type = super::EpisodeRow;
-        type ParentType = gtk::Box;
+        type ParentType = gtk::ListBoxRow;
     }
 
     impl ObjectImpl for EpisodeRow {}
     impl WidgetImpl for EpisodeRow {}
-    impl BoxImpl for EpisodeRow {}
+    impl ListBoxRowImpl for EpisodeRow {}
 }
 
 glib::wrapper! {
-    /// A `GtkBox` that keeps its parts, so a recycled list row can be bound
-    /// to another episode.
+    /// A list box row that keeps its parts, so it can be updated in place
+    /// when the episode's state changes.
     pub struct EpisodeRow(ObjectSubclass<imp::EpisodeRow>)
-        @extends gtk::Box, gtk::Widget,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
+        @extends gtk::ListBoxRow, gtk::Widget,
+        @implements gtk::Accessible, gtk::Actionable, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 pub struct Parts {
@@ -62,8 +63,15 @@ pub struct Parts {
 
 impl EpisodeRow {
     pub fn new(on_action: OnRowAction) -> Self {
-        let root: Self = glib::Object::builder().property("spacing", 12).build();
-        root.set_css_classes(&["episode-card"]);
+        let root: Self = glib::Object::new();
+        let content = gtk::Box::builder()
+            .spacing(12)
+            .margin_top(8)
+            .margin_bottom(8)
+            .margin_start(12)
+            .margin_end(12)
+            .build();
+        root.set_child(Some(&content));
         let cover = Cover::new(COVER_SIZE);
 
         let dot = gtk::Box::builder()
@@ -126,10 +134,10 @@ impl EpisodeRow {
             .build();
         menu.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
 
-        root.append(cover.widget());
-        root.append(&text);
-        root.append(&play);
-        root.append(&menu);
+        content.append(cover.widget());
+        content.append(&text);
+        content.append(&play);
+        content.append(&menu);
 
         let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
         let actions = gio::SimpleActionGroup::new();
@@ -167,16 +175,9 @@ impl EpisodeRow {
         root
     }
 
-    /// Where the row sits in its group, for the boxed-list corners and
-    /// separators.
-    pub fn set_position(&self, first: bool, last: bool) {
-        for (class, on) in [("first", first), ("last", last)] {
-            if on {
-                self.add_css_class(class);
-            } else {
-                self.remove_css_class(class);
-            }
-        }
+    /// The episode the row shows.
+    pub fn item(&self) -> Option<EpisodeItem> {
+        self.imp().parts.get()?.episode.borrow().clone()
     }
 
     pub fn bind(&self, item: &EpisodeItem) {
