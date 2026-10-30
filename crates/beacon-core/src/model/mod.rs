@@ -131,11 +131,12 @@ pub struct ParsedFeed {
     pub episodes: Vec<ParsedEpisode>,
 }
 
-/// Which episodes a list shows.
+/// Which episodes a list shows, by played state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EpisodeFilter {
     #[default]
     All,
+    Played,
     Unplayed,
 }
 
@@ -143,7 +144,28 @@ impl EpisodeFilter {
     pub fn accepts(self, episode: &Episode) -> bool {
         match self {
             EpisodeFilter::All => true,
+            EpisodeFilter::Played => episode.state.played,
             EpisodeFilter::Unplayed => !episode.state.played,
+        }
+    }
+}
+
+/// Which episodes a list shows, by download state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DownloadFilter {
+    #[default]
+    All,
+    Downloaded,
+    NotDownloaded,
+}
+
+impl DownloadFilter {
+    pub fn accepts(self, episode: &Episode) -> bool {
+        let downloaded = episode.state.download_path.is_some();
+        match self {
+            DownloadFilter::All => true,
+            DownloadFilter::Downloaded => downloaded,
+            DownloadFilter::NotDownloaded => !downloaded,
         }
     }
 }
@@ -158,8 +180,20 @@ pub enum SortOrder {
 /// How a podcast page lists its episodes, remembered per show.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ShowPrefs {
-    pub filter: EpisodeFilter,
     pub order: SortOrder,
+    pub played: EpisodeFilter,
+    pub downloaded: DownloadFilter,
+}
+
+impl ShowPrefs {
+    pub fn accepts(&self, episode: &Episode) -> bool {
+        self.played.accepts(episode) && self.downloaded.accepts(episode)
+    }
+
+    /// Whether any filter hides episodes.
+    pub fn is_filtered(&self) -> bool {
+        self.played != EpisodeFilter::All || self.downloaded != DownloadFilter::All
+    }
 }
 
 /// The numbers beside the sidebar items.

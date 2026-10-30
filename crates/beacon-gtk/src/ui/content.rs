@@ -162,9 +162,12 @@ impl Component for Content {
                 NewViewOutput::Action(id, action) => ContentOutput::Action(id, action),
                 NewViewOutput::FilterChanged(filter) => ContentOutput::NewFilterChanged(filter),
             });
-        let show_page = ShowPage::builder()
-            .launch(())
-            .forward(&output, |message| match message {
+        // The podcast page packs its details toggle itself, at the far end
+        // of its header like the root page's, before its filter button.
+        let show_toggle = new_details_toggle();
+        let show_page = ShowPage::builder().launch(show_toggle.clone()).forward(
+            &output,
+            |message| match message {
                 ShowPageOutput::Action(id, action) => ContentOutput::Action(id, action),
                 ShowPageOutput::PrefsChanged(id, prefs) => {
                     ContentOutput::ShowPrefsChanged(id, prefs)
@@ -172,7 +175,8 @@ impl Component for Content {
                 ShowPageOutput::MarkAllPlayed(id) => ContentOutput::MarkAllPlayed(id),
                 ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
                 ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
-            });
+            },
+        );
         let add_page = AddPage::builder()
             .launch(())
             .forward(&output, |AddPageOutput::Subscribe(url)| {
@@ -189,12 +193,9 @@ impl Component for Content {
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
-        for header in [
-            model.add_page.widgets().header().clone(),
-            model.show_page.widgets().header().clone(),
-        ] {
-            let toggle = new_details_toggle();
-            header.pack_end(&toggle);
+        let add_toggle = new_details_toggle();
+        model.add_page.widgets().header().pack_end(&add_toggle);
+        for toggle in [add_toggle, show_toggle] {
             widgets
                 .details_toggle
                 .bind_property("active", &toggle, "active")

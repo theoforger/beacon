@@ -109,7 +109,7 @@ Read the design's files from that link. Match how it looks.
 
 - **Shows:** a grid of cover art with a badge for unplayed episodes. The last tile is Add Podcast, which opens the Add page.
 - **New:** episodes from all subscribed shows grouped by recency (Today, Yesterday, weekday, Last week, Earlier in the month). An All / Unplayed toggle group sits above, and the choice is remembered.
-- **Podcast page:** a hero with cover, category, title, author and description. Subscribe is the accent button, and becomes a neutral Unsubscribe once subscribed. A More Options menu holds Mark All as Played, Download All Episodes and Copy Feed Address. Below sit an All / Unplayed toggle group (remembered per show) and a sort menu with radio items, Newest First and Oldest First. Episodes group into collapsible seasons, with season names, when the feed carries season tags.
+- **Podcast page:** a hero with cover, category, title, author and description. Subscribe is the accent button, and becomes a neutral Unsubscribe once subscribed. A More Options menu holds Mark All as Played, Download All Episodes and Copy Feed Address. A filter button in the page header opens one menu, as in GNOME Podcasts, with three groups of radio items: Newest First / Oldest First; All / Played / Unplayed; All / Downloaded / Not Downloaded. The choices are remembered per show (changed 2026-10-29 from a toggle group and a separate sort menu). Episodes group into collapsible seasons, with season names, when the feed carries season tags.
 - **Queue:** three groups. Now Playing. Next in Queue, with count and total time, for episodes added by hand. Next from the list the playing episode came from. The behaviour copies a music app: manual queue first, then the rest of the list. Rows have a drag handle at the start, and Move Up and Move Down in the row menu.
 - **Favorites** and **Downloaded:** episode lists with status pages when empty.
 - **Add:** a page that slides in over the current section (Back returns to it), opened from the + in the sidebar header or the Add Podcast tile. One search field that also accepts a pasted RSS feed URL (an RSS Feed card with Add Feed). Reference only: the real Add view is modeled on what the iTunes Search API returns (see `docs/specs/add-and-itunes.md`), so the category tiles, Popular This Week and the card layout in the mockup are placeholders.
@@ -118,6 +118,7 @@ Read the design's files from that link. Match how it looks.
 
 **Episode rows**
 
+- Episode lists look like boxed lists, one per recency group or season (2026-10-29); they stay list views, so long feeds stay fast.
 - Cover, title (two lines at most), and a subtitle of show, season and episode, date and length. The subtitle does not show time left.
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.
@@ -128,6 +129,7 @@ Read the design's files from that link. Match how it looks.
 **Details pane**
 
 - Cover, show link, title, subtitle, then actions: Play, Pause or Resume (accent coloured), queue, favourite, download and mark played. The four toggles show their state through the icon only, never through a colour or background change.
+- The pane follows the mockup's order: cover (left-aligned), show, title, the long subtitle (Season 3, Episode 2 · date · length), the actions, About This Episode, then chapters.
 - Description, then chapters. The current chapter has a gray background and bold text, and choosing a chapter seeks to it.
 
 **Player bar**

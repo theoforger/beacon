@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use beacon_core::browse::{self, RecencyGroup};
-use beacon_core::model::{EpisodeFilter, LibraryCounts, ShowPrefs, SortOrder};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, LibraryCounts, ShowPrefs, SortOrder};
 use beacon_core::services::clock::Clock;
 use beacon_core::services::covers::CoverCache;
 use beacon_core::services::feeds::FeedClient;
@@ -91,10 +91,24 @@ async fn a_podcast_page_groups_seasons_and_filters_unplayed() {
             .collect();
         assert_eq!(unplayed, ["Salt flats", "The first echo"]);
 
+        // Played shows only the one marked played.
+        let played = store
+            .episodes(show)
+            .unwrap()
+            .into_iter()
+            .filter(|e| EpisodeFilter::Played.accepts(e))
+            .count();
+        assert_eq!(played, 1);
+        // Nothing is downloaded yet (downloads arrive in M5).
+        assert!(store.episodes(show).unwrap().iter().all(|e| {
+            DownloadFilter::NotDownloaded.accepts(e) && !DownloadFilter::Downloaded.accepts(e)
+        }));
+
         // The page's choices are remembered per show.
         let prefs = ShowPrefs {
-            filter: EpisodeFilter::Unplayed,
             order: SortOrder::OldestFirst,
+            played: EpisodeFilter::Unplayed,
+            downloaded: DownloadFilter::NotDownloaded,
         };
         store.set_show_prefs(show, prefs).unwrap();
         assert_eq!(store.show_prefs(show).unwrap(), prefs);
@@ -201,8 +215,9 @@ async fn show_prefs_survive_a_restart() {
     let db = dir.path().join("beacon.db");
     let (library, show) = subscribed(&server, "plain.xml", Store::open(&db).unwrap()).await;
     let prefs = ShowPrefs {
-        filter: EpisodeFilter::Unplayed,
         order: SortOrder::NewestFirst,
+        played: EpisodeFilter::Played,
+        downloaded: DownloadFilter::Downloaded,
     };
     library.with_store(|store| store.set_show_prefs(show, prefs).unwrap());
     drop(library);

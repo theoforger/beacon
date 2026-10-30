@@ -168,7 +168,8 @@ impl Component for NewView {
             has_shows,
         } = message;
         let name = match filter {
-            EpisodeFilter::All => "all",
+            // New offers only All and Unplayed.
+            EpisodeFilter::All | EpisodeFilter::Played => "all",
             EpisodeFilter::Unplayed => "unplayed",
         };
         if widgets.filter.active_name().as_deref() != Some(name) {

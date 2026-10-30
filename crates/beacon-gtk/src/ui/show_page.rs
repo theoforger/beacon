@@ -9,7 +9,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use beacon_core::model::{EpisodeFilter, ShowId, ShowPrefs};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gdk, gio, glib, pango};
@@ -18,8 +18,8 @@ use relm4::{Component, ComponentParts, ComponentSender, adw};
 use crate::ui::episode_list::{boxed, row_of};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction, SeasonItems, ShowPageData};
-use crate::ui::new_view::filter_from;
-use crate::ui::show_hero::{ShowHero, sort_from};
+use crate::ui::page_filters;
+use crate::ui::show_hero::ShowHero;
 use crate::ui::widgets::episode_row::OnRowAction;
 
 pub const SHOW_TAG: &str = "show";
@@ -27,9 +27,8 @@ pub const SHOW_TAG: &str = "show";
 #[derive(Debug)]
 pub enum ShowPageInput {
     Set(Box<ShowPageData>),
-    /// From the page's own controls.
-    SetFilter(EpisodeFilter),
-    SetSort(String),
+    /// A choice in the filter menu: the group's action name and the value.
+    Choose(&'static str, String),
     MarkAllPlayed,
     CopyFeedAddress,
     Unsubscribe,
@@ -48,19 +47,22 @@ enum Entry {
     Hero,
     Season(SeasonItems),
     Episode(Box<EpisodeItem>),
-    /// Shown under the hero when the filter leaves nothing.
-    Empty,
+    /// Shown under the hero when the filters leave nothing.
+    Empty(String),
 }
 
 pub struct ShowPage {
     data: Option<ShowPageData>,
     hero: Rc<ShowHero>,
     entries: gio::ListStore,
+    /// The filter menu's radio groups, by action name.
+    choices: Vec<gio::SimpleAction>,
 }
 
 #[relm4::component(pub)]
 impl Component for ShowPage {
-    type Init = ();
+    /// The page's details toggle, kept in step by the content pane.
+    type Init = gtk::ToggleButton;
     type Input = ShowPageInput;
     type Output = ShowPageOutput;
     type CommandOutput = ();
@@ -74,7 +76,6 @@ impl Component for ShowPage {
             set_child = &adw::ToolbarView {
                 #[name = "header"]
                 add_top_bar = &adw::HeaderBar {
-                    // The page title shows once the hero scrolls away.
                     set_show_title: false,
                 },
 
@@ -100,7 +101,7 @@ impl Component for ShowPage {
     }
 
     fn init(
-        _init: Self::Init,
+        details_toggle: Self::Init,
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
@@ -109,10 +110,50 @@ impl Component for ShowPage {
             data: None,
             hero: hero.clone(),
             entries: gio::ListStore::new::<glib::BoxedAnyObject>(),
+            choices: [
+                page_filters::SORT,
+                page_filters::PLAYED,
+                page_filters::DOWNLOADED,
+            ]
+            .into_iter()
+            .map(|name| {
+                gio::SimpleAction::new_stateful(
+                    name,
+                    Some(glib::VariantTy::STRING),
+                    &"".to_variant(),
+                )
+            })
+            .collect(),
         };
         let widgets = view_output!();
 
+        // Sort and filter, as in GNOME Podcasts, left of the details toggle.
+        let filter = gtk::MenuButton::builder()
+            .icon_name("funnel-symbolic")
+            .menu_model(&page_filters::menu())
+            .tooltip_text(gettext("Sort and Filter"))
+            .build();
+        filter.update_property(&[gtk::accessible::Property::Label(&gettext(
+            "Sort and Filter",
+        ))]);
+        widgets.header.pack_end(&details_toggle);
+        widgets.header.pack_end(&filter);
+
         let actions = gio::SimpleActionGroup::new();
+        for (choice, name) in model.choices.iter().zip([
+            page_filters::SORT,
+            page_filters::PLAYED,
+            page_filters::DOWNLOADED,
+        ]) {
+            let s = sender.clone();
+            choice.connect_activate(move |action, target| {
+                if let Some(value) = target.and_then(|t| t.get::<String>()) {
+                    action.set_state(&value.to_variant());
+                    s.input(ShowPageInput::Choose(name, value));
+                }
+            });
+            actions.add_action(choice);
+        }
         let mark_all = gio::SimpleAction::new("mark-all-played", None);
         let s = sender.clone();
         mark_all.connect_activate(move |_, _| s.input(ShowPageInput::MarkAllPlayed));
@@ -126,18 +167,6 @@ impl Component for ShowPage {
         let s = sender.clone();
         hero.unsubscribe
             .connect_clicked(move |_| s.input(ShowPageInput::Unsubscribe));
-        let s = sender.clone();
-        hero.filter.connect_active_name_notify(move |group| {
-            s.input(ShowPageInput::SetFilter(filter_from(
-                group.active_name().as_deref(),
-            )));
-        });
-        let s = sender.clone();
-        hero.sort.connect_active_name_notify(move |group| {
-            if let Some(name) = group.active_name() {
-                s.input(ShowPageInput::SetSort(name.to_string()));
-            }
-        });
 
         let tree = gtk::TreeListModel::new(model.entries.clone(), false, true, |object| {
             let boxed = object.downcast_ref::<glib::BoxedAnyObject>()?;
@@ -193,14 +222,17 @@ impl Component for ShowPage {
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
                 self.hero.update(&data);
+                for (choice, (_, value)) in
+                    self.choices.iter().zip(page_filters::states(&data.prefs))
+                {
+                    choice.set_state(&value.to_variant());
+                }
                 self.entries
                     .splice(0, self.entries.n_items(), &entries(&data));
                 self.data = Some(*data);
             }
-            ShowPageInput::SetFilter(filter) => self.change_prefs(&sender, |p| p.filter = filter),
-            ShowPageInput::SetSort(name) => {
-                let order = sort_from(&name);
-                self.change_prefs(&sender, |p| p.order = order);
+            ShowPageInput::Choose(action, value) => {
+                self.change_prefs(&sender, |p| *p = page_filters::apply(*p, action, &value));
             }
             ShowPageInput::MarkAllPlayed => {
                 if let Some(data) = &self.data {
@@ -251,7 +283,15 @@ fn entries(data: &ShowPageData) -> Vec<glib::BoxedAnyObject> {
         None => data.episodes.is_empty(),
     };
     if nothing {
-        entries.push(Entry::Empty);
+        let only_unplayed = data.prefs.played == EpisodeFilter::Unplayed
+            && data.prefs.downloaded == DownloadFilter::All;
+        entries.push(Entry::Empty(if only_unplayed {
+            gettext("No unplayed episodes: you are all caught up")
+        } else if data.prefs.is_filtered() {
+            gettext("No episodes match these filters")
+        } else {
+            gettext("This podcast has no episodes yet")
+        }));
     }
     entries.into_iter().map(glib::BoxedAnyObject::new).collect()
 }
@@ -330,9 +370,9 @@ fn factory(
                 };
                 row.set_position(!is_episode(-1), !is_episode(1));
             }
-            Entry::Empty => {
+            Entry::Empty(message) => {
                 let label = gtk::Label::builder()
-                    .label(gettext("No unplayed episodes: you are all caught up"))
+                    .label(message)
                     .wrap(true)
                     .margin_top(24)
                     .css_classes(["dim-label"])
@@ -342,10 +382,4 @@ fn factory(
         }
     });
     factory
-}
-
-impl ShowPageWidgets {
-    pub fn header(&self) -> &adw::HeaderBar {
-        &self.header
-    }
 }

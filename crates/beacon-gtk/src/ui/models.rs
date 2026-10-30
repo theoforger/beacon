@@ -129,7 +129,7 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
     let mut episodes: Vec<Episode> = store
         .episodes(id)?
         .into_iter()
-        .filter(|e| prefs.filter.accepts(e))
+        .filter(|e| prefs.accepts(e))
         .collect();
 
     let seasons = browse::group_by_season(episodes.clone(), prefs.order).map(|groups| {

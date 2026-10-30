@@ -18,4 +18,4 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 | 2026-10-29 | M3, `ui/new_view.rs`, `ui/show_hero.rs` | Recency and season headers read as headings; the All / Unplayed toggle group announces the selected option; season expanders announce expanded or collapsed | Orca, keyboard |
 | 2026-10-29 | M3, `ui/show_page.rs`, `app/library.rs` | Podcast page: hero title read as a heading; Unsubscribe dialog takes focus and Escape cancels; toasts are announced | Orca, keyboard |
 | 2026-10-29 | M3, `ui/details_pane.rs` | Details pane: focus moves into it when it opens from a row, and back on close; at 360px with large text the title and subtitle wrap without clipping | Orca, keyboard, large text |
-
+| 2026-10-29 | M3, `ui/page_filters.rs`, `ui/show_page.rs` | The Sort and Filter button's label read; the menu's three radio groups read with their checked state; the two "All" items are told apart (consider section labels if not) | Orca, keyboard |

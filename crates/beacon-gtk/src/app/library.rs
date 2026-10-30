@@ -243,7 +243,8 @@ impl App {
             ContentOutput::OpenShow(id) => self.open_show(id, sender),
             ContentOutput::NewFilterChanged(filter) => {
                 let name = match filter {
-                    EpisodeFilter::All => "all",
+                    // New offers only All and Unplayed.
+                    EpisodeFilter::All | EpisodeFilter::Played => "all",
                     EpisodeFilter::Unplayed => "unplayed",
                 };
                 if let Err(err) = self.settings.set_string(NEW_FILTER_KEY, name) {

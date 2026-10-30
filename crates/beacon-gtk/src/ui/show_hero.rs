@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The top of a podcast page: cover, category, title, author, description,
-//! Unsubscribe and More Options, then the All / Unplayed toggle group and the
-//! sort toggle group. Its menu uses the page's `show.*` actions.
+//! Unsubscribe and More Options. Its menu uses the page's `show.*` actions;
+//! sorting and filtering are in the page header's filter menu.
 
-use beacon_core::model::{EpisodeFilter, SortOrder};
 use beacon_core::text;
 use gettextrs::gettext;
-use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gio, pango};
 
@@ -24,8 +22,6 @@ pub struct ShowHero {
     author: gtk::Label,
     description: gtk::Label,
     pub unsubscribe: gtk::Button,
-    pub filter: adw::ToggleGroup,
-    pub sort: adw::ToggleGroup,
 }
 
 impl ShowHero {
@@ -69,51 +65,6 @@ impl ShowHero {
         actions.append(&unsubscribe);
         actions.append(&more);
 
-        let filter = adw::ToggleGroup::builder().homogeneous(true).build();
-        filter.add(
-            adw::Toggle::builder()
-                .name("all")
-                .label(gettext("All"))
-                .build(),
-        );
-        filter.add(
-            adw::Toggle::builder()
-                .name("unplayed")
-                .label(gettext("Unplayed"))
-                .build(),
-        );
-        filter
-            .upcast_ref::<gtk::Widget>()
-            .update_property(&[gtk::accessible::Property::Label(&gettext("Show Episodes"))]);
-        let sort = adw::ToggleGroup::builder().homogeneous(true).build();
-        for (order, icon, label) in [
-            (
-                SortOrder::NewestFirst,
-                "view-sort-descending-symbolic",
-                gettext("Newest First"),
-            ),
-            (
-                SortOrder::OldestFirst,
-                "view-sort-ascending-symbolic",
-                gettext("Oldest First"),
-            ),
-        ] {
-            sort.add(
-                adw::Toggle::builder()
-                    .name(sort_name(order))
-                    .icon_name(icon)
-                    .tooltip(label)
-                    .build(),
-            );
-        }
-        sort.upcast_ref::<gtk::Widget>()
-            .update_property(&[gtk::accessible::Property::Label(&gettext("Sort Episodes"))]);
-        let controls = gtk::Box::builder().spacing(6).margin_top(18).build();
-        let spacer = gtk::Box::builder().hexpand(true).build();
-        controls.append(&filter);
-        controls.append(&spacer);
-        controls.append(&sort);
-
         let root = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
             .spacing(4)
@@ -129,7 +80,6 @@ impl ShowHero {
         root.append(&author);
         root.append(&description);
         root.append(&actions);
-        root.append(&controls);
 
         Self {
             root,
@@ -139,8 +89,6 @@ impl ShowHero {
             author,
             description,
             unsubscribe,
-            filter,
-            sort,
         }
     }
 
@@ -156,17 +104,6 @@ impl ShowHero {
         set_text(&self.author, info.author.as_deref());
         let description = info.description.as_deref().map(text::plain);
         set_text(&self.description, description.as_deref());
-        let name = match data.prefs.filter {
-            EpisodeFilter::All => "all",
-            EpisodeFilter::Unplayed => "unplayed",
-        };
-        if self.filter.active_name().as_deref() != Some(name) {
-            self.filter.set_active_name(Some(name));
-        }
-        let order = sort_name(data.prefs.order);
-        if self.sort.active_name().as_deref() != Some(order) {
-            self.sort.set_active_name(Some(order));
-        }
     }
 }
 
@@ -189,18 +126,4 @@ fn more_menu() -> gio::Menu {
     );
     menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
     menu
-}
-
-pub fn sort_name(order: SortOrder) -> &'static str {
-    match order {
-        SortOrder::NewestFirst => "newest",
-        SortOrder::OldestFirst => "oldest",
-    }
-}
-
-pub fn sort_from(name: &str) -> SortOrder {
-    match name {
-        "oldest" => SortOrder::OldestFirst,
-        _ => SortOrder::NewestFirst,
-    }
 }

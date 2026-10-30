@@ -11,6 +11,7 @@ pub mod format;
 pub mod labels;
 pub mod models;
 pub mod new_view;
+pub mod page_filters;
 pub mod player_bar;
 pub mod show_hero;
 pub mod show_page;

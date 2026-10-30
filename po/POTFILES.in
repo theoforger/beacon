@@ -11,6 +11,7 @@ crates/beacon-gtk/src/ui/errors.rs
 crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs
 crates/beacon-gtk/src/ui/new_view.rs
+crates/beacon-gtk/src/ui/page_filters.rs
 crates/beacon-gtk/src/ui/player_bar.rs
 crates/beacon-gtk/src/ui/show_hero.rs
 crates/beacon-gtk/src/ui/show_page.rs

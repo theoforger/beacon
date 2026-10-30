@@ -10,7 +10,9 @@ use rusqlite::{OptionalExtension, params};
 use super::Store;
 use super::rows::{EPISODE_COLUMNS, episode_from_row};
 use crate::error::StoreError;
-use crate::model::{Episode, EpisodeFilter, EpisodeId, ShowId, ShowPrefs, SortOrder};
+use crate::model::{
+    DownloadFilter, Episode, EpisodeFilter, EpisodeId, ShowId, ShowPrefs, SortOrder,
+};
 
 impl Store {
     pub fn episode(&self, id: EpisodeId) -> Result<Option<Episode>, StoreError> {
@@ -98,35 +100,48 @@ impl Store {
     }
 
     pub fn show_prefs(&self, show: ShowId) -> Result<ShowPrefs, StoreError> {
-        let (filter, order): (String, String) = self.conn.query_row(
-            "SELECT episode_filter, sort_order FROM shows WHERE id = ?1",
+        let (played, order, downloaded): (String, String, String) = self.conn.query_row(
+            "SELECT episode_filter, sort_order, download_filter FROM shows WHERE id = ?1",
             [show.0],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )?;
         Ok(ShowPrefs {
-            filter: match filter.as_str() {
-                "unplayed" => EpisodeFilter::Unplayed,
-                _ => EpisodeFilter::All,
-            },
             order: match order.as_str() {
                 "oldest" => SortOrder::OldestFirst,
                 _ => SortOrder::NewestFirst,
+            },
+            played: match played.as_str() {
+                "played" => EpisodeFilter::Played,
+                "unplayed" => EpisodeFilter::Unplayed,
+                _ => EpisodeFilter::All,
+            },
+            downloaded: match downloaded.as_str() {
+                "downloaded" => DownloadFilter::Downloaded,
+                "not-downloaded" => DownloadFilter::NotDownloaded,
+                _ => DownloadFilter::All,
             },
         })
     }
 
     pub fn set_show_prefs(&self, show: ShowId, prefs: ShowPrefs) -> Result<(), StoreError> {
-        let filter = match prefs.filter {
-            EpisodeFilter::All => "all",
-            EpisodeFilter::Unplayed => "unplayed",
-        };
         let order = match prefs.order {
             SortOrder::NewestFirst => "newest",
             SortOrder::OldestFirst => "oldest",
         };
+        let played = match prefs.played {
+            EpisodeFilter::All => "all",
+            EpisodeFilter::Played => "played",
+            EpisodeFilter::Unplayed => "unplayed",
+        };
+        let downloaded = match prefs.downloaded {
+            DownloadFilter::All => "all",
+            DownloadFilter::Downloaded => "downloaded",
+            DownloadFilter::NotDownloaded => "not-downloaded",
+        };
         self.conn.execute(
-            "UPDATE shows SET episode_filter = ?2, sort_order = ?3 WHERE id = ?1",
-            params![show.0, filter, order],
+            "UPDATE shows SET episode_filter = ?2, sort_order = ?3, download_filter = ?4
+             WHERE id = ?1",
+            params![show.0, played, order, downloaded],
         )?;
         Ok(())
     }
