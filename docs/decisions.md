@@ -46,7 +46,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 ## Runtime
 
 - **GNOME 50 runtime** (checked in the installed `org.gnome.Platform//50`): GTK 4.22.5, libadwaita 1.9 (exports `adw_sidebar_new`, `adw_toggle_group_new`, `adw_shortcuts_dialog_new`, `adw_about_dialog_new`), GStreamer 1.26.11 with `libgstplay`, SQLite 3.50.4. Every widget in the Architecture table is available; no fallbacks needed.
-- **Staying on GNOME 50** (2026-10-28). GNOME 51 is newer and matches the host, but relm4 0.11.0 has no `gnome_51` feature yet. Migrate once it does; `.github/workflows/relm4-gnome-51.yml` checks weekly and fails when the feature appears.
+- **Staying on GNOME 50** (2026-10-28). GNOME 51 is newer, but relm4 0.11.0 has no `gnome_51` feature yet. Migrate once it does; `.github/workflows/relm4-gnome-51.yml` checks weekly and fails when the feature appears.
 
 ## Build and packaging
 

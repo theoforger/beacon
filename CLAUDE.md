@@ -10,7 +10,7 @@ A podcast app for GNOME. Rust, relm4 0.11, libadwaita 1.9, GNOME 50 runtime, pac
 
 ```sh
 # Fast loop (no Meson). Compile the schema once, then run.
-glib-compile-schemas --strict --targetdir=target/schemas data/
+mkdir -p target/schemas && glib-compile-schemas --strict --targetdir=target/schemas data/
 GSETTINGS_SCHEMA_DIR=target/schemas cargo run
 
 # Checks (same as CI)
@@ -31,7 +31,7 @@ flatpak run com.theoforger.Beacon
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest build-aux/com.theoforger.Beacon.json
 ```
 
-Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. To screenshot a state reached by clicks or keys, use `build-aux/headless/shot.sh SIZE SCHEME OUT key:F10 click:X,Y type:TEXT wait:2 …` (it prints the frame's brightness; 0 means black). It uses a scratch library, never yours; set `BEACON_STATE_DIR` to keep one across shots and `BEACON_SCALE=2` for a HiDPI screen (click coordinates are then in device pixels), and serve fixtures with `python3 -m http.server` to subscribe to them. `RUST_LOG=beacon=debug` logs every message `App` handles, often a cheaper check than a screenshot. Run the HIG gate with `/hig-review`. Meson is not installed on the host; use `uvx --with ninja meson …`.
+Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×900 and 360×640, light and dark, to `target/screenshots/`; limit it with `SIZES=360x640 SCHEMES=dark build-aux/screenshots.sh`. It runs on a private session bus (`dbus-run-session`); without one, a Beacon you have open gets activated instead and the capture is black. To screenshot a state reached by clicks or keys, use `build-aux/headless/shot.sh SIZE SCHEME OUT key:F10 click:X,Y type:TEXT wait:2 …` (it prints the frame's brightness; 0 means black). It uses a scratch library, never yours; set `BEACON_STATE_DIR` to keep one across shots and `BEACON_SCALE=2` for a HiDPI screen (click coordinates are then in device pixels), and serve fixtures with `python3 -m http.server` to subscribe to them. `RUST_LOG=beacon=debug` logs every message `App` handles, often a cheaper check than a screenshot. Run the HIG gate with `/hig-review`. The screenshot scripts need Xvfb, ImageMagick, python-xlib and Mesa; without Mesa the app aborts and the capture is black.
 
 ## Architecture
 
@@ -78,7 +78,7 @@ This section is the contract for Claude Code. It records everything agreed in th
 
 ### Decisions
 
-- **Machine:** your Linux machine running CachyOS with GNOME 51. Build in a Flatpak against the GNOME 50 runtime, so the build does not depend on the host.
+- **Build environment:** build in a Flatpak against the GNOME 50 runtime, so the build does not depend on the host.
 - **Target:** GNOME 50 for now.
 - **Directory search:** iTunes Search API.
 - **Sync:** none for now.
