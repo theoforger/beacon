@@ -42,3 +42,11 @@
 .flat-view {
   background: none;
 }
+
+/* The dot on the filter button while a filter or a non-default order is on,
+ * as in GNOME Podcasts. */
+.filter-dot {
+  border-radius: 50px;
+  padding: 4px;
+  background-color: var(--accent-bg-color);
+}

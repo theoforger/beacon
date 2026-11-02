@@ -129,7 +129,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Shows: a grid of covers with badges for new episodes (see decisions), and a final Add Podcast tile that opens Add
 - [x] New: episodes grouped by recency (Today, Yesterday, weekday, Last Week, Earlier in the Month), sorted and filtered from the same filter menu as podcast pages, remembered in GSettings (changed 2026-11-01 from an All / Unplayed toggle group)
 - [x] Podcast page: a hero (cover, category, title, author, description), Unsubscribe (neutral, confirmed), and a More Options menu (Mark All as Played, Download All Episodes disabled until M5, Copy Feed Address). The accent Subscribe arrives with show previews in M6
-- [x] Podcast page: a filter button with one menu (sort; all, played, unplayed; all, downloaded, not downloaded), remembered per show, and collapsible seasons when the feed has season tags (changed after review, 2026-10-29)
+- [x] Podcast page: a filter button with one menu (sort; all, played, unplayed; all, downloaded, not downloaded), remembered per show, and collapsible seasons when the feed has season tags (changed after review, 2026-10-29); an accent dot on the filter button, here and in New, while a filter or Oldest First is on, as in GNOME Podcasts (2026-11-02)
 - [x] Episode lists are `boxed-list` `GtkListBox`es, one per group, as in GNOME Podcasts, filled lazily (after review)
 - [x] Library work never blocks the UI: reads and writes run in the background and reload only what changed; covers decode asynchronously (after review)
 - [x] Episode row widget: cover, a two-line title, a subtitle (show, season and episode, date, length), the blue unplayed dot, the grey played check, a progress bar, and a flat play button with hover feedback

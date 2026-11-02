@@ -7,7 +7,7 @@
 
 use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs, SortOrder};
 use gettextrs::gettext;
-use relm4::gtk::{gio, prelude::*};
+use relm4::gtk::{self, gio, prelude::*};
 
 pub const SORT: &str = "sort";
 pub const PLAYED: &str = "played";
@@ -54,6 +54,68 @@ pub fn menu(prefix: &str) -> gio::Menu {
         menu.append_section(None, &section);
     }
     menu
+}
+
+/// The filter button, as GNOME Podcasts builds it: a menu button in an
+/// overlay with an accent dot in its corner while the list differs from the
+/// default (any filter, or oldest first).
+#[derive(Debug, Clone)]
+pub struct FilterButton {
+    root: gtk::Overlay,
+    button: gtk::MenuButton,
+    dot: gtk::Box,
+}
+
+impl FilterButton {
+    /// A button for the menu whose actions are in the group `prefix`.
+    pub fn new(prefix: &str) -> Self {
+        let button = gtk::MenuButton::builder()
+            .icon_name("funnel-symbolic")
+            .menu_model(&menu(prefix))
+            .tooltip_text(gettext("Sort and Filter"))
+            .build();
+        button.update_property(&[gtk::accessible::Property::Label(&gettext(
+            "Sort and Filter",
+        ))]);
+        let dot = gtk::Box::builder()
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Start)
+            .margin_end(5)
+            .margin_top(5)
+            .can_focus(false)
+            .can_target(false)
+            .visible(false)
+            .css_classes(["filter-dot"])
+            .build();
+        let root = gtk::Overlay::builder().child(&button).build();
+        root.add_overlay(&dot);
+        Self { root, button, dot }
+    }
+
+    pub fn widget(&self) -> &gtk::Overlay {
+        &self.root
+    }
+
+    /// Show the dot when `prefs` differ from the default.
+    pub fn set_prefs(&self, prefs: &ShowPrefs) {
+        let active = is_active(prefs);
+        self.dot.set_visible(active);
+        // The dot is only seen; say it too.
+        if active {
+            self.button
+                .update_property(&[gtk::accessible::Property::Description(&gettext(
+                    "Filters are on",
+                ))]);
+        } else {
+            self.button
+                .reset_property(gtk::AccessibleProperty::Description);
+        }
+    }
+}
+
+/// Whether the list differs from the default, as GNOME Podcasts marks it.
+pub fn is_active(prefs: &ShowPrefs) -> bool {
+    *prefs != ShowPrefs::default()
 }
 
 /// The action states that reflect `prefs`.
@@ -138,5 +200,16 @@ mod tests {
         assert_eq!(prefs.played, EpisodeFilter::Unplayed);
         assert_eq!(prefs.order, SortOrder::NewestFirst);
         assert_eq!(prefs.downloaded, DownloadFilter::All);
+    }
+
+    #[test]
+    fn any_change_from_the_default_marks_the_button() {
+        assert!(!is_active(&ShowPrefs::default()));
+        assert!(is_active(&apply(ShowPrefs::default(), SORT, "oldest")));
+        assert!(is_active(&apply(
+            ShowPrefs::default(),
+            DOWNLOADED,
+            "downloaded"
+        )));
     }
 }

@@ -55,6 +55,7 @@ pub struct ShowPage {
     hero: ShowHero,
     /// The filter menu's radio groups, by action name.
     choices: Vec<gio::SimpleAction>,
+    filter: page_filters::FilterButton,
     on_action: OnRowAction,
     fill: LazyFill,
     /// What the lists show now, to update in place when only states change.
@@ -137,6 +138,7 @@ impl Component for ShowPage {
                 )
             })
             .collect(),
+            filter: page_filters::FilterButton::new("show"),
             on_action,
             fill: LazyFill::default(),
             shown: None,
@@ -146,16 +148,8 @@ impl Component for ShowPage {
         let widgets = view_output!();
 
         // Sort and filter, as in GNOME Podcasts, left of the details toggle.
-        let filter = gtk::MenuButton::builder()
-            .icon_name("funnel-symbolic")
-            .menu_model(&page_filters::menu("show"))
-            .tooltip_text(gettext("Sort and Filter"))
-            .build();
-        filter.update_property(&[gtk::accessible::Property::Label(&gettext(
-            "Sort and Filter",
-        ))]);
         widgets.header.pack_end(&details_toggle);
-        widgets.header.pack_end(&filter);
+        widgets.header.pack_end(model.filter.widget());
 
         let actions = gio::SimpleActionGroup::new();
         for (choice, name) in model.choices.iter().zip([
@@ -207,6 +201,7 @@ impl Component for ShowPage {
                 {
                     choice.set_state(&value.to_variant());
                 }
+                self.filter.set_prefs(&data.prefs);
                 self.show_episodes(&widgets.episodes, &data);
                 self.data = Some(*data);
             }

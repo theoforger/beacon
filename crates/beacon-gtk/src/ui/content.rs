@@ -75,6 +75,8 @@ pub struct Content {
     new_prefs: ShowPrefs,
     /// New's filter menu groups, by action name.
     new_choices: Vec<gio::SimpleAction>,
+    /// New's filter button, shown only in New.
+    new_filter: page_filters::FilterButton,
 }
 
 #[relm4::component(pub)]
@@ -118,14 +120,7 @@ impl Component for Content {
                         pack_end = &new_details_toggle() -> gtk::ToggleButton {},
 
                         // Sort and filter, only in New, as on podcast pages.
-                        #[name = "new_filter"]
-                        pack_end = &gtk::MenuButton {
-                            set_icon_name: "funnel-symbolic",
-                            set_menu_model: Some(&page_filters::menu("new")),
-                            set_visible: false,
-                            set_tooltip_text: Some(&gettext("Sort and Filter")),
-                            update_property: &[gtk::accessible::Property::Label(&gettext("Sort and Filter"))],
-                        },
+                        pack_end: model.new_filter.widget(),
 
                         #[name = "search_toggle"]
                         pack_end = &gtk::ToggleButton {
@@ -221,7 +216,9 @@ impl Component for Content {
                 )
             })
             .collect(),
+            new_filter: page_filters::FilterButton::new("new"),
         };
+        model.new_filter.widget().set_visible(false);
         let widgets = view_output!();
 
         let new_actions = gio::SimpleActionGroup::new();
@@ -293,7 +290,9 @@ impl Component for Content {
             ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
-                widgets.new_filter.set_visible(location == Location::New);
+                self.new_filter
+                    .widget()
+                    .set_visible(location == Location::New);
                 widgets.root_page.set_title(&labels::title(location));
                 // Leaving deeper pages for a section: no slide, the section
                 // simply changes.
@@ -331,6 +330,7 @@ impl Component for Content {
                 {
                     choice.set_state(&value.to_variant());
                 }
+                self.new_filter.set_prefs(&prefs);
                 self.new.emit(NewViewInput::Set {
                     items,
                     prefs,
