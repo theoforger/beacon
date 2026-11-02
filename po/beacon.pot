@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 20:03-0400\n"
+"POT-Creation-Date: 2026-11-02 13:56-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,48 +18,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: crates/beacon-gtk/src/app/library.rs:209
+#: crates/beacon-gtk/src/app/library.rs:223
 #, rust-format
 msgid "Subscribed to {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:270
+#: crates/beacon-gtk/src/app/library.rs:284
 msgid "Feed address copied"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:343
+#: crates/beacon-gtk/src/app/library.rs:357
 #, rust-format
 msgid "Unsubscribe From {show}?"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:345
+#: crates/beacon-gtk/src/app/library.rs:359
 msgid ""
 "Its episodes, your progress in them and your favorites from it are removed "
 "from your library"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:348
+#: crates/beacon-gtk/src/app/library.rs:362
 msgid "_Cancel"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:349
+#: crates/beacon-gtk/src/app/library.rs:363
 #: crates/beacon-gtk/src/ui/show_hero.rs:50
 msgid "_Unsubscribe"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:385
+#: crates/beacon-gtk/src/app/library.rs:399
 #, rust-format
 msgid "Unsubscribed from {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/library.rs:441
+#: crates/beacon-gtk/src/app/library.rs:455
 #, rust-format
 msgid "Could not refresh {n} podcast"
 msgid_plural "Could not refresh {n} podcasts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/library.rs:449
+#: crates/beacon-gtk/src/app/library.rs:463
 #, rust-format
 msgid "{n} new episode"
 msgid_plural "{n} new episodes"
@@ -117,44 +117,51 @@ msgstr ""
 msgid "Find a show by name, or paste the address of its feed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:104
-#: crates/beacon-gtk/src/ui/content.rs:105 data/shortcuts-dialog.ui:28
+#: crates/beacon-gtk/src/ui/content.rs:113
+#: crates/beacon-gtk/src/ui/content.rs:114 data/shortcuts-dialog.ui:28
 msgid "Refresh Feeds"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:114
-#: crates/beacon-gtk/src/ui/content.rs:115
-#: crates/beacon-gtk/src/ui/content.rs:128 data/shortcuts-dialog.ui:16
+#: crates/beacon-gtk/src/ui/content.rs:126
+#: crates/beacon-gtk/src/ui/content.rs:127
+#: crates/beacon-gtk/src/ui/show_page.rs:152
+#: crates/beacon-gtk/src/ui/show_page.rs:155
+msgid "Sort and Filter"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/content.rs:133
+#: crates/beacon-gtk/src/ui/content.rs:134
+#: crates/beacon-gtk/src/ui/content.rs:147 data/shortcuts-dialog.ui:16
 msgid "Search"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:328
-#: crates/beacon-gtk/src/ui/content.rs:331
+#: crates/beacon-gtk/src/ui/content.rs:396
+#: crates/beacon-gtk/src/ui/content.rs:399
 #: crates/beacon-gtk/src/ui/details_pane.rs:46
 msgid "Episode Details"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:350
+#: crates/beacon-gtk/src/ui/content.rs:418
 msgid "Queue Is Empty"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:351
+#: crates/beacon-gtk/src/ui/content.rs:419
 msgid "Add episodes to the queue to play them next"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:354
+#: crates/beacon-gtk/src/ui/content.rs:422
 msgid "No Favorites"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:355
+#: crates/beacon-gtk/src/ui/content.rs:423
 msgid "Mark an episode as a favorite to find it here"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:358
+#: crates/beacon-gtk/src/ui/content.rs:426
 msgid "No Downloads"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/content.rs:359
+#: crates/beacon-gtk/src/ui/content.rs:427
 msgid "Download an episode to listen offline"
 msgstr ""
 
@@ -332,7 +339,7 @@ msgid "Shows"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/labels.rs:12
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:74
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:82
 msgid "New"
 msgstr ""
 
@@ -348,76 +355,68 @@ msgstr ""
 msgid "Downloaded"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:78
-msgid "New Episodes"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/new_view.rs:104
-msgid "Show Episodes"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/new_view.rs:108
-msgid "All"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/new_view.rs:114
-msgid "Unplayed"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/new_view.rs:181
+#: crates/beacon-gtk/src/ui/new_view.rs:120
 msgid "No Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:182
+#: crates/beacon-gtk/src/ui/new_view.rs:121
 msgid "Subscribe to a podcast to see its episodes here"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:186
+#: crates/beacon-gtk/src/ui/new_view.rs:125
 msgid "No Unplayed Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:187
+#: crates/beacon-gtk/src/ui/new_view.rs:126
 msgid "You are all caught up"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:191
+#: crates/beacon-gtk/src/ui/new_view.rs:130
+msgid "No Matching Episodes"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/new_view.rs:131
+msgid "No recent episodes match these filters"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/new_view.rs:135
 msgid "No Recent Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/new_view.rs:192
+#: crates/beacon-gtk/src/ui/new_view.rs:136
 msgid "Episodes from the last month appear here"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:22
+#: crates/beacon-gtk/src/ui/page_filters.rs:23
 msgid "_Newest First"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:23
+#: crates/beacon-gtk/src/ui/page_filters.rs:24
 msgid "_Oldest First"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:29
+#: crates/beacon-gtk/src/ui/page_filters.rs:30
 msgid "_All"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:30
+#: crates/beacon-gtk/src/ui/page_filters.rs:31
 msgid "_Played"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:31
+#: crates/beacon-gtk/src/ui/page_filters.rs:32
 msgid "_Unplayed"
 msgstr ""
 
 #. Translators: all episodes, whether downloaded or not.
-#: crates/beacon-gtk/src/ui/page_filters.rs:38
+#: crates/beacon-gtk/src/ui/page_filters.rs:39
 msgid "A_ll"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:39
+#: crates/beacon-gtk/src/ui/page_filters.rs:40
 msgid "_Downloaded"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/page_filters.rs:40
+#: crates/beacon-gtk/src/ui/page_filters.rs:41
 msgid "No_t Downloaded"
 msgstr ""
 
@@ -431,8 +430,8 @@ msgstr ""
 
 #: crates/beacon-gtk/src/ui/show_hero.rs:55
 #: crates/beacon-gtk/src/ui/show_hero.rs:59
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:123
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:127
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:131
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:135
 msgid "More Options"
 msgstr ""
 
@@ -448,24 +447,15 @@ msgstr ""
 msgid "_Copy Feed Address"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:95
-msgid "Episodes"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/show_page.rs:134
-#: crates/beacon-gtk/src/ui/show_page.rs:137
-msgid "Sort and Filter"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/show_page.rs:289
+#: crates/beacon-gtk/src/ui/show_page.rs:338
 msgid "No unplayed episodes: you are all caught up"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:291
+#: crates/beacon-gtk/src/ui/show_page.rs:340
 msgid "No episodes match these filters"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:293
+#: crates/beacon-gtk/src/ui/show_page.rs:342
 msgid "This podcast has no episodes yet"
 msgstr ""
 
@@ -522,44 +512,44 @@ msgstr ""
 msgid "_About Beacon"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:89
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:97
 msgid "Played"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:116
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:120
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:124
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:128
 msgid "Play"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:210
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:211
 msgid "Show _Details"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:215
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:216
 msgid "Remove From _Queue"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:217
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:218
 msgid "Add to _Queue"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:222
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:223
 msgid "_Download"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:225
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:226
 msgid "Remove From _Favorites"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:227
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:228
 msgid "Add to _Favorites"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:233
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:234
 msgid "Mark as _Unplayed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:235
+#: crates/beacon-gtk/src/ui/widgets/episode_row.rs:236
 msgid "Mark as _Played"
 msgstr ""
 
@@ -585,12 +575,32 @@ msgstr ""
 msgid "Window maximized state"
 msgstr ""
 
-#: data/com.theoforger.Beacon.gschema.xml:23
-msgid "Episodes shown in New"
+#: data/com.theoforger.Beacon.gschema.xml:24
+msgid "Episodes shown in New, by played state"
 msgstr ""
 
-#: data/com.theoforger.Beacon.gschema.xml:24
-msgid "Whether New shows all recent episodes or only unplayed ones."
+#: data/com.theoforger.Beacon.gschema.xml:25
+msgid ""
+"Whether New shows all recent episodes, only played ones or only unplayed "
+"ones."
+msgstr ""
+
+#: data/com.theoforger.Beacon.gschema.xml:33
+msgid "Order of New"
+msgstr ""
+
+#: data/com.theoforger.Beacon.gschema.xml:34
+msgid "Whether New lists the newest or the oldest episodes first."
+msgstr ""
+
+#: data/com.theoforger.Beacon.gschema.xml:43
+msgid "Episodes shown in New, by download state"
+msgstr ""
+
+#: data/com.theoforger.Beacon.gschema.xml:44
+msgid ""
+"Whether New shows all recent episodes, only downloaded ones or only those "
+"not downloaded."
 msgstr ""
 
 #: data/com.theoforger.Beacon.metainfo.xml.in:11

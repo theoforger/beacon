@@ -148,7 +148,7 @@ impl Component for ShowPage {
         // Sort and filter, as in GNOME Podcasts, left of the details toggle.
         let filter = gtk::MenuButton::builder()
             .icon_name("funnel-symbolic")
-            .menu_model(&page_filters::menu())
+            .menu_model(&page_filters::menu("show"))
             .tooltip_text(gettext("Sort and Filter"))
             .build();
         filter.update_property(&[gtk::accessible::Property::Label(&gettext(

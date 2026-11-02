@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use beacon_core::StoreError;
 use beacon_core::browse::{self, RecencyGroup};
-use beacon_core::model::{Episode, EpisodeFilter, EpisodeId, Season, Show, ShowId, ShowPrefs};
+use beacon_core::model::{Episode, EpisodeId, Season, Show, ShowId, ShowPrefs, SortOrder};
 use beacon_core::store::Store;
 use chrono::{DateTime, Duration, Local, Utc};
 
@@ -97,27 +97,32 @@ pub fn show_cards(store: &Store) -> Result<Vec<ShowCard>, StoreError> {
         .collect())
 }
 
-/// The New view: recent episodes of every show with their recency group,
-/// newest first.
+/// The New view: recent episodes of every show that pass `prefs`' filters,
+/// with their recency group. Newest first puts Today first; oldest first
+/// reverses the groups and the episodes in them.
 pub fn new_items(
     store: &Store,
     now: DateTime<Utc>,
-    filter: EpisodeFilter,
+    prefs: ShowPrefs,
 ) -> Result<Vec<(RecencyGroup, EpisodeItem)>, StoreError> {
     let context = Context::load(store)?;
     let today = now.with_timezone(&Local).date_naive();
     // A day of slack so the oldest local day is complete.
     let since = now - Duration::days(browse::NEW_VIEW_DAYS + 1);
-    Ok(store
+    let mut items: Vec<_> = store
         .recent_episodes(since)?
         .into_iter()
-        .filter(|e| filter.accepts(e))
+        .filter(|e| prefs.accepts(e))
         .filter_map(|episode| {
             let published = episode.info.published?.with_timezone(&Local).date_naive();
             let group = browse::recency_group(published, today)?;
             Some((group, context.item(episode)))
         })
-        .collect())
+        .collect();
+    if prefs.order == SortOrder::OldestFirst {
+        items.reverse();
+    }
+    Ok(items)
 }
 
 pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, StoreError> {
@@ -163,4 +168,65 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
 pub fn episode_item(store: &Store, id: EpisodeId) -> Result<Option<EpisodeItem>, StoreError> {
     let context = Context::load(store)?;
     Ok(store.episode(id)?.map(|e| context.item(e)))
+}
+
+#[cfg(test)]
+mod tests {
+    use beacon_core::model::{EpisodeFilter, EpisodeInfo, ShowInfo};
+    use beacon_core::store::Store;
+    use chrono::TimeZone;
+    use url::Url;
+
+    use super::*;
+
+    fn store_with_recent_episodes(now: DateTime<Utc>) -> Store {
+        let mut store = Store::open_in_memory().unwrap();
+        let url = Url::parse("https://example.com/feed.xml").unwrap();
+        let show = store.insert_show(&url, &ShowInfo::default(), now).unwrap();
+        let episodes: Vec<_> = [(1, "today"), (2, "two days ago"), (10, "ten days ago")]
+            .into_iter()
+            .map(|(days, title)| beacon_core::model::ParsedEpisode {
+                info: EpisodeInfo {
+                    guid: title.into(),
+                    title: title.into(),
+                    published: Some(now - Duration::days(days - 1)),
+                    ..Default::default()
+                },
+                chapters: Vec::new(),
+            })
+            .collect();
+        store.sync_episodes(show, &episodes, now).unwrap();
+        store
+    }
+
+    fn titles(items: &[(RecencyGroup, EpisodeItem)]) -> Vec<&str> {
+        items
+            .iter()
+            .map(|(_, i)| i.episode.info.title.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn new_sorts_both_ways_and_filters() {
+        let now = Utc.with_ymd_and_hms(2026, 11, 2, 12, 0, 0).unwrap();
+        let store = store_with_recent_episodes(now);
+
+        let newest = new_items(&store, now, ShowPrefs::default()).unwrap();
+        assert_eq!(titles(&newest), ["today", "two days ago", "ten days ago"]);
+        assert_eq!(newest[0].0, RecencyGroup::Today);
+
+        let oldest = ShowPrefs {
+            order: SortOrder::OldestFirst,
+            ..Default::default()
+        };
+        let oldest = new_items(&store, now, oldest).unwrap();
+        assert_eq!(titles(&oldest), ["ten days ago", "two days ago", "today"]);
+        assert_eq!(oldest[0].0, RecencyGroup::LastWeek);
+
+        let played = ShowPrefs {
+            played: EpisodeFilter::Played,
+            ..Default::default()
+        };
+        assert!(new_items(&store, now, played).unwrap().is_empty());
+    }
 }

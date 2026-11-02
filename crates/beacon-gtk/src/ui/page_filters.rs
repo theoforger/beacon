@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The filter menu in a podcast page's header, as in GNOME Podcasts: three
-//! groups of radio items for the sort order, the played state and the
-//! download state. Each group is a stateful `show.*` action holding the
-//! chosen value's name.
+//! The filter menu, as in GNOME Podcasts, on podcast pages (`show.*`
+//! actions) and in New (`new.*`): three groups of radio items for the sort
+//! order, the played state and the download state. Each group is a stateful
+//! action holding the chosen value's name.
 
 use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs, SortOrder};
 use gettextrs::gettext;
@@ -13,7 +13,8 @@ pub const SORT: &str = "sort";
 pub const PLAYED: &str = "played";
 pub const DOWNLOADED: &str = "downloaded";
 
-pub fn menu() -> gio::Menu {
+/// The menu, its items naming actions in the group `prefix`.
+pub fn menu(prefix: &str) -> gio::Menu {
     let menu = gio::Menu::new();
     for (action, items) in [
         (
@@ -45,7 +46,7 @@ pub fn menu() -> gio::Menu {
         for (label, value) in items {
             let item = gio::MenuItem::new(Some(&label), None);
             item.set_action_and_target_value(
-                Some(&format!("show.{action}")),
+                Some(&format!("{prefix}.{action}")),
                 Some(&value.to_variant()),
             );
             section.append_item(&item);

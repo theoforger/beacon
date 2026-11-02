@@ -17,11 +17,31 @@
     <key name="new-filter" type="s">
       <choices>
         <choice value="all"/>
+        <choice value="played"/>
         <choice value="unplayed"/>
       </choices>
       <default>'all'</default>
-      <summary>Episodes shown in New</summary>
-      <description>Whether New shows all recent episodes or only unplayed ones.</description>
+      <summary>Episodes shown in New, by played state</summary>
+      <description>Whether New shows all recent episodes, only played ones or only unplayed ones.</description>
+    </key>
+    <key name="new-sort" type="s">
+      <choices>
+        <choice value="newest"/>
+        <choice value="oldest"/>
+      </choices>
+      <default>'newest'</default>
+      <summary>Order of New</summary>
+      <description>Whether New lists the newest or the oldest episodes first.</description>
+    </key>
+    <key name="new-downloaded" type="s">
+      <choices>
+        <choice value="all"/>
+        <choice value="downloaded"/>
+        <choice value="not-downloaded"/>
+      </choices>
+      <default>'all'</default>
+      <summary>Episodes shown in New, by download state</summary>
+      <description>Whether New shows all recent episodes, only downloaded ones or only those not downloaded.</description>
     </key>
   </schema>
 </schemalist>

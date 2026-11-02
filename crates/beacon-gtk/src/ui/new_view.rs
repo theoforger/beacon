@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The New section: recent episodes of every show, one boxed list per
-//! recency group under its heading (as GNOME Podcasts' home view), with an
-//! All / Unplayed toggle group above that the window remembers.
+//! recency group under its heading (as GNOME Podcasts' home view). The
+//! content header's filter button sorts and filters it, as on podcast pages.
 
 use std::rc::Rc;
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeFilter, EpisodeId};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk;
@@ -22,7 +22,7 @@ use crate::ui::widgets::episode_row::OnRowAction;
 pub enum NewViewInput {
     Set {
         items: Vec<(RecencyGroup, EpisodeItem)>,
-        filter: EpisodeFilter,
+        prefs: ShowPrefs,
         has_shows: bool,
     },
 }
@@ -30,7 +30,6 @@ pub enum NewViewInput {
 #[derive(Debug)]
 pub enum NewViewOutput {
     Action(Box<EpisodeItem>, RowAction),
-    FilterChanged(EpisodeFilter),
 }
 
 pub struct NewView {
@@ -51,14 +50,6 @@ impl Component for NewView {
     view! {
         gtk::Box {
             set_orientation: gtk::Orientation::Vertical,
-
-            #[name = "filter"]
-            adw::ToggleGroup {
-                set_halign: gtk::Align::Center,
-                set_margin_top: 12,
-                set_margin_bottom: 6,
-                set_homogeneous: true,
-            },
 
             #[name = "stack"]
             gtk::Stack {
@@ -95,9 +86,8 @@ impl Component for NewView {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let s = sender.clone();
         let on_action: OnRowAction = Rc::new(move |item, action| {
-            let _ = s.output(NewViewOutput::Action(Box::new(item.clone()), action));
+            let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
         });
         let model = NewView {
             on_action,
@@ -106,27 +96,6 @@ impl Component for NewView {
             lists: Vec::new(),
         };
         let widgets = view_output!();
-
-        widgets
-            .filter
-            .upcast_ref::<gtk::Widget>()
-            .update_property(&[gtk::accessible::Property::Label(&gettext("Show Episodes"))]);
-        widgets.filter.add(
-            adw::Toggle::builder()
-                .name("all")
-                .label(gettext("All"))
-                .build(),
-        );
-        widgets.filter.add(
-            adw::Toggle::builder()
-                .name("unplayed")
-                .label(gettext("Unplayed"))
-                .build(),
-        );
-        widgets.filter.connect_active_name_notify(move |group| {
-            let filter = filter_from(group.active_name().as_deref());
-            let _ = sender.output(NewViewOutput::FilterChanged(filter));
-        });
 
         ComponentParts { model, widgets }
     }
@@ -140,27 +109,26 @@ impl Component for NewView {
     ) {
         let NewViewInput::Set {
             items,
-            filter,
+            prefs,
             has_shows,
         } = message;
-        let name = match filter {
-            // New offers only All and Unplayed.
-            EpisodeFilter::All | EpisodeFilter::Played => "all",
-            EpisodeFilter::Unplayed => "unplayed",
-        };
-        if widgets.filter.active_name().as_deref() != Some(name) {
-            widgets.filter.set_active_name(Some(name));
-        }
 
+        let only_unplayed =
+            prefs.played == EpisodeFilter::Unplayed && prefs.downloaded == DownloadFilter::All;
         let (title, description) = if !has_shows {
             (
                 gettext("No Episodes"),
                 gettext("Subscribe to a podcast to see its episodes here"),
             )
-        } else if filter == EpisodeFilter::Unplayed {
+        } else if only_unplayed {
             (
                 gettext("No Unplayed Episodes"),
                 gettext("You are all caught up"),
+            )
+        } else if prefs.is_filtered() {
+            (
+                gettext("No Matching Episodes"),
+                gettext("No recent episodes match these filters"),
             )
         } else {
             (
@@ -217,11 +185,4 @@ fn group(items: Vec<(RecencyGroup, EpisodeItem)>) -> Vec<(RecencyGroup, Vec<Epis
         }
     }
     groups
-}
-
-pub fn filter_from(name: Option<&str>) -> EpisodeFilter {
-    match name {
-        Some("unplayed") => EpisodeFilter::Unplayed,
-        _ => EpisodeFilter::All,
-    }
 }

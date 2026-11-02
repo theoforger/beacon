@@ -9,9 +9,10 @@
 //! and their actions back.
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeFilter, ShowId, ShowPrefs};
+use beacon_core::model::{ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
+use relm4::gtk::{gio, glib};
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
 };
@@ -22,6 +23,7 @@ use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
 use crate::ui::labels;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
+use crate::ui::page_filters;
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 
@@ -42,18 +44,21 @@ pub enum ContentInput {
     SetShows(Vec<ShowCard>),
     SetNew {
         items: Vec<(RecencyGroup, EpisodeItem)>,
-        filter: EpisodeFilter,
+        prefs: ShowPrefs,
         has_shows: bool,
     },
     /// The Add page's subscription finished, either way.
     SubscribeDone,
+    /// A choice in New's filter menu: the group's action name and the value.
+    ChooseNew(&'static str, String),
 }
 
 #[derive(Debug)]
 pub enum ContentOutput {
     Action(Box<EpisodeItem>, RowAction),
     OpenShow(ShowId),
-    NewFilterChanged(EpisodeFilter),
+    /// A choice in New's filter menu.
+    NewPrefsChanged(ShowPrefs),
     ShowPrefsChanged(ShowId, ShowPrefs),
     MarkAllPlayed(ShowId),
     Unsubscribe(ShowId),
@@ -66,6 +71,10 @@ pub struct Content {
     new: Controller<NewView>,
     show_page: Controller<ShowPage>,
     add_page: Controller<AddPage>,
+    /// New's sort and filters, as last set by the window.
+    new_prefs: ShowPrefs,
+    /// New's filter menu groups, by action name.
+    new_choices: Vec<gio::SimpleAction>,
 }
 
 #[relm4::component(pub)]
@@ -107,6 +116,16 @@ impl Component for Content {
 
                         #[name = "details_toggle"]
                         pack_end = &new_details_toggle() -> gtk::ToggleButton {},
+
+                        // Sort and filter, only in New, as on podcast pages.
+                        #[name = "new_filter"]
+                        pack_end = &gtk::MenuButton {
+                            set_icon_name: "funnel-symbolic",
+                            set_menu_model: Some(&page_filters::menu("new")),
+                            set_visible: false,
+                            set_tooltip_text: Some(&gettext("Sort and Filter")),
+                            update_property: &[gtk::accessible::Property::Label(&gettext("Sort and Filter"))],
+                        },
 
                         #[name = "search_toggle"]
                         pack_end = &gtk::ToggleButton {
@@ -160,7 +179,6 @@ impl Component for Content {
             .launch(())
             .forward(&output, |message| match message {
                 NewViewOutput::Action(id, action) => ContentOutput::Action(id, action),
-                NewViewOutput::FilterChanged(filter) => ContentOutput::NewFilterChanged(filter),
             });
         // The podcast page packs its details toggle itself, at the far end
         // of its header like the root page's, before its filter button.
@@ -188,8 +206,42 @@ impl Component for Content {
             new,
             show_page,
             add_page,
+            new_prefs: ShowPrefs::default(),
+            new_choices: [
+                page_filters::SORT,
+                page_filters::PLAYED,
+                page_filters::DOWNLOADED,
+            ]
+            .into_iter()
+            .map(|name| {
+                gio::SimpleAction::new_stateful(
+                    name,
+                    Some(glib::VariantTy::STRING),
+                    &"".to_variant(),
+                )
+            })
+            .collect(),
         };
         let widgets = view_output!();
+
+        let new_actions = gio::SimpleActionGroup::new();
+        for (choice, name) in model.new_choices.iter().zip([
+            page_filters::SORT,
+            page_filters::PLAYED,
+            page_filters::DOWNLOADED,
+        ]) {
+            let s = sender.clone();
+            choice.connect_activate(move |action, target| {
+                if let Some(value) = target.and_then(|t| t.get::<String>()) {
+                    action.set_state(&value.to_variant());
+                    s.input(ContentInput::ChooseNew(name, value));
+                }
+            });
+            new_actions.add_action(choice);
+        }
+        widgets
+            .root_page
+            .insert_action_group("new", Some(&new_actions));
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
@@ -233,7 +285,7 @@ impl Component for Content {
         &mut self,
         widgets: &mut Self::Widgets,
         message: Self::Input,
-        _sender: ComponentSender<Self>,
+        sender: ComponentSender<Self>,
         _root: &Self::Root,
     ) {
         let navigation = &widgets.navigation;
@@ -241,6 +293,7 @@ impl Component for Content {
             ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
+                widgets.new_filter.set_visible(location == Location::New);
                 widgets.root_page.set_title(&labels::title(location));
                 // Leaving deeper pages for a section: no slide, the section
                 // simply changes.
@@ -269,14 +322,29 @@ impl Component for Content {
             ContentInput::SetShows(cards) => self.shows.emit(ShowsGridInput::SetCards(cards)),
             ContentInput::SetNew {
                 items,
-                filter,
+                prefs,
                 has_shows,
-            } => self.new.emit(NewViewInput::Set {
-                items,
-                filter,
-                has_shows,
-            }),
+            } => {
+                self.new_prefs = prefs;
+                for (choice, (_, value)) in
+                    self.new_choices.iter().zip(page_filters::states(&prefs))
+                {
+                    choice.set_state(&value.to_variant());
+                }
+                self.new.emit(NewViewInput::Set {
+                    items,
+                    prefs,
+                    has_shows,
+                });
+            }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
+            ContentInput::ChooseNew(group, value) => {
+                let prefs = page_filters::apply(self.new_prefs, group, &value);
+                if prefs != self.new_prefs {
+                    self.new_prefs = prefs;
+                    let _ = sender.output(ContentOutput::NewPrefsChanged(prefs));
+                }
+            }
         }
     }
 }

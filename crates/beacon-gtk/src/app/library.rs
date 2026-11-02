@@ -9,7 +9,7 @@
 use beacon_core::LibraryError;
 use beacon_core::StoreError;
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeFilter, EpisodeId, LibraryCounts, ShowId};
+use beacon_core::model::{EpisodeId, LibraryCounts, ShowId, ShowPrefs};
 use beacon_core::services::library::RefreshSummary;
 use beacon_core::store::Store;
 use chrono::{DateTime, Utc};
@@ -23,10 +23,15 @@ use crate::ui::content::{ContentInput, ContentOutput};
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{self, EpisodeItem, RowAction, ShowCard, ShowPageData};
-use crate::ui::new_view::filter_from;
+use crate::ui::page_filters;
 use crate::ui::sidebar::{Counts, SidebarInput};
 
-const NEW_FILTER_KEY: &str = "new-filter";
+/// Where New's filter menu choices are remembered, by menu group.
+const NEW_KEYS: [(&str, &str); 3] = [
+    (page_filters::SORT, "new-sort"),
+    (page_filters::PLAYED, "new-filter"),
+    (page_filters::DOWNLOADED, "new-downloaded"),
+];
 
 /// Which parts of the views a job reloads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,7 +74,7 @@ impl Parts {
 #[derive(Debug, Clone)]
 struct Context {
     now: DateTime<Utc>,
-    filter: EpisodeFilter,
+    new_prefs: ShowPrefs,
     page: Option<ShowId>,
     details: Option<EpisodeId>,
 }
@@ -89,7 +94,7 @@ pub struct Requests {
 pub struct Loaded {
     generation: u64,
     cards: Option<Vec<ShowCard>>,
-    new: Option<(Vec<(RecencyGroup, EpisodeItem)>, EpisodeFilter)>,
+    new: Option<(Vec<(RecencyGroup, EpisodeItem)>, ShowPrefs)>,
     page: Option<Option<ShowPageData>>,
     details: Option<Option<EpisodeItem>>,
     counts: Option<LibraryCounts>,
@@ -103,8 +108,8 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
         loaded.cards = Some(models::show_cards(store)?);
     }
     if parts.new {
-        let items = models::new_items(store, context.now, context.filter)?;
-        loaded.new = Some((items, context.filter));
+        let items = models::new_items(store, context.now, context.new_prefs)?;
+        loaded.new = Some((items, context.new_prefs));
     }
     if parts.page {
         loaded.page = Some(match context.page {
@@ -128,10 +133,19 @@ impl App {
     fn context(&self) -> Option<Context> {
         Some(Context {
             now: self.library.as_ref()?.now(),
-            filter: filter_from(Some(self.settings.string(NEW_FILTER_KEY).as_str())),
+            new_prefs: self.new_prefs(),
             page: self.last_show,
             details: self.details_episode.map(|(episode, _)| episode),
         })
+    }
+
+    /// New's sort and filters, as remembered in settings.
+    fn new_prefs(&self) -> ShowPrefs {
+        NEW_KEYS
+            .iter()
+            .fold(ShowPrefs::default(), |prefs, (group, key)| {
+                page_filters::apply(prefs, group, self.settings.string(key).as_str())
+            })
     }
 
     /// Run `change` on the store in the background, then reload `parts`.
@@ -194,10 +208,10 @@ impl App {
             self.titles = cards.iter().map(|c| (c.id, c.title.clone())).collect();
             self.content.emit(ContentInput::SetShows(cards));
         }
-        if let Some((items, filter)) = loaded.new.filter(|_| current(self.requests.new)) {
+        if let Some((items, prefs)) = loaded.new.filter(|_| current(self.requests.new)) {
             self.content.emit(ContentInput::SetNew {
                 items,
-                filter,
+                prefs,
                 has_shows: self.has_shows,
             });
         }
@@ -241,14 +255,14 @@ impl App {
         match output {
             ContentOutput::Action(item, action) => self.row_action(*item, action, widgets, sender),
             ContentOutput::OpenShow(id) => self.open_show(id, sender),
-            ContentOutput::NewFilterChanged(filter) => {
-                let name = match filter {
-                    // New offers only All and Unplayed.
-                    EpisodeFilter::All | EpisodeFilter::Played => "all",
-                    EpisodeFilter::Unplayed => "unplayed",
-                };
-                if let Err(err) = self.settings.set_string(NEW_FILTER_KEY, name) {
-                    tracing::warn!("could not remember the New filter: {err}");
+            ContentOutput::NewPrefsChanged(prefs) => {
+                for (group, value) in page_filters::states(&prefs) {
+                    let Some((_, key)) = NEW_KEYS.iter().find(|(g, _)| *g == group) else {
+                        continue;
+                    };
+                    if let Err(err) = self.settings.set_string(key, value) {
+                        tracing::warn!("could not remember the New filters: {err}");
+                    }
                 }
                 self.reload(sender, Parts::NEW);
             }
