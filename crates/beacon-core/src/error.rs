@@ -45,3 +45,15 @@ pub enum LibraryError {
     #[error("no such show")]
     ShowNotFound(ShowId),
 }
+
+/// Why an episode cannot be played. The player reports these; the details
+/// are for logs.
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum PlaybackError {
+    #[error("the audio system could not start: {0}")]
+    Unavailable(String),
+    #[error("the episode has no audio file")]
+    NoAudio,
+    #[error("could not play the episode: {0}")]
+    Stream(String),
+}

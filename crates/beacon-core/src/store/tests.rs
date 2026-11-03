@@ -155,3 +155,27 @@ fn deleting_a_show_removes_its_episodes() {
         .unwrap();
     assert_eq!(count, 0);
 }
+
+#[test]
+fn positions_are_saved_and_a_finished_episode_starts_over() {
+    let (mut store, show) = store_with_show();
+    store
+        .sync_episodes(show, &[episode("a", "A", 1)], now())
+        .unwrap();
+    let id = store.episodes(show).unwrap()[0].id;
+    store.enqueue(id).unwrap();
+
+    store
+        .set_position(id, std::time::Duration::from_millis(754_900))
+        .unwrap();
+    let state = store.episode(id).unwrap().unwrap().state;
+    assert_eq!(state.position, std::time::Duration::from_secs(754));
+    assert!(state.is_partly_played());
+
+    store.finish(id, now()).unwrap();
+    let state = store.episode(id).unwrap().unwrap().state;
+    assert!(state.played);
+    assert_eq!(state.position, std::time::Duration::ZERO);
+    // Finishing is not dequeuing: moving on is the player's job.
+    assert_eq!(store.queue().unwrap(), [id]);
+}

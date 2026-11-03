@@ -4,6 +4,8 @@
 //! preferences and unsubscribing. Marking played or unplayed never touches
 //! the queue.
 
+use std::time::Duration;
+
 use chrono::{DateTime, Utc};
 use rusqlite::{OptionalExtension, params};
 
@@ -55,6 +57,23 @@ impl Store {
             "UPDATE episodes SET played = 1, played_at = ?2 WHERE show_id = ?1 AND played = 0",
             params![show.0, now],
         )?)
+    }
+
+    /// Where playback of an episode got to, saved while it plays and when
+    /// it stops. Saved to the second.
+    pub fn set_position(&self, id: EpisodeId, position: Duration) -> Result<(), StoreError> {
+        self.conn.execute(
+            "UPDATE episodes SET position_secs = ?2 WHERE id = ?1",
+            params![id.0, i64::try_from(position.as_secs()).unwrap_or(i64::MAX)],
+        )?;
+        Ok(())
+    }
+
+    /// An episode played to its end: played, and back to the start for the
+    /// next listen. The queue is left alone; moving on is the player's job.
+    pub fn finish(&self, id: EpisodeId, now: DateTime<Utc>) -> Result<(), StoreError> {
+        self.set_played(id, true, now)?;
+        self.set_position(id, Duration::ZERO)
     }
 
     /// Viewing an episode's details clears its blue dot for good.
