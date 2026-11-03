@@ -77,3 +77,11 @@ Walked through on 2026-11-03. Every pending row was covered; they are cleared fr
 - **B7.** R activated Reset Sort and Filters headless with a filter on. With every choice at its default the item is unavailable, so its access key does nothing, by design.
 
 **Raised alongside the walk-through:** grid covers were still softer than the details pane's (now decoded at the size they are drawn), and a podcast page's rows repeated the show's name (now left out).
+
+### Recheck (2026-11-03)
+
+Everything passed except:
+
+- **B9.** "Middle dot" was still read: Orca reads an unnamed row from its text, so naming the subtitle label changed nothing. Rows now have an accessible name (title, New or Played, subtitle with commas), checked through AT-SPI headless.
+- **B2.** Escape did nothing in Add's search field (Alt+Left worked): a search entry keeps Escape for itself. Escape now clears the field, and in the empty field goes back.
+- **Grid covers** were still softer than the details pane's: the decode size was rounded up to a multiple of 8, so covers were drawn slightly smaller than decoded. They are now decoded at exactly the drawn size (37.8 dB against a Lanczos resize of the source, up from 27.9 dB).
