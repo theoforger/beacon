@@ -77,12 +77,15 @@ impl EpisodeRow {
         root.set_child(Some(&content));
         let cover = Cover::new(COVER_SIZE);
 
+        // The dot, title, check and subtitle are left out of the
+        // accessibility tree: the row's name says what they show (see
+        // `bind`), and exposed too they were read a second time, the
+        // subtitle's separators as "middle dot".
         let dot = gtk::Box::builder()
             .css_classes(["new-dot"])
             .valign(gtk::Align::Center)
-            .accessible_role(gtk::AccessibleRole::Img)
+            .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
-        dot.update_property(&[gtk::accessible::Property::Label(&gettext("New"))]);
         let title = gtk::Label::builder()
             .xalign(0.0)
             .wrap(true)
@@ -90,14 +93,14 @@ impl EpisodeRow {
             .lines(2)
             .ellipsize(pango::EllipsizeMode::End)
             .css_classes(["heading"])
+            .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
         let check = gtk::Image::builder()
             .icon_name("object-select-symbolic")
             .css_classes(["dim-label"])
             .valign(gtk::Align::Center)
-            .accessible_role(gtk::AccessibleRole::Img)
+            .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
-        check.update_property(&[gtk::accessible::Property::Label(&gettext("Played"))]);
         let title_line = gtk::Box::builder().spacing(6).build();
         title_line.append(&dot);
         title_line.append(&title);
@@ -107,9 +110,9 @@ impl EpisodeRow {
             .xalign(0.0)
             .ellipsize(pango::EllipsizeMode::End)
             .css_classes(["dim-label", "caption"])
+            .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
         let progress = gtk::ProgressBar::builder().margin_top(4).build();
-
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
             .spacing(2)
