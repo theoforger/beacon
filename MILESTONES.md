@@ -120,7 +120,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green (run 40814712761 on `a84f682`); docs up to date
 - [x] Human review of the running app (2026-10-29: "M2 looks good"). The main-menu icon stays `open-menu-symbolic`, as the HIG asks; the user's Papirus theme draws it as dots
 
-## M3 Library views
+## M3 Library views ✓
 
 **Done when:** real data can be browsed end to end.
 
@@ -153,8 +153,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m3.md`)
 - [x] Translation and labels checked; accessibility walk-throughs logged in `pending-accessibility.md` (deferred to the checkpoint after M3)
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario
-- [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] CI and docs: CI green; docs up to date
+- [x] Human review of the running app (2026-11-03, after the fixes in `docs/hig-reviews/m3.md`)
 
 ## Accessibility checkpoint (after M3)
 
