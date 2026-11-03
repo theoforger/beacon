@@ -163,7 +163,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] Orca walk-through of every view and dialog built in M0 to M3
 - [ ] Keyboard-only walk-through: every control reachable, focus order sensible, shortcuts work
 - [ ] States exposed to assistive technology (selected sidebar item, toggle groups, played and unplayed)
-- [ ] Large text at 360px wide: no clipping or overlap
+- [x] Large text at 360px wide: no clipping or overlap (2026-11-03)
 - [ ] Results recorded in `docs/hig-reviews/a11y-checkpoint.md`; fixes have their own commits
 - [ ] `pending-accessibility.md` empty
 
