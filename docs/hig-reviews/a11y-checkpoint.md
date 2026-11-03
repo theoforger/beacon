@@ -89,3 +89,7 @@ Everything passed except:
 ### Second recheck (2026-11-03)
 
 - **B9.** The subtitle was read twice, once from the row's name and once, with "middle dot", from its label. The row's text parts now have the `Presentation` role, so only the name and the two buttons are exposed (checked through AT-SPI).
+
+## Closed
+
+The last rechecks (B2, B9) passed on 2026-11-03. `pending-accessibility.md` is empty; from M4 on, the walk-throughs run in each milestone's HIG gate.

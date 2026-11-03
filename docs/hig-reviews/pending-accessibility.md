@@ -4,5 +4,3 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 
 | Added | Change (commit or files) | What to check | How |
 | --- | --- | --- | --- |
-| 2026-11-03 | Checkpoint B2: `ui/add_page.rs` | Recheck: in Add's search field, Escape clears the text, and a second Escape (empty field) goes back | Keyboard |
-| 2026-11-03 | Checkpoint B9: `ui/widgets/episode_row.rs` | Recheck: a row is read once, as its title, "New" or "Played", then the subtitle with pauses; no "middle dot", and the subtitle not repeated. AT-SPI exposes only the row's name and its Play and More Options buttons | Orca |

@@ -156,16 +156,16 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green; docs up to date
 - [x] Human review of the running app (2026-11-03, after the fixes in `docs/hig-reviews/m3.md`)
 
-## Accessibility checkpoint (after M3)
+## Accessibility checkpoint (after M3) ✓
 
 **Done when:** every row of `docs/hig-reviews/pending-accessibility.md` is checked, fixed where needed and cleared. M4 starts after this.
 
-- [ ] Orca walk-through of every view and dialog built in M0 to M3
-- [ ] Keyboard-only walk-through: every control reachable, focus order sensible, shortcuts work
-- [ ] States exposed to assistive technology (selected sidebar item, toggle groups, played and unplayed)
+- [x] Orca walk-through of every view and dialog built in M0 to M3
+- [x] Keyboard-only walk-through: every control reachable, focus order sensible, shortcuts work
+- [x] States exposed to assistive technology (selected sidebar item, toggle groups, played and unplayed)
 - [x] Large text at 360px wide: no clipping or overlap (2026-11-03)
-- [ ] Results recorded in `docs/hig-reviews/a11y-checkpoint.md`; fixes have their own commits
-- [ ] `pending-accessibility.md` empty
+- [x] Results recorded in `docs/hig-reviews/a11y-checkpoint.md`; fixes have their own commits
+- [x] `pending-accessibility.md` empty
 
 ## M4 Playback
 
