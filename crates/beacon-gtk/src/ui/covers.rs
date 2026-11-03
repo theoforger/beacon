@@ -1,88 +1,51 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Cover art at the sizes the views draw it. Covers can be several thousand
-//! pixels wide, so each is decoded once, asynchronously, at the size needed,
-//! and kept. Decoding never blocks the UI: a cover shows its placeholder
-//! until its image is ready.
+//! Cover art at the sizes the views draw it (decoded and kept by
+//! `cover_cache`). Decoding never blocks the UI: a cover shows its
+//! placeholder until its image is ready. Covers that grow with the Shows grid are decoded
+//! again at their new size once the window stops resizing, since a texture
+//! drawn much smaller than its pixels looks soft.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::Duration;
 
-use relm4::gtk::{self, gdk, gdk_pixbuf, gio, glib, prelude::*};
+use relm4::gtk::{self, gdk, glib, prelude::*};
 
+use crate::ui::cover_cache::{Key, cached, decode, decode_size, device_pixels, store};
 use crate::ui::widgets::smooth_texture::SmoothTexture;
 
-type Key = (PathBuf, i32);
-
 thread_local! {
-    /// Decoded covers; `None` marks one that could not be read.
-    static TEXTURES: RefCell<HashMap<Key, Option<SmoothTexture>>> =
-        RefCell::new(HashMap::new());
+    /// Covers being decoded, with the other covers waiting for the same
+    /// image: a long list asks for one show's cover once per row.
+    static DECODING: RefCell<HashMap<Key, Vec<WeakCover>>> = RefCell::new(HashMap::new());
 }
 
-fn cached(key: &Key) -> Option<Option<SmoothTexture>> {
-    TEXTURES.with_borrow(|cache| cache.get(key).cloned())
+/// How long the grid must keep a size before its covers are decoded again.
+const SETTLE: Duration = Duration::from_millis(150);
+
+/// How a cover is sized.
+#[derive(Debug, Clone, Copy)]
+enum Mode {
+    /// `size` logical pixels square.
+    Fixed(i32),
+    /// As wide as its column; decoded at the device pixels it is drawn at.
+    Filling,
 }
 
-/// The width and height to ask the decoder for, so that a `width` by
-/// `height` image fills a `size` square once cropped: its shorter side
-/// becomes `size` and the other keeps the aspect ratio (-1). With the
-/// image's size unknown, it fits inside the square.
-fn decode_box(dimensions: Option<(i32, i32)>, size: i32) -> (i32, i32) {
-    match dimensions {
-        Some((width, height)) if width > height => (-1, size),
-        Some((width, height)) if width < height => (size, -1),
-        _ => (size, size),
-    }
-}
-
-/// Decode a cover on GIO's worker threads, at `size` pixels on its shorter
-/// side, to be cropped to a square.
-async fn decode(path: PathBuf, size: i32) -> Option<SmoothTexture> {
-    let file = gio::File::for_path(&path);
-    let result = async {
-        let dimensions = gdk_pixbuf::Pixbuf::file_info_future(path.clone())
-            .await
-            .ok()
-            .flatten()
-            .map(|(_, width, height)| (width, height));
-        let (width, height) = decode_box(dimensions, size);
-        let stream = file.read_future(glib::Priority::LOW).await?;
-        gdk_pixbuf::Pixbuf::from_stream_at_scale_future(&stream, width, height, true).await
-    }
-    .await;
-    match result {
-        Ok(pixbuf) => Some(SmoothTexture::new(texture_from(&pixbuf))),
-        Err(err) => {
-            tracing::debug!("cannot read cover {}: {err}", path.display());
-            None
-        }
-    }
-}
-
-fn texture_from(pixbuf: &gdk_pixbuf::Pixbuf) -> gdk::Texture {
-    let format = if pixbuf.has_alpha() {
-        gdk::MemoryFormat::R8g8b8a8
-    } else {
-        gdk::MemoryFormat::R8g8b8
-    };
-    gdk::MemoryTexture::new(
-        pixbuf.width(),
-        pixbuf.height(),
-        format,
-        &pixbuf.read_pixel_bytes(),
-        pixbuf.rowstride() as usize,
-    )
-    .upcast()
-}
-
-/// Pixels to decode a cover drawn at `size` logical pixels. A widget not yet
-/// on screen reports scale 1, so decode at least 2x to stay sharp on HiDPI
-/// screens.
-fn decode_size(size: i32, scale: i32) -> i32 {
-    size * scale.max(2)
+/// What a cover shows and wants, shared by its handles.
+#[derive(Debug, Default)]
+struct State {
+    path: RefCell<Option<PathBuf>>,
+    /// A filling cover's width in device pixels; 0 until first allocated.
+    pixels: Cell<i32>,
+    /// The cover this widget should show now; a decode that finishes after
+    /// the widget moved on to another cover or size is dropped.
+    wanted: RefCell<Option<Key>>,
+    /// A decode waiting for the grid to stop resizing.
+    settling: RefCell<Option<glib::SourceId>>,
 }
 
 /// A square cover with a placeholder icon when there is no art. Art that is
@@ -92,11 +55,31 @@ pub struct Cover {
     root: gtk::Overlay,
     art: gtk::Picture,
     placeholder: gtk::Image,
-    /// Pixels the art is decoded at, before the screen's scale.
-    size: i32,
-    /// The cover this widget should show now; a decode that finishes after
-    /// the widget moved on to another cover is dropped.
-    wanted: Rc<RefCell<Option<Key>>>,
+    mode: Mode,
+    state: Rc<State>,
+}
+
+/// A cover held without keeping its widgets alive, for its own signal
+/// handlers.
+#[derive(Debug, Clone)]
+struct WeakCover {
+    root: glib::WeakRef<gtk::Overlay>,
+    art: glib::WeakRef<gtk::Picture>,
+    placeholder: glib::WeakRef<gtk::Image>,
+    mode: Mode,
+    state: Rc<State>,
+}
+
+impl WeakCover {
+    fn upgrade(&self) -> Option<Cover> {
+        Some(Cover {
+            root: self.root.upgrade()?,
+            art: self.art.upgrade()?,
+            placeholder: self.placeholder.upgrade()?,
+            mode: self.mode,
+            state: self.state.clone(),
+        })
+    }
 }
 
 impl Cover {
@@ -111,25 +94,43 @@ impl Cover {
             .halign(gtk::Align::Start)
             .valign(gtk::Align::Center)
             .build();
-        Self::build(root, size, size)
+        Self::build(root, size, Mode::Fixed(size))
     }
 
     /// A cover as wide as it is given, at least `min` pixels, and as tall as
-    /// it is wide, as GNOME Podcasts draws the Shows grid. Its art is
-    /// decoded for `max` pixels. Put it in a container that measures height
-    /// for width at the natural size (a grid view with a natural
-    /// `vscroll-policy`).
-    pub fn filling(min: i32, max: i32) -> Self {
+    /// it is wide, as GNOME Podcasts draws the Shows grid. Put it in a
+    /// container that measures height for width at the natural size (a grid
+    /// view with a natural `vscroll-policy`).
+    pub fn filling(min: i32) -> Self {
         let root = gtk::Overlay::builder()
             .child(&square(min))
             .hexpand(true)
             .build();
-        Self::build(root, min, max)
+        // Draws nothing; it reports the cover's size as the grid changes.
+        let probe = gtk::DrawingArea::builder()
+            .can_target(false)
+            .can_focus(false)
+            .build();
+        root.add_overlay(&probe);
+        let this = Self::build(root, min, Mode::Filling);
+        let weak = this.downgrade();
+        probe.connect_resize(move |probe, width, _| {
+            if let Some(cover) = weak.upgrade() {
+                cover.resized(probe, width);
+            }
+        });
+        let weak = this.downgrade();
+        probe.connect_scale_factor_notify(move |probe| {
+            if let Some(cover) = weak.upgrade() {
+                cover.resized(probe, probe.width());
+            }
+        });
+        this
     }
 
     /// The art and placeholder over `root`'s child, which sets the size: the
     /// art never does, so a 2x texture never doubles the layout.
-    fn build(root: gtk::Overlay, size: i32, decode: i32) -> Self {
+    fn build(root: gtk::Overlay, size: i32, mode: Mode) -> Self {
         let art = gtk::Picture::builder()
             .content_fit(gtk::ContentFit::Cover)
             .can_shrink(true)
@@ -151,8 +152,18 @@ impl Cover {
             root,
             art,
             placeholder,
-            size: decode,
-            wanted: Rc::default(),
+            mode,
+            state: Rc::default(),
+        }
+    }
+
+    fn downgrade(&self) -> WeakCover {
+        WeakCover {
+            root: self.root.downgrade(),
+            art: self.art.downgrade(),
+            placeholder: self.placeholder.downgrade(),
+            mode: self.mode,
+            state: self.state.clone(),
         }
     }
 
@@ -161,16 +172,60 @@ impl Cover {
     }
 
     pub fn set(&self, path: Option<&Path>) {
-        let key = path.map(|p| {
-            (
-                p.to_owned(),
-                decode_size(self.size, self.root.scale_factor()),
-            )
-        });
-        if *self.wanted.borrow() == key {
+        self.state.path.replace(path.map(Path::to_owned));
+        self.load();
+    }
+
+    /// A filling cover was given `width` logical pixels: decode for it, at
+    /// once the first time, then when the grid stops resizing.
+    fn resized(&self, widget: &impl IsA<gtk::Widget>, width: i32) {
+        let scale = widget
+            .native()
+            .and_then(|native| native.surface())
+            .map_or_else(
+                || f64::from(widget.scale_factor()),
+                |surface| surface.scale(),
+            );
+        let pixels = device_pixels(width, scale);
+        if width <= 0 || pixels == self.state.pixels.get() {
             return;
         }
-        self.wanted.replace(key.clone());
+        let first = self.state.pixels.replace(pixels) == 0;
+        if let Some(waiting) = self.state.settling.take() {
+            waiting.remove();
+        }
+        if first {
+            self.load();
+            return;
+        }
+        let weak = self.downgrade();
+        let id = glib::timeout_add_local_once(SETTLE, move || {
+            if let Some(cover) = weak.upgrade() {
+                cover.state.settling.take();
+                cover.load();
+            }
+        });
+        self.state.settling.replace(Some(id));
+    }
+
+    /// Show the wanted cover at the wanted size, decoding it if needed.
+    fn load(&self) {
+        let path = self.state.path.borrow().clone();
+        let key = match (path, self.mode) {
+            (None, _) => None,
+            (Some(path), Mode::Fixed(size)) => {
+                Some((path, decode_size(size, self.root.scale_factor())))
+            }
+            (Some(path), Mode::Filling) => match self.state.pixels.get() {
+                // Not allocated yet: decode once its size is known.
+                0 => return,
+                pixels => Some((path, pixels)),
+            },
+        };
+        let previous = self.state.wanted.replace(key.clone());
+        if previous == key {
+            return;
+        }
         let Some(key) = key else {
             self.show(None);
             return;
@@ -179,13 +234,38 @@ impl Cover {
             self.show(texture.as_ref());
             return;
         }
-        self.show(None);
-        let this = self.clone();
+        // A new size of the same cover keeps the old art until the sharper
+        // one is ready; a different cover shows the placeholder meanwhile.
+        if previous.is_none_or(|(path, _)| path != key.0) {
+            self.show(None);
+        }
+        let this = self.downgrade();
+        let already = DECODING.with_borrow_mut(|decoding| match decoding.get_mut(&key) {
+            Some(waiting) => {
+                waiting.push(this.clone());
+                true
+            }
+            None => {
+                decoding.insert(key.clone(), Vec::new());
+                false
+            }
+        });
+        if already {
+            return;
+        }
+        let filling = matches!(self.mode, Mode::Filling);
         glib::spawn_future_local(async move {
             let texture = decode(key.0.clone(), key.1).await;
-            TEXTURES.with_borrow_mut(|cache| cache.insert(key.clone(), texture.clone()));
-            if this.wanted.borrow().as_ref() == Some(&key) {
-                this.show(texture.as_ref());
+            store(&key, texture.clone(), filling);
+            let waiting = DECODING
+                .with_borrow_mut(|decoding| decoding.remove(&key))
+                .unwrap_or_default();
+            for cover in std::iter::once(this).chain(waiting) {
+                if let Some(cover) = cover.upgrade()
+                    && cover.state.wanted.borrow().as_ref() == Some(&key)
+                {
+                    cover.show(texture.as_ref());
+                }
             }
         });
     }
@@ -219,28 +299,4 @@ pub fn square(min: i32) -> gtk::Picture {
         .width_request(min)
         .hexpand(true)
         .build()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn covers_decode_sharp_enough_before_the_scale_is_known() {
-        // Unrealized widgets report scale 1; HiDPI screens need at least 2x.
-        assert_eq!(decode_size(48, 1), 96);
-        assert_eq!(decode_size(48, 2), 96);
-        assert_eq!(decode_size(48, 3), 144);
-        assert_eq!(decode_size(160, 0), 320);
-    }
-
-    #[test]
-    fn covers_decode_with_the_shorter_side_filling_the_square() {
-        // Wide and tall art keeps its aspect ratio, short side at `size`, so
-        // cropping to the square never scales it up.
-        assert_eq!(decode_box(Some((1920, 1080)), 96), (-1, 96));
-        assert_eq!(decode_box(Some((600, 900)), 96), (96, -1));
-        assert_eq!(decode_box(Some((3000, 3000)), 96), (96, 96));
-        assert_eq!(decode_box(None, 96), (96, 96));
-    }
 }

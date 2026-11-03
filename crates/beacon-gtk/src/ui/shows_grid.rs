@@ -17,8 +17,6 @@ use crate::ui::models::ShowCard;
 /// The narrowest a cover gets, as in GNOME Podcasts. Covers grow to fill
 /// their column; the gaps between them stay the same.
 const COVER_MIN: i32 = 150;
-/// The size covers are decoded for: a column is never twice the narrowest.
-const COVER_MAX: i32 = 300;
 
 #[derive(Debug)]
 pub enum ShowsGridInput {
@@ -165,7 +163,7 @@ fn tile_factory() -> gtk::SignalListItemFactory {
 }
 
 fn show_tile(card: &ShowCard) -> gtk::Box {
-    let cover = Cover::filling(COVER_MIN, COVER_MAX);
+    let cover = Cover::filling(COVER_MIN);
     cover.set(card.cover.as_deref());
     let art = cover.widget();
     // On the cover itself, so the badge stays in its corner at any width.

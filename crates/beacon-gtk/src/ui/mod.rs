@@ -2,6 +2,7 @@
 
 pub mod add_page;
 pub mod content;
+pub mod cover_cache;
 pub mod covers;
 pub mod details_pane;
 pub mod dialogs;
