@@ -10,6 +10,9 @@
 
 .cover-placeholder {
   background-color: var(--card-bg-color);
+  /* Outlined, or the card colour barely shows on the light window
+   * background. */
+  box-shadow: inset 0 0 0 1px var(--border-color);
 }
 
 /* The number of new episodes on a Shows tile. */
@@ -38,9 +41,16 @@
 }
 
 /* The Shows grid sits on the window background, as in the mockup, rather
- * than on its own view background. */
-.flat-view {
+ * than on its own view background. As in GNOME Podcasts, every tile has the
+ * same margin, so the gaps stay the same while covers grow with the window. */
+.shows-grid {
   background: none;
+  padding: 6px;
+}
+
+.shows-grid > child {
+  padding: 0;
+  margin: 6px;
 }
 
 /* The dot on the filter button while a filter or a non-default order is on,

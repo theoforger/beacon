@@ -64,12 +64,24 @@ fn decode_size(size: i32, scale: i32) -> i32 {
     size * scale.max(2)
 }
 
+/// What draws the art.
+#[derive(Debug, Clone)]
+enum Art {
+    /// At a fixed size: a `GtkImage` draws its paintable at `pixel_size`
+    /// whatever the paintable's own size, so a 2x texture never doubles the
+    /// layout.
+    Fixed(gtk::Image),
+    /// Filling the cover, cropped to the square if the art is not square.
+    Filling(gtk::Picture),
+}
+
 /// A square cover with a placeholder icon when there is no art.
 #[derive(Debug, Clone)]
 pub struct Cover {
     root: gtk::Overlay,
-    image: gtk::Image,
+    art: Art,
     placeholder: gtk::Image,
+    /// Pixels the art is decoded at, before the screen's scale.
     size: i32,
     /// The cover this widget should show now; a decode that finishes after
     /// the widget moved on to another cover is dropped.
@@ -77,32 +89,53 @@ pub struct Cover {
 }
 
 impl Cover {
+    /// A cover `size` pixels square.
     pub fn new(size: i32) -> Self {
-        // A GtkImage draws its paintable at `pixel_size` whatever the
-        // paintable's own size, so a 2x texture never doubles the layout.
         let image = gtk::Image::builder().pixel_size(size).build();
+        let root = gtk::Overlay::builder()
+            .child(&image)
+            .width_request(size)
+            .height_request(size)
+            .halign(gtk::Align::Start)
+            .valign(gtk::Align::Center)
+            .build();
+        Self::build(root, Art::Fixed(image), size, size)
+    }
+
+    /// A cover as wide as it is given, at least `min` pixels, and as tall as
+    /// it is wide, as GNOME Podcasts draws the Shows grid. Its art is
+    /// decoded for `max` pixels. Put it in a container that measures height
+    /// for width at the natural size (a grid view with a natural
+    /// `vscroll-policy`).
+    pub fn filling(min: i32, max: i32) -> Self {
+        let picture = gtk::Picture::builder()
+            .content_fit(gtk::ContentFit::Cover)
+            .can_shrink(true)
+            .build();
+        let root = gtk::Overlay::builder()
+            .child(&square(min))
+            .hexpand(true)
+            .build();
+        root.add_overlay(&picture);
+        Self::build(root, Art::Filling(picture), min, max)
+    }
+
+    fn build(root: gtk::Overlay, art: Art, size: i32, decode: i32) -> Self {
         let placeholder = gtk::Image::builder()
             .icon_name("com.theoforger.Beacon-symbolic")
             .pixel_size(size / 3)
             .css_classes(["dim-label"])
             .build();
-        let root = gtk::Overlay::builder()
-            .child(&image)
-            .overflow(gtk::Overflow::Hidden)
-            .width_request(size)
-            .height_request(size)
-            .halign(gtk::Align::Start)
-            .valign(gtk::Align::Center)
-            .css_classes(["cover"])
-            .build();
         root.add_overlay(&placeholder);
+        root.set_overflow(gtk::Overflow::Hidden);
+        root.set_css_classes(&["cover"]);
         // Decorative: the title next to it says what it is.
         root.set_accessible_role(gtk::AccessibleRole::Presentation);
         Self {
             root,
-            image,
+            art,
             placeholder,
-            size,
+            size: decode,
             wanted: Rc::default(),
         }
     }
@@ -142,7 +175,10 @@ impl Cover {
     }
 
     fn show(&self, texture: Option<&gdk::Texture>) {
-        self.image.set_paintable(texture);
+        match &self.art {
+            Art::Fixed(image) => image.set_paintable(texture),
+            Art::Filling(picture) => picture.set_paintable(texture),
+        }
         self.placeholder.set_visible(texture.is_none());
         self.root.set_css_classes(if texture.is_some() {
             &["cover"]
@@ -150,6 +186,26 @@ impl Cover {
             &["cover", "cover-placeholder"]
         });
     }
+}
+
+/// An empty widget as wide as it is given, at least `min` pixels, and as
+/// tall as it is wide: a `GtkPicture` of a square paintable measures its
+/// height for its width.
+pub fn square(min: i32) -> gtk::Picture {
+    let pixel = gdk::MemoryTexture::new(
+        1,
+        1,
+        gdk::MemoryFormat::R8g8b8a8,
+        &glib::Bytes::from_static(&[0, 0, 0, 0]),
+        4,
+    );
+    gtk::Picture::builder()
+        .paintable(&pixel)
+        .content_fit(gtk::ContentFit::Fill)
+        .can_shrink(true)
+        .width_request(min)
+        .hexpand(true)
+        .build()
 }
 
 #[cfg(test)]

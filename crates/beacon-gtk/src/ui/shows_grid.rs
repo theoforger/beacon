@@ -11,10 +11,14 @@ use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw};
 
 use beacon_core::model::ShowId;
 
-use crate::ui::covers::Cover;
+use crate::ui::covers::{Cover, square};
 use crate::ui::models::ShowCard;
 
-const COVER_SIZE: i32 = 160;
+/// The narrowest a cover gets, as in GNOME Podcasts. Covers grow to fill
+/// their column; the gaps between them stay the same.
+const COVER_MIN: i32 = 150;
+/// The size covers are decoded for: a column is never twice the narrowest.
+const COVER_MAX: i32 = 300;
 
 #[derive(Debug)]
 pub enum ShowsGridInput {
@@ -72,17 +76,19 @@ impl SimpleComponent for ShowsGrid {
                 #[wrap(Some)]
                 set_child = &adw::ClampScrollable {
                     set_maximum_size: 1200,
+                    set_vscroll_policy: gtk::ScrollablePolicy::Natural,
 
+                    // As in GNOME Podcasts: 2 to 7 columns, fixed margins
+                    // around each tile (`.shows-grid`), and rows as tall as
+                    // their tiles' natural height, so covers stay square.
                     #[wrap(Some)]
                     #[name = "grid"]
                     set_child = &gtk::GridView {
-                        set_max_columns: 12,
+                        set_min_columns: 2,
+                        set_max_columns: 7,
+                        set_vscroll_policy: gtk::ScrollablePolicy::Natural,
                         set_single_click_activate: true,
-                        add_css_class: "flat-view",
-                        set_margin_top: 12,
-                        set_margin_bottom: 12,
-                        set_margin_start: 12,
-                        set_margin_end: 12,
+                        add_css_class: "shows-grid",
                         update_property: &[gtk::accessible::Property::Label(&gettext("Shows"))],
                     },
                 },
@@ -159,9 +165,10 @@ fn tile_factory() -> gtk::SignalListItemFactory {
 }
 
 fn show_tile(card: &ShowCard) -> gtk::Box {
-    let cover = Cover::new(COVER_SIZE);
+    let cover = Cover::filling(COVER_MIN, COVER_MAX);
     cover.set(card.cover.as_deref());
-    let art = gtk::Overlay::builder().child(cover.widget()).build();
+    let art = cover.widget();
+    // On the cover itself, so the badge stays in its corner at any width.
     if card.new_count > 0 {
         let badge = gtk::Label::builder()
             .label(card.new_count.to_string())
@@ -175,7 +182,7 @@ fn show_tile(card: &ShowCard) -> gtk::Box {
     }
 
     let tile = text_tile(&card.title, card.author.as_deref().unwrap_or_default());
-    tile.prepend(&art);
+    tile.prepend(art);
     let label = match &card.author {
         // Translators: how a screen reader names a show tile.
         Some(author) => gettext("{title} by {author}")
@@ -199,15 +206,17 @@ fn add_tile() -> gtk::Box {
     let icon = gtk::Image::builder()
         .icon_name("list-add-symbolic")
         .pixel_size(32)
-        .width_request(COVER_SIZE)
-        .height_request(COVER_SIZE)
+        .build();
+    let art = gtk::Overlay::builder()
+        .child(&square(COVER_MIN))
         .css_classes(["add-tile", "dim-label"])
         .build();
+    art.add_overlay(&icon);
     let tile = text_tile(
         &gettext("Add Podcast"),
         &gettext("Find a show or paste a feed"),
     );
-    tile.prepend(&icon);
+    tile.prepend(&art);
     tile.update_property(&[gtk::accessible::Property::Label(&gettext("Add Podcast"))]);
     tile
 }
@@ -216,7 +225,6 @@ fn text_tile(title: &str, subtitle: &str) -> gtk::Box {
     let tile = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(2)
-        .width_request(COVER_SIZE)
         .build();
     let title = gtk::Label::builder()
         .label(title)

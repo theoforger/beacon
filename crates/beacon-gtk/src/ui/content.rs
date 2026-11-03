@@ -12,7 +12,6 @@ use beacon_core::browse::RecencyGroup;
 use beacon_core::model::{ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::gtk::{gio, glib};
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
 };
@@ -50,7 +49,7 @@ pub enum ContentInput {
     /// The Add page's subscription finished, either way.
     SubscribeDone,
     /// A choice in New's filter menu: the group's action name and the value.
-    ChooseNew(&'static str, String),
+    ChooseNew(page_filters::Choice),
 }
 
 #[derive(Debug)]
@@ -73,8 +72,6 @@ pub struct Content {
     add_page: Controller<AddPage>,
     /// New's sort and filters, as last set by the window.
     new_prefs: ShowPrefs,
-    /// New's filter menu groups, by action name.
-    new_choices: Vec<gio::SimpleAction>,
     /// New's filter button, shown only in New.
     new_filter: page_filters::FilterButton,
 }
@@ -202,43 +199,13 @@ impl Component for Content {
             show_page,
             add_page,
             new_prefs: ShowPrefs::default(),
-            new_choices: [
-                page_filters::SORT,
-                page_filters::PLAYED,
-                page_filters::DOWNLOADED,
-            ]
-            .into_iter()
-            .map(|name| {
-                gio::SimpleAction::new_stateful(
-                    name,
-                    Some(glib::VariantTy::STRING),
-                    &"".to_variant(),
-                )
-            })
-            .collect(),
-            new_filter: page_filters::FilterButton::new("new"),
+            new_filter: page_filters::FilterButton::new({
+                let s = sender.clone();
+                move |choice| s.input(ContentInput::ChooseNew(choice))
+            }),
         };
         model.new_filter.widget().set_visible(false);
         let widgets = view_output!();
-
-        let new_actions = gio::SimpleActionGroup::new();
-        for (choice, name) in model.new_choices.iter().zip([
-            page_filters::SORT,
-            page_filters::PLAYED,
-            page_filters::DOWNLOADED,
-        ]) {
-            let s = sender.clone();
-            choice.connect_activate(move |action, target| {
-                if let Some(value) = target.and_then(|t| t.get::<String>()) {
-                    action.set_state(&value.to_variant());
-                    s.input(ContentInput::ChooseNew(name, value));
-                }
-            });
-            new_actions.add_action(choice);
-        }
-        widgets
-            .root_page
-            .insert_action_group("new", Some(&new_actions));
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
@@ -325,11 +292,6 @@ impl Component for Content {
                 has_shows,
             } => {
                 self.new_prefs = prefs;
-                for (choice, (_, value)) in
-                    self.new_choices.iter().zip(page_filters::states(&prefs))
-                {
-                    choice.set_state(&value.to_variant());
-                }
                 self.new_filter.set_prefs(&prefs);
                 self.new.emit(NewViewInput::Set {
                     items,
@@ -338,8 +300,8 @@ impl Component for Content {
                 });
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
-            ContentInput::ChooseNew(group, value) => {
-                let prefs = page_filters::apply(self.new_prefs, group, &value);
+            ContentInput::ChooseNew(choice) => {
+                let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {
                     self.new_prefs = prefs;
                     let _ = sender.output(ContentOutput::NewPrefsChanged(prefs));

@@ -13,7 +13,7 @@ use std::rc::Rc;
 use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::gtk::{self, gdk, gio, glib, pango};
+use relm4::gtk::{self, gdk, gio, pango};
 use relm4::{Component, ComponentParts, ComponentSender, adw};
 
 use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
@@ -29,7 +29,7 @@ pub const SHOW_TAG: &str = "show";
 pub enum ShowPageInput {
     Set(Box<ShowPageData>),
     /// A choice in the filter menu: the group's action name and the value.
-    Choose(&'static str, String),
+    Choose(page_filters::Choice),
     MarkAllPlayed,
     CopyFeedAddress,
     Unsubscribe,
@@ -54,7 +54,6 @@ pub struct ShowPage {
     data: Option<ShowPageData>,
     hero: ShowHero,
     /// The filter menu's radio groups, by action name.
-    choices: Vec<gio::SimpleAction>,
     filter: page_filters::FilterButton,
     on_action: OnRowAction,
     fill: LazyFill,
@@ -124,21 +123,10 @@ impl Component for ShowPage {
         let model = ShowPage {
             data: None,
             hero: ShowHero::new(),
-            choices: [
-                page_filters::SORT,
-                page_filters::PLAYED,
-                page_filters::DOWNLOADED,
-            ]
-            .into_iter()
-            .map(|name| {
-                gio::SimpleAction::new_stateful(
-                    name,
-                    Some(glib::VariantTy::STRING),
-                    &"".to_variant(),
-                )
-            })
-            .collect(),
-            filter: page_filters::FilterButton::new("show"),
+            filter: page_filters::FilterButton::new({
+                let s = sender.clone();
+                move |choice| s.input(ShowPageInput::Choose(choice))
+            }),
             on_action,
             fill: LazyFill::default(),
             shown: None,
@@ -152,20 +140,6 @@ impl Component for ShowPage {
         widgets.header.pack_end(model.filter.widget());
 
         let actions = gio::SimpleActionGroup::new();
-        for (choice, name) in model.choices.iter().zip([
-            page_filters::SORT,
-            page_filters::PLAYED,
-            page_filters::DOWNLOADED,
-        ]) {
-            let s = sender.clone();
-            choice.connect_activate(move |action, target| {
-                if let Some(value) = target.and_then(|t| t.get::<String>()) {
-                    action.set_state(&value.to_variant());
-                    s.input(ShowPageInput::Choose(name, value));
-                }
-            });
-            actions.add_action(choice);
-        }
         let mark_all = gio::SimpleAction::new("mark-all-played", None);
         let s = sender.clone();
         mark_all.connect_activate(move |_, _| s.input(ShowPageInput::MarkAllPlayed));
@@ -196,17 +170,12 @@ impl Component for ShowPage {
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
                 self.hero.update(&data);
-                for (choice, (_, value)) in
-                    self.choices.iter().zip(page_filters::states(&data.prefs))
-                {
-                    choice.set_state(&value.to_variant());
-                }
                 self.filter.set_prefs(&data.prefs);
                 self.show_episodes(&widgets.episodes, &data);
                 self.data = Some(*data);
             }
-            ShowPageInput::Choose(action, value) => {
-                self.change_prefs(&sender, |p| *p = page_filters::apply(*p, action, &value));
+            ShowPageInput::Choose(choice) => {
+                self.change_prefs(&sender, |p| *p = choice.apply(*p));
             }
             ShowPageInput::MarkAllPlayed => {
                 if let Some(data) = &self.data {

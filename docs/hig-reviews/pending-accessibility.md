@@ -21,3 +21,5 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 | 2026-10-29 | M3, `ui/page_filters.rs`, `ui/show_page.rs` | The Sort and Filter button's label read; the menu's three radio groups read with their checked state; the two "All" items are told apart (consider section labels if not) | Orca, keyboard |
 | 2026-11-01 | M3, `ui/content.rs` | New's Sort and Filter button: label read, reachable with Tab only in New, menu groups read with their checked state | Orca, keyboard |
 | 2026-11-02 | M3, `ui/page_filters.rs` | The filter button's description "Filters are on" read while the dot shows, and not read once the choices are back to the default | Orca |
+| 2026-11-02 | M3, `ui/page_filters.rs` | Reset Sort and Filters read with its access key, and announced as unavailable while every choice is the default; after Reset, the radio items read the default choices | Orca, keyboard |
+| 2026-11-02 | M3, `ui/shows_grid.rs`, `ui/covers.rs` | Show tiles still read as "Title by Author, N new" now that the cover is a picture; the cover itself is not announced | Orca |

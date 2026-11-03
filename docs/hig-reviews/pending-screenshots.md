@@ -4,4 +4,5 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-11-02 | M3, `ui/page_filters.rs`, `data/style.css` | The filter dot: accent colour on the funnel's corner, not clipped; gone once every choice is back to the default | 1440×900 dark; 360×640 light and dark; podcast page at 1440×900; high contrast | New with Oldest First (setting `new-sort='oldest'`); a podcast page with Unplayed chosen in its filter menu |
+| 2026-11-02 | M3, `ui/shows_grid.rs`, `ui/covers.rs`, `data/style.css` | Shows grid: same 12px gaps and square covers at an in-between width (two to four columns), badge on the cover's corner; placeholder covers now outlined, visible but not heavy in light and dark | 1440×900 dark; 360×640 light; a window around 700px wide; high contrast | Subscribe to fixtures served with `python3 -m http.server`, including one without a cover (`no-guid.xml`) |
+| 2026-11-02 | M3, `ui/page_filters.rs` | Reset Sort and Filters greyed out while every choice is the default; on a podcast page as well as in New | Podcast page menu at 1440×900 light; New's menu at the default | Open the funnel menu on a podcast page with the default choices |
