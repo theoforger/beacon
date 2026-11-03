@@ -157,21 +157,22 @@ impl Component for NewView {
         self.lists.clear();
         let mut work = Vec::new();
         for (group, items) in groups {
+            let title = format::recency_title(group);
             let heading = gtk::Label::builder()
-                .label(format::recency_title(group))
+                .label(&title)
                 .xalign(0.0)
                 .margin_top(12)
                 .css_classes(["heading"])
                 .accessible_role(gtk::AccessibleRole::Heading)
                 .build();
-            let list = new_list(&self.on_action);
+            let list = new_list(&self.on_action, &title);
             widgets.groups.append(&heading);
             widgets.groups.append(&list);
             work.extend(items.into_iter().map(|item| (list.clone(), item)));
             self.lists.push(list);
         }
         self.shown = shape;
-        self.fill.start(work, self.on_action.clone());
+        self.fill.start(work, self.on_action.clone(), true);
     }
 }
 

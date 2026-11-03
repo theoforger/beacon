@@ -29,6 +29,14 @@ pub fn subtitle(episode: &Episode, show_title: &str) -> String {
     parts.join(&gettext(" · "))
 }
 
+/// A subtitle as a screen reader should say it: the dots between its parts
+/// are read aloud ("middle dot"), so they become pauses.
+pub fn spoken(subtitle: &str) -> String {
+    // Translators: separates the parts of an episode's subtitle when a
+    // screen reader reads it; a pause, not a symbol.
+    subtitle.replace(&gettext(" · "), &gettext(", "))
+}
+
 /// The details pane's subtitle: "Season 3, Episode 2 · Oct 27 · 52 min".
 pub fn long_subtitle(episode: &Episode) -> String {
     let number = episode.info.number.map(number);
@@ -159,6 +167,14 @@ pub fn recency_title(group: RecencyGroup) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn subtitles_are_spoken_without_their_dots() {
+        assert_eq!(
+            spoken("The Long Signal · S3 E2 · Oct 27 · 52 min"),
+            "The Long Signal, S3 E2, Oct 27, 52 min"
+        );
+    }
 
     #[test]
     fn lengths_round_to_minutes() {

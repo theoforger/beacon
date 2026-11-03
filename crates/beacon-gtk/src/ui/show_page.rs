@@ -248,7 +248,10 @@ impl ShowPage {
             if items.is_empty() {
                 continue;
             }
-            let list = new_list(&self.on_action);
+            // Translators: how a screen reader names a show's episode list
+            // when the show has no seasons.
+            let name = title.clone().unwrap_or_else(|| gettext("Episodes"));
+            let list = new_list(&self.on_action, &name);
             match title {
                 Some(title) => container.append(&self.season(show, key, &title, &list)),
                 None => container.append(&list),
@@ -257,7 +260,8 @@ impl ShowPage {
             self.lists.push(list);
         }
         self.shown = Some((show, shape));
-        self.fill.start(work, self.on_action.clone());
+        // The page is the show's own: its name would repeat on every row.
+        self.fill.start(work, self.on_action.clone(), false);
     }
 
     /// A season: its title in a `GtkExpander`, unfolding to its list.

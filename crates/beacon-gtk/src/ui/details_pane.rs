@@ -107,6 +107,8 @@ impl SimpleComponent for DetailsPane {
                                 add_css_class: "dim-label",
                                 #[watch]
                                 set_label: &model.episode.as_ref().map(|e| format::long_subtitle(&e.episode)).unwrap_or_default(),
+                                #[watch]
+                                update_property: &[gtk::accessible::Property::Label(&model.episode.as_ref().map(|e| format::spoken(&format::long_subtitle(&e.episode))).unwrap_or_default())],
                             },
                             gtk::Label {
                                 set_margin_top: 18,

@@ -19,12 +19,19 @@ use crate::ui::widgets::episode_row::{EpisodeRow, OnRowAction};
 /// 60 Hz frame so scrolling and clicks stay smooth while a long feed fills.
 const BUDGET: Duration = Duration::from_millis(8);
 
-/// A boxed list whose rows open their episode's details when activated.
-pub fn new_list(on_action: &OnRowAction) -> gtk::ListBox {
+/// A boxed list whose rows open their episode's details when activated,
+/// named `label` for screen readers (the group or season it holds): its
+/// heading is a label, which focus never reaches, so the list says it.
+pub fn new_list(on_action: &OnRowAction, label: &str) -> gtk::ListBox {
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
+        // Tab visits the focused row's buttons, then leaves the list; the
+        // arrow keys move between rows. With the default, Tab walked every
+        // row of a long feed (GNOME Podcasts sets the same on its grid).
+        .tab_behavior(gtk::ListTabBehavior::Item)
         .css_classes(["boxed-list"])
         .build();
+    list.update_property(&[gtk::accessible::Property::Label(label)]);
     let on_action = on_action.clone();
     list.connect_row_activated(move |_, row| {
         if let Some(item) = row.downcast_ref::<EpisodeRow>().and_then(EpisodeRow::item) {
@@ -76,7 +83,13 @@ pub struct LazyFill {
 impl LazyFill {
     /// Append a row for each item to its list, a chunk at a time, yielding to
     /// the main loop in between.
-    pub fn start(&self, work: Vec<(gtk::ListBox, EpisodeItem)>, on_action: OnRowAction) {
+    /// Rows name their show in the subtitle when `show_names` is set.
+    pub fn start(
+        &self,
+        work: Vec<(gtk::ListBox, EpisodeItem)>,
+        on_action: OnRowAction,
+        show_names: bool,
+    ) {
         let generation = self.generation.get() + 1;
         self.generation.set(generation);
         let current = self.generation.clone();
@@ -90,7 +103,7 @@ impl LazyFill {
                 let started = Instant::now();
                 // At least one row a turn, however slow the machine.
                 for (list, item) in work.by_ref() {
-                    let row = EpisodeRow::new(on_action.clone());
+                    let row = EpisodeRow::new(on_action.clone(), show_names);
                     row.bind(&item);
                     list.append(&row);
                     if started.elapsed() >= BUDGET {

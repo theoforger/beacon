@@ -59,10 +59,13 @@ pub struct Parts {
     progress: gtk::ProgressBar,
     menu: gtk::MenuButton,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
+    /// Whether the subtitle names the show; not on the show's own page.
+    show_name: bool,
 }
 
 impl EpisodeRow {
-    pub fn new(on_action: OnRowAction) -> Self {
+    /// A row whose subtitle names the show when `show_name` is set.
+    pub fn new(on_action: OnRowAction, show_name: bool) -> Self {
         let root: Self = glib::Object::new();
         let content = gtk::Box::builder()
             .spacing(12)
@@ -178,6 +181,7 @@ impl EpisodeRow {
             progress,
             menu,
             episode,
+            show_name,
         };
         let _ = root.imp().parts.set(parts);
         root
@@ -206,9 +210,16 @@ impl EpisodeRow {
         } else {
             parts.title.remove_css_class("dim-label");
         }
+        let show_title = if parts.show_name {
+            item.show_title.as_str()
+        } else {
+            ""
+        };
+        let subtitle = format::subtitle(episode, show_title);
+        parts.subtitle.set_label(&subtitle);
         parts
             .subtitle
-            .set_label(&format::subtitle(episode, &item.show_title));
+            .update_property(&[gtk::accessible::Property::Label(&format::spoken(&subtitle))]);
         parts.progress.set_visible(state.is_partly_played());
         if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
             parts
