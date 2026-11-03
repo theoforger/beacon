@@ -3,7 +3,7 @@
 //! What to tell people when something fails. Each error variant has its own
 //! translated message; the core's `Display` text is for logs only.
 
-use beacon_core::error::{FeedError, LibraryError, StoreError};
+use beacon_core::error::{FeedError, LibraryError, PlaybackError, StoreError};
 use gettextrs::gettext;
 
 pub fn library(error: &LibraryError) -> String {
@@ -31,5 +31,13 @@ pub fn store(error: &StoreError) -> String {
             gettext("Could not read or save your library")
         }
         StoreError::Io(_) => gettext("Could not open your library folder"),
+    }
+}
+
+pub fn playback(error: &PlaybackError) -> String {
+    match error {
+        PlaybackError::Unavailable(_) => gettext("Audio playback is not available"),
+        PlaybackError::NoAudio => gettext("This episode has no audio to play"),
+        PlaybackError::Stream(_) => gettext("Could not play this episode"),
     }
 }

@@ -35,6 +35,7 @@ jobs:
         run: >
           dnf install -y --setopt=install_weak_deps=False
           gcc git gettext gettext-devel glib2-devel gtk4-devel libadwaita-devel sqlite-devel
+          gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-bad-free-devel
           desktop-file-utils appstream meson ninja-build
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable

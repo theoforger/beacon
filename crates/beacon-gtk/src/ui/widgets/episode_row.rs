@@ -125,7 +125,6 @@ impl EpisodeRow {
 
         let play = gtk::Button::builder()
             .icon_name("media-playback-start-symbolic")
-            // Enabled with playback (M4).
             .action_name("row.play")
             .tooltip_text(gettext("Play"))
             .valign(gtk::Align::Center)
@@ -156,6 +155,7 @@ impl EpisodeRow {
         });
         let actions = gio::SimpleActionGroup::new();
         for (name, action) in [
+            ("play", RowAction::Play),
             ("details", RowAction::ShowDetails),
             ("queue", RowAction::ToggleQueue),
             ("favorite", RowAction::ToggleFavorite),

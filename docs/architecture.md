@@ -103,3 +103,8 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - `ui/page_filters.rs`: the filter button (sort, played, downloaded, Reset Sort and Filters, the accent dot), which owns its `filter.*` actions; used by podcast pages and New.
 - `ui/widgets/episode_row.rs` (its menu built when opened), `ui/covers.rs` (square covers, fixed-size or filling a grid column, art cropped to the square), `ui/widgets/smooth_texture.rs` (draws covers with a trilinear filter), `ui/format.rs` (subtitles, lengths, dates, headers), `ui/errors.rs` (a translated message per error variant).
 
+### M4
+
+- Core: `playback.rs` (resume, skips, speeds, saving, the sleep timer and fade, the current chapter); `Store::set_position` and `Store::finish`; `PlaybackError`.
+- `player/`: `Player`, a `GstPlay` wrapper reporting `PlayerEvent`s (state, position, duration, end, error) on the main loop; `player/tests.rs` plays a local file to a silent sink.
+- `app/playback.rs`: starts the player with the remembered volume and speed, plays a row's episode (or pauses and resumes it), saves the position while playing, on pause and on close, and marks finished episodes played.

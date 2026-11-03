@@ -17,6 +17,8 @@ path = "src/main.rs"
 beacon-core = { path = "../beacon-core" }
 chrono = "0.4.45"
 gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
+gstreamer = { version = "0.25.4", features = ["v1_26"] }
+gstreamer-play = { version = "0.25.0", features = ["v1_26"] }
 relm4 = { version = "0.11.0", features = ["libadwaita", "gnome_50"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

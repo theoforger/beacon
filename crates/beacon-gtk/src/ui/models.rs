@@ -24,6 +24,8 @@ pub struct EpisodeItem {
 /// What a row's menu, or activating a row, asks for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RowAction {
+    /// Play the episode from where it was left, or pause or resume it.
+    Play,
     ShowDetails,
     ToggleQueue,
     ToggleFavorite,

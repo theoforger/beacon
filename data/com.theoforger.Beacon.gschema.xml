@@ -43,5 +43,17 @@
       <summary>Episodes shown in New, by download state</summary>
       <description>Whether New shows all recent episodes, only downloaded ones or only those not downloaded.</description>
     </key>
+    <key name="volume" type="d">
+      <range min="0" max="1"/>
+      <default>1.0</default>
+      <summary>Playback volume</summary>
+      <description>Beacon's own audio volume, from 0 to 1.</description>
+    </key>
+    <key name="playback-rate" type="d">
+      <range min="0.75" max="2"/>
+      <default>1.0</default>
+      <summary>Playback speed</summary>
+      <description>How fast episodes play, as chosen in the speed menu.</description>
+    </key>
   </schema>
 </schemalist>

@@ -6,6 +6,7 @@
 //! the views ask for.
 
 mod library;
+mod playback;
 mod window;
 
 use std::cell::RefCell;
@@ -15,7 +16,7 @@ use std::sync::Arc;
 
 use beacon_core::model::{EpisodeId, ShowId};
 use beacon_core::services::library::{Library, RefreshSummary};
-use beacon_core::{LibraryError, StoreError};
+use beacon_core::{LibraryError, PlaybackError, StoreError};
 use gettextrs::gettext;
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::adw::prelude::*;
@@ -27,6 +28,7 @@ use url::Url;
 
 use crate::config::APP_ID;
 use crate::navigation::Location;
+use crate::player::{Player, PlayerEvent};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
 use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
 use crate::ui::dialogs::about;
@@ -57,6 +59,7 @@ pub enum AppMsg {
     Content(ContentOutput),
     /// The user confirmed unsubscribing in the dialog.
     ConfirmUnsubscribe(ShowId),
+    Player(PlayerEvent),
 }
 
 #[derive(Debug)]
@@ -82,6 +85,12 @@ pub struct App {
     /// A subscription whose toast waits for the show's title.
     subscribed_toast: Option<ShowId>,
     refresh: gio::SimpleAction,
+    /// Plays episodes; `None` when the audio system could not start, with
+    /// the reason in `player_error`.
+    player: Option<Player>,
+    player_error: Option<PlaybackError>,
+    now_playing: Option<playback::NowPlaying>,
+    last_position: playback::LastPosition,
     /// Where focus was when a row opened the details pane, to return to
     /// when the pane closes.
     details_origin: Rc<RefCell<Option<glib::WeakRef<gtk::Widget>>>>,
@@ -208,6 +217,10 @@ impl Component for App {
             subscribed_toast: None,
             refresh: refresh_action,
             details_origin: Rc::default(),
+            player: None,
+            player_error: None,
+            now_playing: None,
+            last_position: Rc::default(),
             sidebar,
             content,
             details,
@@ -229,10 +242,21 @@ impl Component for App {
         model.manage_focus(&widgets);
         model.content.widgets().capture_typing(&root);
 
+        match playback::start_player(&model.settings, &sender) {
+            Ok(player) => model.player = Some(player),
+            Err(err) => {
+                tracing::warn!("{err}");
+                model.player_error = Some(err);
+            }
+        }
+
         model.restore_window_state(&root);
         let settings = model.settings.clone();
+        let library = model.library.clone();
+        let last_position = model.last_position.clone();
         root.connect_close_request(move |window| {
             window::save_window_state(&settings, window);
+            playback::save_on_close(library.as_ref(), &last_position);
             glib::Propagation::Proceed
         });
 
@@ -271,6 +295,7 @@ impl Component for App {
             AppMsg::Refresh => self.start_refresh(&sender),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
+            AppMsg::Player(event) => self.player_event(event, widgets, &sender),
         }
     }
 

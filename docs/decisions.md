@@ -10,6 +10,8 @@ Every crate and every custom widget gets an entry here, with the reason. Before 
 | `gettext-rs` (feature `gettext-system`) | Translation | 0.8.0 | 2026-08-05 | 5.0M / 663k | gettext-rs/gettext-rs, 23 open, pushed 2026-10-17 | MIT | The standard gettext binding used by GNOME Rust apps. `gettext-system` links the runtime's libintl instead of building gettext |
 | `tracing` | Logging | 0.1.44 | 2025-12-18 | 984M / 242M | tokio-rs/tracing, 905 open, pushed 2026-10-09 | MIT | De facto standard; works with tokio, which relm4 commands use. The open count is high but the project is very active |
 | `tracing-subscriber` (feature `env-filter`) | Log output | 0.3.23 | 2026-03-13 | 702M / 175M | tokio-rs/tracing | MIT | Companion to `tracing`; `RUST_LOG` filtering |
+| `gstreamer` (feature `v1_26`) | GStreamer core, for the player (M4) | 0.25.4 | 2026-09-21 | 12.7M / 3.3M | gstreamer/gstreamer-rs on freedesktop GitLab, active 2026-11-03 | MIT OR Apache-2.0 | The official bindings; same `glib` 0.22 as gtk4-rs, so one GLib in the lockfile. `v1_26` matches the GNOME 50 runtime's GStreamer 1.26 (Fedora 44 has 1.28, which runs the same API) |
+| `gstreamer-play` (feature `v1_26`) | Playback (M4) | 0.25.0 | 2026-02-28 | 364k / 99k | gstreamer/gstreamer-rs | MIT OR Apache-2.0 | `GstPlay`: play, pause, seek, rate, volume, and position, duration, state and end-of-stream signals delivered on the main loop (`PlaySignalAdapter::with_main_context`). Was the planned candidate |
 | `glib-build-tools` (build dependency) | Compile the GResource in `build.rs` | 0.22.8 | 2026-06-29 | 543k / 138k | gtk-rs/gtk-rs-core, 170 open, pushed 2026-10-28 | MIT | Lets a plain `cargo build` embed resources, so clippy and tests run without Meson |
 | `rss` (no default features) | Feed parsing (M1) | 2.1.2 | 2026-09-10 | 5.1M / 605k | rust-syndication/rss, 12 open, pushed 2026-09-30 | MIT/Apache-2.0 | Exposes every iTunes item field and keeps other namespaces (`podcast:`, `psc:`) in an extension map, so one parse covers seasons, episode numbers, durations and chapters. RSS only; podcasts are RSS 2.0. Chosen over `feed-rs`, see below |
 | `reqwest` (default features + `stream`) | HTTP (M1) | 0.13.5 | 2026-09-08 | 850M / 236M | seanmonstar/reqwest, 487 open, pushed 2026-10-19 | MIT OR Apache-2.0 | Standard async HTTP client. Default TLS is rustls with the platform verifier, so it uses the runtime's CA store and needs no OpenSSL |
@@ -35,7 +37,6 @@ One maintained crate per job. Before adding each one, check it and move it to th
 
 | Job | Candidate | To check before adding |
 | --- | --- | --- |
-| Playback | `gstreamer-play` from gstreamer-rs (high-level player: seek, rate, position and state signals) | Use the release that matches gtk4-rs; GStreamer 1.26 is in the runtime |
 | OPML | `opml` | That it both parses and writes (both listed on docs.rs) |
 | Directory search | iTunes Search API (no key) | Apple's terms and rate limits; see `docs/specs/add-and-itunes.md` |
 | Media keys and MPRIS | An MPRIS server crate, not chosen | Compare candidates on last release, downloads and open issues |
@@ -54,7 +55,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 - **Offline Flatpak build.** `build-aux/cargo-sources.json` is generated from `Cargo.lock` by `build-aux/flatpak-cargo-sources.py`, a small local script that writes the same layout as flatpak-builder-tools' generator for crates.io dependencies. It avoids downloading and running the upstream script on every update. Switch to the upstream generator if a git dependency is ever needed.
 - **Sandbox permissions** start minimal (`ipc`, `wayland`, `fallback-x11`, `dri`).
   - `--share=network` (M1): fetching feeds and covers.
-  - `--socket=pulseaudio` comes with M4 (playback).
+  - `--socket=pulseaudio` (M4): playing episodes. PulseAudio's socket is how sandboxed apps reach PipeWire; Flathub expects it for audio playback. The MPRIS D-Bus name follows with media keys.
 
 ## Reference app
 
@@ -78,6 +79,7 @@ One maintained crate per job. Before adding each one, check it and move it to th
 - **Refresh** (M3) runs from the Shows and New headers, the main menu, Ctrl+R and F5. A toast reports new episodes or failed feeds; a refresh that finds nothing says nothing.
 - **Show descriptions are plain text for now** (M3): `beacon_core::text::plain` drops tags and decodes entities. A stopgap: the details pane in M4 needs real rich text (paragraphs, links) and should use a maintained crate. Confirmed as a stopgap by the user 2026-10-29.
 
+- **Playback** (M4, 2026-11-03). `beacon-core` never imports GLib and gstreamer-rs is built on it, so the rules live in core (`playback.rs`: where to resume, skip limits, the speed menu, when to save, the sleep timer and its fade, the current chapter) and the `GstPlay` wrapper in `beacon-gtk/src/player/`, reporting typed `PlayerEvent`s that `app/playback.rs` turns into store writes. An episode resumes where it was left unless it is played or was left in its last 10 seconds. The position is saved every 5 seconds of playback without reloading any view, and on pause or stop with a reload so progress bars follow; an episode played to its end is marked played and back at the start (`Store::finish`), and stays in the queue until auto-continue (M5) moves on. Video tracks are turned off: podcasts are listened to. A downloaded file plays instead of the enclosure. When the window closes, the last position is written on the main thread, the one exception to keeping store writes off it, since the window is going away. Volume and speed are GSettings keys (`volume`, `playback-rate`); a stored speed snaps to the nearest one in the menu.
 - **Sleep timer, volume and speed** (M4, settled by the user 2026-11-03; open question 2). GNOME Podcasts has no sleep timer or volume control, so these follow the mockup and the user's choices:
   - The Sleep Timer button opens a menu: Off, 15, 30, 45 and 60 minutes, and End of Episode. When the timer runs out, playback fades out over about 5 seconds and pauses, keeping its position.
   - The volume slider sets Beacon's own audio stream volume, the per-app volume GNOME Settings shows, and it is remembered across restarts.

@@ -51,7 +51,7 @@ impl Parts {
         details: true,
         counts: true,
     };
-    const NONE: Parts = Parts {
+    pub(super) const NONE: Parts = Parts {
         shows: false,
         new: false,
         page: false,
@@ -59,7 +59,7 @@ impl Parts {
         counts: false,
     };
     /// Everything an episode's state shows up in.
-    const EPISODE: Parts = Parts::ALL;
+    pub(super) const EPISODE: Parts = Parts::ALL;
     const NEW: Parts = Parts {
         new: true,
         ..Parts::NONE
@@ -149,7 +149,7 @@ impl App {
     }
 
     /// Run `change` on the store in the background, then reload `parts`.
-    fn job(
+    pub(super) fn job(
         &mut self,
         sender: &ComponentSender<Self>,
         parts: Parts,
@@ -309,6 +309,7 @@ impl App {
         let id = item.episode.id;
         let state = item.episode.state.clone();
         match action {
+            RowAction::Play => self.play_episode(&item.episode, widgets, sender),
             RowAction::ShowDetails => {
                 // Show what the row already knows at once; viewing clears
                 // the blue dot for good, which the reload then shows.

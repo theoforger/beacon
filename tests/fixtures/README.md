@@ -2,6 +2,7 @@
 
 | File | Source | Covers |
 | --- | --- | --- |
+| `tone-30s.ogg` | Generated with `gst-launch-1.0 audiotestsrc` (a 440 Hz sine, mono, Vorbis), GPL-3.0-or-later | 30 seconds of audio for the playback test: long enough that pausing a few seconds in is not "nearly finished" |
 | `seasons.xml` | Hand-written | iTunes and Podcasting 2.0 seasons, `MM:SS` and plain-seconds durations |
 | `plain.xml`, `plain-updated.xml` | Hand-written | A show without seasons, and the same feed a week later for refresh |
 | `chapters.xml` | Hand-written | Podlove inline chapters and a Podcasting 2.0 chapters URL under an unusual prefix |

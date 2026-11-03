@@ -4,3 +4,4 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 
 | Added | Change (commit or files) | What to check | How |
 | --- | --- | --- | --- |
+| 2026-11-03 | M4, `ui/widgets/episode_row.rs`, `app/playback.rs` | A row's Play button, now working, is read as "Play", starts the episode with Enter or Space, and a second press pauses it; a playback error toast is announced | Orca, keyboard |

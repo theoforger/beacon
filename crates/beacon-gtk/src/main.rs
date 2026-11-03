@@ -3,6 +3,7 @@
 mod app;
 mod config;
 mod navigation;
+mod player;
 mod ui;
 
 use gettextrs::{LocaleCategory, gettext};
