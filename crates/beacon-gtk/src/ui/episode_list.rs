@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! Episode lists as `boxed-list` `GtkListBox`es, as in GNOME Podcasts, and
-//! its way of keeping long lists from blocking the UI: rows are added in
-//! idle chunks (GNOME Podcasts' `lazy_load`), and a list whose episodes are
-//! unchanged is updated in place instead of rebuilt.
+//! its way of keeping long lists from blocking the UI: rows are added a few
+//! at a time at idle priority (GNOME Podcasts' `lazy_load`), and a list
+//! whose episodes are unchanged is updated in place instead of rebuilt.
 
 use std::cell::Cell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use beacon_core::model::EpisodeId;
 use relm4::gtk::{self, glib, prelude::*};
@@ -15,8 +15,9 @@ use relm4::gtk::{self, glib, prelude::*};
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::widgets::episode_row::{EpisodeRow, OnRowAction};
 
-/// Rows added between two pauses for the main loop.
-const CHUNK: usize = 25;
+/// Time spent adding rows before the main loop gets a turn, well inside a
+/// 60 Hz frame so scrolling and clicks stay smooth while a long feed fills.
+const BUDGET: Duration = Duration::from_millis(8);
 
 /// A boxed list whose rows open their episode's details when activated.
 pub fn new_list(on_action: &OnRowAction) -> gtk::ListBox {
@@ -80,18 +81,26 @@ impl LazyFill {
         self.generation.set(generation);
         let current = self.generation.clone();
         glib::spawn_future_local(async move {
-            for chunk in work.chunks(CHUNK) {
+            let (rows, all) = (work.len(), Instant::now());
+            let mut work = work.into_iter().peekable();
+            while work.peek().is_some() {
                 if current.get() != generation {
                     return;
                 }
-                for (list, item) in chunk {
+                let started = Instant::now();
+                // At least one row a turn, however slow the machine.
+                for (list, item) in work.by_ref() {
                     let row = EpisodeRow::new(on_action.clone());
-                    row.bind(item);
+                    row.bind(&item);
                     list.append(&row);
+                    if started.elapsed() >= BUDGET {
+                        break;
+                    }
                 }
                 glib::timeout_future_with_priority(glib::Priority::DEFAULT_IDLE, Duration::ZERO)
                     .await;
             }
+            tracing::debug!("filled {rows} episode rows in {:?}", all.elapsed());
         });
     }
 

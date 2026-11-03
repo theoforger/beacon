@@ -128,6 +128,11 @@ impl Component for AddPage {
             adding: false,
         };
         let widgets = view_output!();
+        // The page is one search field: type into it as soon as it opens.
+        let entry = widgets.entry.clone();
+        root.connect_shown(move |_| {
+            entry.grab_focus();
+        });
         ComponentParts { model, widgets }
     }
 

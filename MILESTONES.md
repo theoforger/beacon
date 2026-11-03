@@ -136,6 +136,9 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Episode row widget: cover, a two-line title, a subtitle (show, season and episode, date, length), the blue unplayed dot, the grey played check, a progress bar, and a flat play button with hover feedback
 - [x] Row menu: Show Details, queue, download, favourite and played toggles
 - [x] Episode lists: `GtkListBox` as in GNOME Podcasts (the plan's `GtkListView` replaced at the user's request, 2026-10-30)
+- [x] Covers that are not square are cropped to the square, not letterboxed; covers without art show an outlined placeholder; the badge has a ring that keeps it apart from the cover (after review, 2026-11-02)
+- [x] Add's search field takes focus when the page opens (after review, 2026-11-02)
+- [x] After the user's review (2026-11-03): sharp covers in the Shows grid at every width; the keyboard focus ring around a show tile, not across its text; a show's episode list fills without blocking the UI (row menus built when opened, a time budget per turn); played titles dimmed as in GNOME Podcasts; Refresh always reports, "No new episodes" included
 - [x] Unplayed dot cleared on viewing the details, and not restored by Mark as Unplayed
 - [x] Marking played or unplayed never touches the queue, including Mark All as Played
 - [x] Carried from M2: sidebar count badges fed from the library (Shows with new episodes, new episodes, queue length), and the details pane opening as a narrow full page with its own Back, checked in screenshots

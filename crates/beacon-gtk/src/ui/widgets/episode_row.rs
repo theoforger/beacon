@@ -140,6 +140,14 @@ impl EpisodeRow {
         content.append(&menu);
 
         let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
+        // A popover menu builds a widget per item, too much for every row of
+        // a long feed; build it on first open, as GNOME Podcasts does.
+        let shown = episode.clone();
+        menu.set_create_popup_func(move |button| {
+            if let Some(item) = shown.borrow().as_ref() {
+                button.set_menu_model(Some(&menu_for(item)));
+            }
+        });
         let actions = gio::SimpleActionGroup::new();
         for (name, action) in [
             ("details", RowAction::ShowDetails),
@@ -191,6 +199,13 @@ impl EpisodeRow {
         parts.dot.set_visible(state.is_new());
         parts.title.set_label(&episode.info.title);
         parts.check.set_visible(state.played);
+        // Played titles are dimmed as well as checked, as in GNOME Podcasts
+        // (`EpisodeWidget::set_played`).
+        if state.played {
+            parts.title.add_css_class("dim-label");
+        } else {
+            parts.title.remove_css_class("dim-label");
+        }
         parts
             .subtitle
             .set_label(&format::subtitle(episode, &item.show_title));
@@ -200,12 +215,15 @@ impl EpisodeRow {
                 .progress
                 .set_fraction((state.position.as_secs_f64() / total.as_secs_f64()).min(1.0));
         }
-        parts.menu.set_menu_model(Some(&menu(item)));
+        // Built when opened (below), so drop one worded for the old state.
+        if parts.menu.menu_model().is_some() {
+            parts.menu.set_menu_model(None::<&gio::MenuModel>);
+        }
     }
 }
 
 /// The row menu, worded for the episode's current state.
-fn menu(item: &EpisodeItem) -> gio::Menu {
+fn menu_for(item: &EpisodeItem) -> gio::Menu {
     let state = &item.episode.state;
     let details = gio::Menu::new();
     details.append(Some(&gettext("Show _Details")), Some("row.details"));

@@ -448,24 +448,45 @@ impl App {
         for (show, err) in &summary.failed {
             tracing::warn!("could not refresh show {show:?}: {err}");
         }
-        let message = if !summary.failed.is_empty() {
-            let n = summary.failed.len() as u32;
-            Some(
-                ngettext(
-                    "Could not refresh {n} podcast",
-                    "Could not refresh {n} podcasts",
-                    n,
-                )
-                .replace("{n}", &n.to_string()),
-            )
-        } else if summary.added > 0 {
-            let n = summary.added as u32;
-            Some(ngettext("{n} new episode", "{n} new episodes", n).replace("{n}", &n.to_string()))
-        } else {
-            None
-        };
-        if let Some(message) = message {
-            toast(&widgets.toasts, &message);
+        toast(&widgets.toasts, &refresh_message(summary));
+    }
+}
+
+/// What a finished refresh says: failures first, then what was found,
+/// including that nothing was.
+fn refresh_message(summary: &RefreshSummary) -> String {
+    if !summary.failed.is_empty() {
+        let n = summary.failed.len() as u32;
+        return ngettext(
+            "Could not refresh {n} podcast",
+            "Could not refresh {n} podcasts",
+            n,
+        )
+        .replace("{n}", &n.to_string());
+    }
+    match summary.added {
+        0 => gettext("No new episodes"),
+        n => {
+            ngettext("{n} new episode", "{n} new episodes", n as u32).replace("{n}", &n.to_string())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn summary(added: usize) -> RefreshSummary {
+        RefreshSummary {
+            added,
+            failed: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn a_refresh_always_says_what_it_found() {
+        assert_eq!(refresh_message(&summary(0)), "No new episodes");
+        assert_eq!(refresh_message(&summary(1)), "1 new episode");
+        assert_eq!(refresh_message(&summary(3)), "3 new episodes");
     }
 }

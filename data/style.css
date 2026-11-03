@@ -24,6 +24,9 @@
   background-color: var(--accent-bg-color);
   color: var(--accent-fg-color);
   font-weight: bold;
+  /* A ring in the window's colour keeps the badge apart from a cover of
+   * the same colour. */
+  box-shadow: 0 0 0 2px var(--window-bg-color);
 }
 
 /* The blue dot on a new episode. */
@@ -41,16 +44,20 @@
 }
 
 /* The Shows grid sits on the window background, as in the mockup, rather
- * than on its own view background. As in GNOME Podcasts, every tile has the
- * same margin, so the gaps stay the same while covers grow with the window. */
+ * than on its own view background. Every tile has the same spacing, so the
+ * gaps stay the same while covers grow with the window. GNOME Podcasts puts
+ * it in a margin; here it is padding, so the focus ring, drawn just inside
+ * the tile, falls around the cover and title rather than on them, and the
+ * hover highlight frames the tile as in the mockup. */
 .shows-grid {
   background: none;
   padding: 6px;
 }
 
 .shows-grid > child {
-  padding: 0;
-  margin: 6px;
+  padding: 6px;
+  margin: 0;
+  border-radius: 14px;
 }
 
 /* The dot on the filter button while a filter or a non-default order is on,

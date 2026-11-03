@@ -23,3 +23,7 @@ Accessibility checks are deferred until after M3. Until then, the HIG gate still
 | 2026-11-02 | M3, `ui/page_filters.rs` | The filter button's description "Filters are on" read while the dot shows, and not read once the choices are back to the default | Orca |
 | 2026-11-02 | M3, `ui/page_filters.rs` | Reset Sort and Filters read with its access key, and announced as unavailable while every choice is the default; after Reset, the radio items read the default choices | Orca, keyboard |
 | 2026-11-02 | M3, `ui/shows_grid.rs`, `ui/covers.rs` | Show tiles still read as "Title by Author, N new" now that the cover is a picture; the cover itself is not announced | Orca |
+| 2026-11-02 | M3, `ui/add_page.rs` | Opening Add moves focus into the search field and Orca reads its label; Back returns focus to where Add was opened from | Orca, keyboard |
+| 2026-11-03 | M3, `ui/widgets/episode_row.rs` | The row's More Options menu, now built when opened, opens with Enter or Space, reads its items, and reads the new wording after a change (Mark as Played becomes Mark as Unplayed); a played row's dimmed title is still read in full, with "Played" | Orca, keyboard |
+| 2026-11-03 | M3, `app/library.rs` | The "No new episodes" toast is announced after Ctrl+R | Orca |
+| 2026-11-03 | M3, `data/style.css` | Keyboard focus in the Shows grid: the ring frames the whole tile and moves with the arrow keys | Keyboard |
