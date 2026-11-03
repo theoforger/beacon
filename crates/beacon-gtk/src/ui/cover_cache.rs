@@ -6,7 +6,7 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use relm4::gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
 
@@ -25,10 +25,10 @@ thread_local! {
 }
 
 /// Device pixels to decode a cover drawn `width` logical pixels wide on a
-/// screen of `scale`, rounded up to 8 so tiny changes reuse a texture.
+/// screen of `scale`: exactly those, since even a few percent of scaling
+/// when drawn softens the whole image.
 pub fn device_pixels(width: i32, scale: f64) -> i32 {
-    let pixels = (f64::from(width) * scale).ceil() as i32;
-    (pixels + 7) / 8 * 8
+    (f64::from(width) * scale).round() as i32
 }
 
 pub fn cached(key: &Key) -> Option<Option<SmoothTexture>> {
@@ -47,45 +47,60 @@ fn decode_box(dimensions: Option<(i32, i32)>, size: i32) -> (i32, i32) {
     }
 }
 
+/// Decoded pixels, which, unlike a `Pixbuf`, can leave the worker thread.
+struct Pixels {
+    width: i32,
+    height: i32,
+    rowstride: usize,
+    alpha: bool,
+    bytes: glib::Bytes,
+}
+
+/// Decode a cover at `size` pixels on its shorter side, in one pass: checked
+/// against a Lanczos resize, this came closer than finishing a 2x decode
+/// with gdk-pixbuf's high quality scaler.
+fn decode_pixels(path: &Path, size: i32) -> Result<Pixels, glib::Error> {
+    let dimensions = gdk_pixbuf::Pixbuf::file_info(path).map(|(_, width, height)| (width, height));
+    let (width, height) = decode_box(dimensions, size);
+    let pixbuf = gdk_pixbuf::Pixbuf::from_file_at_scale(path, width, height, true)?;
+    Ok(Pixels {
+        width: pixbuf.width(),
+        height: pixbuf.height(),
+        rowstride: pixbuf.rowstride() as usize,
+        alpha: pixbuf.has_alpha(),
+        bytes: pixbuf.read_pixel_bytes(),
+    })
+}
+
 /// Decode a cover on GIO's worker threads, at `size` pixels on its shorter
 /// side, to be cropped to a square.
 pub async fn decode(path: PathBuf, size: i32) -> Option<SmoothTexture> {
-    let file = gio::File::for_path(&path);
-    let result = async {
-        let dimensions = gdk_pixbuf::Pixbuf::file_info_future(path.clone())
-            .await
-            .ok()
-            .flatten()
-            .map(|(_, width, height)| (width, height));
-        let (width, height) = decode_box(dimensions, size);
-        let stream = file.read_future(glib::Priority::LOW).await?;
-        gdk_pixbuf::Pixbuf::from_stream_at_scale_future(&stream, width, height, true).await
-    }
-    .await;
-    match result {
-        Ok(pixbuf) => {
+    let source = path.clone();
+    match gio::spawn_blocking(move || decode_pixels(&source, size)).await {
+        Ok(Ok(pixels)) => {
             tracing::debug!("decoded cover {} at {size}px", path.display());
-            Some(SmoothTexture::new(texture_from(&pixbuf)))
+            Some(SmoothTexture::new(texture_from(&pixels)))
         }
-        Err(err) => {
+        Ok(Err(err)) => {
             tracing::debug!("cannot read cover {}: {err}", path.display());
             None
         }
+        Err(_) => None,
     }
 }
 
-fn texture_from(pixbuf: &gdk_pixbuf::Pixbuf) -> gdk::Texture {
-    let format = if pixbuf.has_alpha() {
+fn texture_from(pixels: &Pixels) -> gdk::Texture {
+    let format = if pixels.alpha {
         gdk::MemoryFormat::R8g8b8a8
     } else {
         gdk::MemoryFormat::R8g8b8
     };
     gdk::MemoryTexture::new(
-        pixbuf.width(),
-        pixbuf.height(),
+        pixels.width,
+        pixels.height,
         format,
-        &pixbuf.read_pixel_bytes(),
-        pixbuf.rowstride() as usize,
+        &pixels.bytes,
+        pixels.rowstride,
     )
     .upcast()
 }
@@ -125,11 +140,11 @@ mod tests {
 
     #[test]
     fn grid_covers_decode_at_the_device_pixels_they_are_drawn_at() {
-        assert_eq!(device_pixels(185, 1.0), 192);
-        assert_eq!(device_pixels(185, 2.0), 376);
+        assert_eq!(device_pixels(185, 1.0), 185);
+        assert_eq!(device_pixels(185, 2.0), 370);
         // Fractional scaling: 185 × 1.25 = 231.25.
-        assert_eq!(device_pixels(185, 1.25), 232);
-        assert_eq!(device_pixels(160, 1.0), 160);
+        assert_eq!(device_pixels(185, 1.25), 231);
+        assert_eq!(device_pixels(160, 1.5), 240);
     }
 
     #[test]
