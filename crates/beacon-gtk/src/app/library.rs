@@ -313,6 +313,7 @@ impl App {
                 // the blue dot for good, which the reload then shows.
                 self.details_episode = Some((id, item.episode.show_id));
                 self.details.emit(DetailsPaneInput::Show(Box::new(item)));
+                self.focus_details(widgets);
                 widgets.details_split.set_show_sidebar(true);
                 self.job(sender, Parts::EPISODE, false, move |store| {
                     store.mark_seen(id)

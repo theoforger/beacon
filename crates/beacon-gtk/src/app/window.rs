@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The narrow layout and the remembered window size.
+//! The narrow layout, keyboard focus and Back, and the remembered window
+//! size.
 
 use relm4::adw::prelude::*;
-use relm4::gtk::gio;
+use relm4::gtk::{self, gdk, gio, glib};
 use relm4::{ComponentController, adw};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
@@ -14,6 +15,74 @@ use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
 const FULL_WIDTH: f64 = 100_000.0;
 
 impl App {
+    /// Alt+Left or the Back key: close the details page in the narrow
+    /// layout, else leave a deeper page, else return from the content to
+    /// the sidebar in the narrow layout, as Escape does there.
+    pub(super) fn go_back(&self, widgets: &AppWidgets) {
+        if widgets.details_split.is_collapsed() && widgets.details_split.shows_sidebar() {
+            widgets.details_split.set_show_sidebar(false);
+        } else if !self.content.widgets().go_back()
+            && widgets.split_view.is_collapsed()
+            && widgets.split_view.shows_content()
+        {
+            widgets.split_view.set_show_content(false);
+        }
+    }
+
+    /// Remember where focus was before a row opens the details pane, and
+    /// move it into the pane once its content is in place.
+    pub(super) fn focus_details(&self, widgets: &AppWidgets) {
+        let focus = widgets.details_split.root().and_then(|root| root.focus());
+        self.details_origin
+            .replace(focus.map(|widget| widget.downgrade()));
+        let pane = self.details.widget().clone();
+        glib::idle_add_local_once(move || {
+            pane.child_focus(gtk::DirectionType::TabForward);
+        });
+    }
+
+    /// Start in the sidebar; Escape closes the details pane; closing it
+    /// returns focus to where it was before the pane opened.
+    pub(super) fn manage_focus(&self, widgets: &AppWidgets) {
+        let library = self.sidebar.widgets().library().clone();
+        glib::idle_add_local_once(move || {
+            library.child_focus(gtk::DirectionType::TabForward);
+        });
+
+        let escape = gtk::EventControllerKey::new();
+        let split = widgets.details_split.downgrade();
+        escape.connect_key_pressed(move |_, key, _, _| {
+            if key != gdk::Key::Escape {
+                return glib::Propagation::Proceed;
+            }
+            if let Some(split) = split.upgrade() {
+                split.set_show_sidebar(false);
+            }
+            glib::Propagation::Stop
+        });
+        self.details.widget().add_controller(escape);
+
+        let pane = self.details.widget().clone();
+        let origin = self.details_origin.clone();
+        widgets
+            .details_split
+            .connect_show_sidebar_notify(move |split| {
+                if split.shows_sidebar() {
+                    return;
+                }
+                let Some(widget) = origin.take().and_then(|weak| weak.upgrade()) else {
+                    return;
+                };
+                let inside = split
+                    .root()
+                    .and_then(|root| root.focus())
+                    .is_none_or(|focus| focus.is_ancestor(&pane));
+                if inside && widget.is_mapped() {
+                    widget.grab_focus();
+                }
+            });
+    }
+
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.

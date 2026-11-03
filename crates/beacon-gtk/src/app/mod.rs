@@ -8,7 +8,9 @@
 mod library;
 mod window;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use beacon_core::model::{EpisodeId, ShowId};
@@ -80,6 +82,9 @@ pub struct App {
     /// A subscription whose toast waits for the show's title.
     subscribed_toast: Option<ShowId>,
     refresh: gio::SimpleAction,
+    /// Where focus was when a row opened the details pane, to return to
+    /// when the pane closes.
+    details_origin: Rc<RefCell<Option<glib::WeakRef<gtk::Widget>>>>,
     sidebar: Controller<Sidebar>,
     content: Controller<Content>,
     details: Controller<DetailsPane>,
@@ -202,6 +207,7 @@ impl Component for App {
             titles: HashMap::new(),
             subscribed_toast: None,
             refresh: refresh_action,
+            details_origin: Rc::default(),
             sidebar,
             content,
             details,
@@ -220,6 +226,7 @@ impl Component for App {
             .build();
 
         root.add_breakpoint(model.narrow_breakpoint(&widgets));
+        model.manage_focus(&widgets);
         model.content.widgets().capture_typing(&root);
 
         model.restore_window_state(&root);
@@ -259,7 +266,7 @@ impl Component for App {
                 widgets.split_view.set_show_content(true);
             }
             AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
-            AppMsg::GoBack => self.content.widgets().go_back(),
+            AppMsg::GoBack => self.go_back(widgets),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
             AppMsg::Refresh => self.start_refresh(&sender),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),

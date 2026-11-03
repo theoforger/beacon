@@ -337,8 +337,9 @@ impl ContentWidgets {
     }
 
     /// Leave the deeper page, as its Back button does.
-    pub fn go_back(&self) {
-        self.navigation.pop();
+    /// Leave the deeper page showing, if there is one.
+    pub fn go_back(&self) -> bool {
+        self.navigation.pop()
     }
 
     /// Ctrl+F: open the search bar, or close it if it is open. Only the root
