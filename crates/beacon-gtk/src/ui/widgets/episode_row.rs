@@ -217,9 +217,19 @@ impl EpisodeRow {
         };
         let subtitle = format::subtitle(episode, show_title);
         parts.subtitle.set_label(&subtitle);
-        parts
-            .subtitle
-            .update_property(&[gtk::accessible::Property::Label(&format::spoken(&subtitle))]);
+        // Screen readers read a row from its text, " · " included ("middle
+        // dot"), unless the row has a name: give it one that says it all.
+        let mut name = vec![episode.info.title.clone()];
+        if state.is_new() {
+            name.push(gettext("New"));
+        }
+        if state.played {
+            name.push(gettext("Played"));
+        }
+        name.push(format::spoken(&subtitle));
+        // Translators: separates the parts of an episode row when a screen
+        // reader reads it; a pause, not a symbol.
+        self.update_property(&[gtk::accessible::Property::Label(&name.join(&gettext(", ")))]);
         parts.progress.set_visible(state.is_partly_played());
         if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
             parts
