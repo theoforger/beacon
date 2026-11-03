@@ -40,9 +40,11 @@ impl Choice {
 /// The menu, its items naming the `filter.*` actions.
 fn menu() -> gio::Menu {
     let menu = gio::Menu::new();
-    for (action, items) in [
+    for (action, title, items) in [
         (
             SORT,
+            // Translators: a section title in the Sort and Filter menu.
+            gettext("Order"),
             vec![
                 (gettext("_Newest First"), "newest"),
                 (gettext("_Oldest First"), "oldest"),
@@ -50,6 +52,9 @@ fn menu() -> gio::Menu {
         ),
         (
             PLAYED,
+            // Translators: a section title in the Sort and Filter menu, over
+            // All, Played and Unplayed.
+            gettext("Progress"),
             vec![
                 (gettext("_All"), "all"),
                 (gettext("_Played"), "played"),
@@ -58,6 +63,9 @@ fn menu() -> gio::Menu {
         ),
         (
             DOWNLOADED,
+            // Translators: a section title in the Sort and Filter menu, over
+            // All, Downloaded and Not Downloaded.
+            gettext("Downloads"),
             vec![
                 // Translators: all episodes, whether downloaded or not.
                 (gettext("A_ll"), "all"),
@@ -75,7 +83,9 @@ fn menu() -> gio::Menu {
             );
             section.append_item(&item);
         }
-        menu.append_section(None, &section);
+        // Titled, so the two "All" items can be told apart, by eye and by
+        // screen reader.
+        menu.append_section(Some(&title), &section);
     }
     let reset = gio::Menu::new();
     // Translators: in the Sort and Filter menu; back to Newest First with no
