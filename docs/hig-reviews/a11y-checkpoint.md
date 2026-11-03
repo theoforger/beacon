@@ -85,3 +85,7 @@ Everything passed except:
 - **B9.** "Middle dot" was still read: Orca reads an unnamed row from its text, so naming the subtitle label changed nothing. Rows now have an accessible name (title, New or Played, subtitle with commas), checked through AT-SPI headless.
 - **B2.** Escape did nothing in Add's search field (Alt+Left worked): a search entry keeps Escape for itself. Escape now clears the field, and in the empty field goes back.
 - **Grid covers** were still softer than the details pane's: the decode size was rounded up to a multiple of 8, so covers were drawn slightly smaller than decoded. They are now decoded at exactly the drawn size (37.8 dB against a Lanczos resize of the source, up from 27.9 dB).
+
+### Second recheck (2026-11-03)
+
+- **B9.** The subtitle was read twice, once from the row's name and once, with "middle dot", from its label. The row's text parts now have the `Presentation` role, so only the name and the two buttons are exposed (checked through AT-SPI).
