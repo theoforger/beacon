@@ -176,7 +176,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] Carried from M3: the details pane's extra space between the cover and the show name
 - [ ] `PlayerService` wrapping `gstreamer-play`, publishing state; position saved periodically and on close
 - [ ] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
-- [ ] Settle the sleep timer lengths and volume behaviour (open question 2)
+- [x] Settle the sleep timer lengths and volume behaviour (open question 2; see `docs/decisions.md`, 2026-11-03)
 - [ ] The now-playing area opens the details pane
 - [ ] Details pane: cover, show link, title, subtitle, actions (Play/Pause/Resume in accent; queue, favourite, download and played as icon-only state toggles), description, and chapters (current chapter grey and bold, click to seek)
 - [ ] MPRIS: compare candidate crates (last release, downloads, open issues), choose one, record it in decisions, and wire up media keys

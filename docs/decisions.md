@@ -78,6 +78,11 @@ One maintained crate per job. Before adding each one, check it and move it to th
 - **Refresh** (M3) runs from the Shows and New headers, the main menu, Ctrl+R and F5. A toast reports new episodes or failed feeds; a refresh that finds nothing says nothing.
 - **Show descriptions are plain text for now** (M3): `beacon_core::text::plain` drops tags and decodes entities. A stopgap: the details pane in M4 needs real rich text (paragraphs, links) and should use a maintained crate. Confirmed as a stopgap by the user 2026-10-29.
 
+- **Sleep timer, volume and speed** (M4, settled by the user 2026-11-03; open question 2). GNOME Podcasts has no sleep timer or volume control, so these follow the mockup and the user's choices:
+  - The Sleep Timer button opens a menu: Off, 15, 30, 45 and 60 minutes, and End of Episode. When the timer runs out, playback fades out over about 5 seconds and pauses, keeping its position.
+  - The volume slider sets Beacon's own audio stream volume, the per-app volume GNOME Settings shows, and it is remembered across restarts.
+  - Playback speed follows GNOME Podcasts (`player_rate.ui`, commit 63b82e7) rather than the mockup's click-to-cycle button: a menu button with 0.75×, 0.90×, 1.00×, 1.25×, 1.50×, 1.75× and 2.00×, labelled with the current rate.
+
 ## Custom widgets and icons
 
 - **Episode lists are `GtkListBox`es, as in GNOME Podcasts** (M3, decided by the user 2026-10-30). The HIG keeps boxed lists to "relatively small static lists" and suggests list views for large ones; the user chose `GtkListBox` anyway, following GNOME Podcasts: one `boxed-list` per recency group in New and per season on a podcast page (seasons fold in a `GtkExpander`). To keep long feeds from blocking the UI, rows are added at idle priority (GNOME Podcasts' `lazy_load`), for at most 8ms per turn of the main loop rather than a fixed 25 rows (2026-11-03, after the user found opening a show slow: 25 rows took ~50ms, blocking frames), a newer fill cancels an older one, and a list whose episodes are unchanged is updated in place. Replaced a list view styled to look boxed.
