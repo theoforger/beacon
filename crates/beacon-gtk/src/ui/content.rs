@@ -63,6 +63,8 @@ pub enum ContentOutput {
     Unsubscribe(ShowId),
     FeedAddressCopied,
     Subscribe(Url),
+    /// Leave the page showing, as Back does.
+    GoBack,
 }
 
 pub struct Content {
@@ -189,8 +191,9 @@ impl Component for Content {
         );
         let add_page = AddPage::builder()
             .launch(())
-            .forward(&output, |AddPageOutput::Subscribe(url)| {
-                ContentOutput::Subscribe(url)
+            .forward(&output, |message| match message {
+                AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
+                AddPageOutput::Back => ContentOutput::GoBack,
             });
 
         let model = Content {

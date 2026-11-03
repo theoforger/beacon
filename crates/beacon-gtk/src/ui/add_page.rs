@@ -23,6 +23,8 @@ pub enum AddPageInput {
 #[derive(Debug)]
 pub enum AddPageOutput {
     Subscribe(Url),
+    /// Escape in the empty search field: leave the page.
+    Back,
 }
 
 pub struct AddPage {
@@ -71,6 +73,16 @@ impl Component for AddPage {
                                     sender.input(AddPageInput::TextChanged(entry.text().to_string()));
                                 },
                                 connect_activate[sender] => move |_| sender.input(AddPageInput::AddFeed),
+                                // A search entry keeps Escape for itself:
+                                // clear the field first, then leave the page,
+                                // as Escape does elsewhere.
+                                connect_stop_search[sender] => move |entry| {
+                                    if entry.text().is_empty() {
+                                        let _ = sender.output(AddPageOutput::Back);
+                                    } else {
+                                        entry.set_text("");
+                                    }
+                                },
                             },
 
                             gtk::ListBox {

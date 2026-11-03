@@ -255,6 +255,7 @@ impl App {
         match output {
             ContentOutput::Action(item, action) => self.row_action(*item, action, widgets, sender),
             ContentOutput::OpenShow(id) => self.open_show(id, sender),
+            ContentOutput::GoBack => self.go_back(widgets),
             ContentOutput::NewPrefsChanged(prefs) => {
                 for (group, value) in page_filters::states(&prefs) {
                     let Some((_, key)) = NEW_KEYS.iter().find(|(g, _)| *g == group) else {
