@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 13:10-0500\n"
+"POT-Creation-Date: 2026-11-04 13:14-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -578,44 +578,48 @@ msgstr ""
 msgid "Read More"
 msgstr ""
 
+#: crates/beacon-gtk/src/ui/show_page.rs:84
+msgid "Podcast"
+msgstr ""
+
 #. Translators: how a screen reader names a show's episode list
 #. when the show has no seasons.
-#: crates/beacon-gtk/src/ui/show_page.rs:269
+#: crates/beacon-gtk/src/ui/show_page.rs:272
 msgid "Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:323
+#: crates/beacon-gtk/src/ui/show_page.rs:326
 msgid "No unplayed episodes: you are all caught up"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:325
+#: crates/beacon-gtk/src/ui/show_page.rs:328
 msgid "No episodes match these filters"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:327
+#: crates/beacon-gtk/src/ui/show_page.rs:330
 msgid "This podcast has no episodes yet"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:341
 #: crates/beacon-gtk/src/ui/show_page.rs:344
+#: crates/beacon-gtk/src/ui/show_page.rs:347
 #: crates/beacon-gtk/src/ui/widgets/episode_row.rs:163
 #: crates/beacon-gtk/src/ui/widgets/episode_row.rs:167
 msgid "More Options"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:353
+#: crates/beacon-gtk/src/ui/show_page.rs:356
 msgid "Mark All as _Unplayed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:355
+#: crates/beacon-gtk/src/ui/show_page.rs:358
 msgid "Mark All as _Played"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:360
+#: crates/beacon-gtk/src/ui/show_page.rs:363
 msgid "_Download All Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/show_page.rs:363
+#: crates/beacon-gtk/src/ui/show_page.rs:366
 msgid "_Copy Feed Address"
 msgstr ""
 

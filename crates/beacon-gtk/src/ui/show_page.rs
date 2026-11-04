@@ -79,6 +79,9 @@ impl Component for ShowPage {
     view! {
         adw::NavigationPage {
             set_tag: Some(SHOW_TAG),
+            // Until the show's own title arrives: the page is pushed first,
+            // and a page needs a title for Back and screen readers.
+            set_title: &gettext("Podcast"),
 
             #[wrap(Some)]
             set_child = &adw::ToolbarView {
