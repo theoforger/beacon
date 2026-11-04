@@ -18,6 +18,7 @@
     <item>
       <title>The night shift (remastered)</title>
       <guid>small-hours-2</guid>
+      <itunes:image href="{{BASE}}/covers/night-shift.png"/>
       <pubDate>Wed, 21 Oct 2026 23:00:00 +0200</pubDate>
       <itunes:duration>38:10</itunes:duration>
       <enclosure url="{{BASE}}/audio/sh2.mp3" type="audio/mpeg" length="36000000"/>
@@ -25,6 +26,7 @@
     <item>
       <title>Insomnia, briefly</title>
       <guid>small-hours-1</guid>
+      <itunes:image href="{{BASE}}/covers/small-hours.png"/>
       <pubDate>Wed, 14 Oct 2026 23:00:00 +0200</pubDate>
       <itunes:duration>41:00</itunes:duration>
       <enclosure url="{{BASE}}/audio/sh1.mp3" type="audio/mpeg" length="39000000"/>

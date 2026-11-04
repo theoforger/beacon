@@ -4,6 +4,9 @@
 //! subtitle, then About This Episode. The actions between the subtitle and
 //! the description, and the chapters after it, arrive with M4.
 
+use std::path::PathBuf;
+
+use beacon_core::model::EpisodeId;
 use beacon_core::text;
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
@@ -21,6 +24,9 @@ const COVER_SIZE: i32 = 176;
 #[derive(Debug)]
 pub enum DetailsPaneInput {
     Show(Box<EpisodeItem>),
+    /// The episode's own cover, once fetched; the show's stands in until
+    /// then, and for episodes without one.
+    EpisodeCover(EpisodeId, PathBuf),
     Clear,
 }
 
@@ -33,6 +39,8 @@ pub enum DetailsPaneOutput {
 pub struct DetailsPane {
     episode: Option<EpisodeItem>,
     cover: Cover,
+    /// The shown episode's own cover, when it has one and it has arrived.
+    own_cover: Option<(EpisodeId, PathBuf)>,
 }
 
 #[relm4::component(pub)]
@@ -149,6 +157,7 @@ impl SimpleComponent for DetailsPane {
         let model = DetailsPane {
             episode: None,
             cover: Cover::new(COVER_SIZE),
+            own_cover: None,
         };
         let widgets = view_output!();
         links::arrow_keys_between_links(&widgets.description);
@@ -166,10 +175,24 @@ impl SimpleComponent for DetailsPane {
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         match message {
             DetailsPaneInput::Show(item) => {
-                self.cover.set(item.cover.as_deref());
+                // A reload of the same episode keeps the cover it has.
+                if self.own_cover.as_ref().map(|(id, _)| *id) != Some(item.episode.id) {
+                    self.own_cover = None;
+                }
+                let cover = self.own_cover.as_ref().map(|(_, path)| path.as_path());
+                self.cover.set(cover.or(item.cover.as_deref()));
                 self.episode = Some(*item);
             }
-            DetailsPaneInput::Clear => self.episode = None,
+            DetailsPaneInput::EpisodeCover(id, path) => {
+                if self.episode.as_ref().map(|e| e.episode.id) == Some(id) {
+                    self.cover.set(Some(&path));
+                    self.own_cover = Some((id, path));
+                }
+            }
+            DetailsPaneInput::Clear => {
+                self.episode = None;
+                self.own_cover = None;
+            }
         }
     }
 }

@@ -319,6 +319,13 @@ impl App {
                 // the blue dot for good, which the reload then shows.
                 self.details_episode = Some((id, item.episode.show_id));
                 self.details.emit(DetailsPaneInput::Show(Box::new(item)));
+                // The episode's own cover, as GNOME Podcasts shows it in its
+                // details; rows keep the show's.
+                if let Some(library) = self.library.clone() {
+                    sender.oneshot_command(async move {
+                        AppCommand::EpisodeCover(id, library.episode_cover(id).await.ok().flatten())
+                    });
+                }
                 self.focus_details(widgets);
                 widgets.details_split.set_show_sidebar(true);
                 self.job(sender, Parts::EPISODE, false, move |store| {

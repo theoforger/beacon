@@ -5,13 +5,13 @@
 //! The store sits behind a mutex that is never held across an `await`, so the
 //! network work of several feeds can overlap.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use url::Url;
 
 use crate::error::{LibraryError, StoreError};
-use crate::model::ShowId;
+use crate::model::{EpisodeId, ShowId};
 use crate::services::clock::Clock;
 use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
@@ -139,6 +139,25 @@ impl Library {
         if let Ok(path) = self.covers.fetch(&image_url).await {
             let _ = self.lock().set_cover_path(id, &path);
         }
+    }
+
+    /// The episode's own cover, downloaded once and then kept with the
+    /// shows' covers. `None` when it has no image of its own, or the same
+    /// image as its show (GNOME Podcasts' rule), or the image cannot be
+    /// fetched: the show's cover stands in.
+    pub async fn episode_cover(&self, id: EpisodeId) -> Result<Option<PathBuf>, StoreError> {
+        let (episode_image, show_image) = {
+            let store = self.lock();
+            let Some(episode) = store.episode(id)? else {
+                return Ok(None);
+            };
+            let show_image = store.show(episode.show_id)?.and_then(|s| s.info.image_url);
+            (episode.info.image_url, show_image)
+        };
+        let Some(url) = episode_image.filter(|url| Some(url) != show_image.as_ref()) else {
+            return Ok(None);
+        };
+        Ok(self.covers.fetch(&url).await.ok())
     }
 
     fn lock(&self) -> MutexGuard<'_, Store> {

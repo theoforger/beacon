@@ -177,9 +177,10 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] `PlayerService` wrapping `gstreamer-play`, publishing state; position saved periodically and on close (`player/`, `app/playback.rs`; a row's Play starts, pauses and resumes)
 - [x] After the user's review of step 1 (2026-11-03): square row Play button; Mark All as Unplayed when every episode is played; links and formatting in descriptions; the podcast page header in the mockup's layout with More Options in the header bar; long lists paged and reloads rebinding only changed rows
 - [x] After review (2026-11-03): the podcast page header keeps the cover's height, with Read More opening the whole description in a dialog; arrow keys move between a description's links
+- [x] The details pane shows the episode's own cover; rows keep the show's (2026-11-03)
 - [ ] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
 - [x] Settle the sleep timer lengths and volume behaviour (open question 2; see `docs/decisions.md`, 2026-11-03)
-- [ ] The now-playing area opens the details pane
+- [ ] The now-playing area opens the details pane, and shows the episode's own cover as the details pane does (`Library::episode_cover`)
 - [ ] Details pane: cover, show link, title, subtitle, actions (Play/Pause/Resume in accent; queue, favourite, download and played as icon-only state toggles), description, and chapters (current chapter grey and bold, click to seek)
 - [ ] MPRIS: compare candidate crates (last release, downloads, open issues), choose one, record it in decisions, and wire up media keys
 - [ ] Flatpak: add `--socket=pulseaudio` (done) and the MPRIS D-Bus name (`--own-name=org.mpris.MediaPlayer2.com.theoforger.Beacon`, with media keys)

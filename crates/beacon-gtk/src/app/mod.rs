@@ -11,6 +11,7 @@ mod window;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -30,7 +31,7 @@ use crate::config::APP_ID;
 use crate::navigation::Location;
 use crate::player::{Player, PlayerEvent};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
-use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
+use crate::ui::details_pane::{DetailsPane, DetailsPaneInput, DetailsPaneOutput};
 use crate::ui::dialogs::about;
 use crate::ui::player_bar::PlayerBar;
 use crate::ui::sidebar::{Sidebar, SidebarInput, SidebarOutput};
@@ -67,6 +68,8 @@ pub enum AppCommand {
     Loaded(Box<Result<library::Loaded, StoreError>>),
     Subscribed(Url, Result<ShowId, LibraryError>),
     Refreshed(RefreshSummary),
+    /// An episode's own cover, fetched for the details pane.
+    EpisodeCover(EpisodeId, Option<PathBuf>),
 }
 
 pub struct App {
@@ -312,6 +315,10 @@ impl Component for App {
                 self.subscribed(&url, result, widgets, &sender);
             }
             AppCommand::Refreshed(summary) => self.refreshed(&summary, widgets, &sender),
+            AppCommand::EpisodeCover(id, Some(path)) => {
+                self.details.emit(DetailsPaneInput::EpisodeCover(id, path));
+            }
+            AppCommand::EpisodeCover(_, None) => {}
         }
     }
 }

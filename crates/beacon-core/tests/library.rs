@@ -373,3 +373,42 @@ fn opening_creates_the_library_folder() {
     assert!(data.join("beacon.db").exists());
     library.with_store(|store| assert!(store.shows().unwrap().is_empty()));
 }
+
+#[tokio::test]
+async fn an_episode_with_its_own_image_has_its_own_cover() {
+    let server = MockServer::start_async().await;
+    serve(&server, "/feed.xml", fixture("plain.xml", &server)).await;
+    let own = server
+        .mock_async(|when, then| {
+            when.method(GET).path("/covers/night-shift.png");
+            then.status(200).body(b"\x89PNG night".as_slice());
+        })
+        .await;
+    let setup = library();
+    let id = setup
+        .library
+        .subscribe(&feed_url(&server, "/feed.xml"))
+        .await
+        .unwrap();
+    let episodes = setup
+        .library
+        .with_store(|store| store.episodes(id).unwrap());
+    let (night, insomnia) = (&episodes[0], &episodes[1]);
+    assert_eq!(night.info.title, "The night shift");
+
+    // Its own image, fetched once and then served from the cache.
+    for _ in 0..2 {
+        let cover = setup.library.episode_cover(night.id).await.unwrap();
+        assert_eq!(
+            std::fs::read(cover.expect("own cover")).unwrap(),
+            b"\x89PNG night"
+        );
+    }
+    own.assert_calls_async(1).await;
+
+    // The show's image is not the episode's own: the show cover stands.
+    assert_eq!(
+        setup.library.episode_cover(insomnia.id).await.unwrap(),
+        None
+    );
+}
