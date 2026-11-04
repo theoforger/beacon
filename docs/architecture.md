@@ -108,3 +108,4 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - Core: `playback.rs` (resume, skips, speeds, saving, the sleep timer and fade, the current chapter); `Store::set_position` and `Store::finish`; `PlaybackError`.
 - `player/`: `Player`, a `GstPlay` wrapper reporting `PlayerEvent`s (state, position, duration, end, error) on the main loop; `player/tests.rs` plays a local file to a silent sink.
 - `app/playback.rs`: starts the player with the remembered volume and speed, plays a row's episode (or pauses and resumes it), saves the position while playing, on pause and on close, and marks finished episodes played.
+- After review: `text::markup` (description HTML to Pango markup); the podcast page header in the mockup's layout, with More Options in the page's header bar; episode lists paged by `LazyFill::follow`, rebinding only changed rows.

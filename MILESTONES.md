@@ -175,6 +175,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [ ] Carried from M3: the details pane's extra space between the cover and the show name
 - [x] `PlayerService` wrapping `gstreamer-play`, publishing state; position saved periodically and on close (`player/`, `app/playback.rs`; a row's Play starts, pauses and resumes)
+- [x] After the user's review of step 1 (2026-11-03): square row Play button; Mark All as Unplayed when every episode is played; links and formatting in descriptions; the podcast page header in the mockup's layout with More Options in the header bar; long lists paged and reloads rebinding only changed rows
 - [ ] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
 - [x] Settle the sleep timer lengths and volume behaviour (open question 2; see `docs/decisions.md`, 2026-11-03)
 - [ ] The now-playing area opens the details pane
