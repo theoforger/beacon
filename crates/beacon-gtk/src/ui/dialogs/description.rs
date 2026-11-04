@@ -23,7 +23,7 @@ pub fn present(parent: &impl IsA<gtk::Widget>, title: &str, markup: &str) {
         .margin_end(24)
         .build();
     label.set_markup(markup);
-    links::selectable_description(&label);
+    links::arrow_keys_between_links(&label);
 
     let scrolled = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
