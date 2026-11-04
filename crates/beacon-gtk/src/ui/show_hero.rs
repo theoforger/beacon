@@ -18,12 +18,15 @@ use crate::ui::dialogs::description;
 use crate::ui::links;
 use crate::ui::models::ShowPageData;
 
-/// The cover beside the text, and above it when narrow (the mockup's `xl`).
-const COVER_SIZE: i32 = 200;
-const NARROW_COVER_SIZE: i32 = 150;
-/// Below this width the text goes under the cover: the mockup's text column
-/// wants about 320px beside a 200px cover and its 24px gap.
-const NARROW_WIDTH: f64 = 560.0;
+/// The cover beside the text, and above it when narrow: GNOME Music's large
+/// and medium album art (`ArtSize`), which gives the text room beside it.
+const COVER_SIZE: i32 = 256;
+const NARROW_COVER_SIZE: i32 = 192;
+/// Between the cover and the text, as on GNOME Music's album page.
+const GAP: i32 = 32;
+/// Below this width the text goes under the cover: the text column wants
+/// about 320px beside the cover and the gap.
+const NARROW_WIDTH: f64 = 610.0;
 
 /// The most description lines: beside the cover, as many of these as fit
 /// its height; under it, GNOME Podcasts' four (`read_more_label.rs`).
@@ -76,9 +79,9 @@ impl ShowHero {
         title.set_accessible_role(gtk::AccessibleRole::Heading);
         let author = label(&["dim-label"], 2);
         let description = label(&[], WIDE_LINES);
-        description.set_margin_top(4);
+        description.set_margin_top(6);
         description.set_use_markup(true);
-        links::selectable_description(&description);
+        links::arrow_keys_between_links(&description);
 
         // Opens the whole description when it does not fit, as GNOME
         // Podcasts' Read More does; in a dialog rather than in place, so the
@@ -100,12 +103,13 @@ impl ShowHero {
             .label(gettext("_Unsubscribe"))
             .use_underline(true)
             .halign(gtk::Align::Start)
-            .margin_top(6)
+            .margin_top(12)
             .build();
 
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
+            // GNOME Software's spacing between the lines of its app header.
+            .spacing(6)
             .hexpand(true)
             .valign(gtk::Align::Start)
             .build();
@@ -116,9 +120,9 @@ impl ShowHero {
         text.append(&unsubscribe);
 
         let row = gtk::Box::builder()
-            .spacing(24)
+            .spacing(GAP)
             .margin_top(24)
-            .margin_bottom(6)
+            .margin_bottom(12)
             .build();
         row.append(cover.widget());
         row.append(&text);
@@ -226,13 +230,13 @@ impl Parts {
             self.cover.set_size(NARROW_COVER_SIZE);
         } else {
             self.row.set_orientation(gtk::Orientation::Horizontal);
-            self.row.set_spacing(24);
+            self.row.set_spacing(GAP);
             self.cover.set_size(COVER_SIZE);
         }
         let width = if narrow {
             self.row.width()
         } else {
-            self.row.width() - COVER_SIZE - 24
+            self.row.width() - COVER_SIZE - GAP
         };
         if width <= 0 || !self.description.is_visible() {
             self.read_more.set_visible(false);
