@@ -123,9 +123,14 @@ impl SimpleComponent for DetailsPane {
                                 set_xalign: 0.0,
                                 set_wrap: true,
                                 set_wrap_mode: pango::WrapMode::WordChar,
-                                set_selectable: true,
+                                // Links, bold, italics and lists, as GNOME
+                                // Podcasts shows them, and like it not
+                                // selectable: a selectable label selects all
+                                // its text when it takes focus. Links open in
+                                // the browser through the portal.
+                                set_use_markup: true,
                                 #[watch]
-                                set_label: &model.episode.as_ref().and_then(|e| e.episode.info.description.as_deref()).map(text::plain).unwrap_or_default(),
+                                set_markup: &model.episode.as_ref().and_then(|e| e.episode.info.description.as_deref()).map(text::markup).unwrap_or_default(),
                             },
                         },
                     },
