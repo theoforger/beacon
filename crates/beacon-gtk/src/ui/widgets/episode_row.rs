@@ -24,8 +24,21 @@ pub type OnRowAction = Rc<dyn Fn(&EpisodeItem, RowAction)>;
 thread_local! {
     /// The episode playing, if any, and whether it is playing or paused.
     static PLAYING: Cell<Option<(EpisodeId, bool)>> = const { Cell::new(None) };
+    /// Whether the window has the narrow layout, where titles get two lines.
+    static NARROW: Cell<bool> = const { Cell::new(false) };
     /// Every row made, so the playing one can show Pause without a reload.
     static ROWS: RefCell<Vec<glib::WeakRef<EpisodeRow>>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Tell the rows whether the window has the narrow layout: titles take two
+/// lines there, one elsewhere, and every row keeps the same height.
+pub fn set_narrow(narrow: bool) {
+    NARROW.set(narrow);
+    ROWS.with_borrow(|rows| {
+        for row in rows.iter().filter_map(glib::WeakRef::upgrade) {
+            row.fit_title();
+        }
+    });
 }
 
 /// Tell the rows which episode is in the player and whether it plays: its
@@ -43,7 +56,11 @@ pub fn show_playing(playing: Option<(EpisodeId, bool)>) {
     });
 }
 
-const COVER_SIZE: i32 = 48;
+/// GNOME Podcasts' row cover (`episode_widget.ui`).
+const COVER_SIZE: i32 = 64;
+/// Every row's content is this tall, as in GNOME Podcasts, whatever its
+/// title: one line in wide windows, two in the narrow layout.
+const CONTENT_HEIGHT: i32 = 64;
 
 mod imp {
     use super::*;
@@ -96,8 +113,9 @@ impl EpisodeRow {
         let root: Self = glib::Object::new();
         let content = gtk::Box::builder()
             .spacing(12)
-            .margin_top(8)
-            .margin_bottom(8)
+            .height_request(CONTENT_HEIGHT)
+            .margin_top(6)
+            .margin_bottom(6)
             .margin_start(12)
             .margin_end(12)
             .build();
@@ -117,7 +135,7 @@ impl EpisodeRow {
             .xalign(0.0)
             .wrap(true)
             .wrap_mode(pango::WrapMode::WordChar)
-            .lines(2)
+            .lines(1)
             .ellipsize(pango::EllipsizeMode::End)
             .css_classes(["heading"])
             .accessible_role(gtk::AccessibleRole::Presentation)
@@ -139,10 +157,11 @@ impl EpisodeRow {
             .css_classes(["dim-label", "caption"])
             .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
-        let progress = gtk::ProgressBar::builder().margin_top(4).build();
+        let progress = gtk::ProgressBar::new();
+        // GNOME Podcasts' spacing between title and subtitle.
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
+            .spacing(6)
             .hexpand(true)
             .valign(gtk::Align::Center)
             .build();
@@ -229,6 +248,16 @@ impl EpisodeRow {
         root
     }
 
+    /// One line of title, or two in the narrow layout unless the progress
+    /// bar needs the room (GNOME Podcasts' `update_progressbar_spacing`).
+    fn fit_title(&self) {
+        let Some(parts) = self.imp().parts.get() else {
+            return;
+        };
+        let two = NARROW.get() && !parts.progress.is_visible();
+        parts.title.set_lines(if two { 2 } else { 1 });
+    }
+
     /// Play, or Pause while this row's episode plays.
     fn show_play_state(&self) {
         let Some(parts) = self.imp().parts.get() else {
@@ -295,6 +324,7 @@ impl EpisodeRow {
         // reader reads it; a pause, not a symbol.
         self.update_property(&[gtk::accessible::Property::Label(&name.join(&gettext(", ")))]);
         parts.progress.set_visible(state.is_partly_played());
+        self.fit_title();
         if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
             parts
                 .progress

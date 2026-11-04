@@ -47,6 +47,7 @@ struct Parts {
     author: gtk::Label,
     description: gtk::Label,
     read_more: gtk::Label,
+    unsubscribe: gtk::Button,
     narrow: Cell<bool>,
     /// A fit waits for the next turn of the main loop.
     fitting: Cell<bool>,
@@ -121,7 +122,8 @@ impl ShowHero {
 
         let row = gtk::Box::builder()
             .spacing(GAP)
-            .margin_top(24)
+            // GNOME Podcasts' 32px above its show header.
+            .margin_top(32)
             .margin_bottom(12)
             .build();
         row.append(cover.widget());
@@ -148,6 +150,7 @@ impl ShowHero {
             author,
             description,
             read_more,
+            unsubscribe: unsubscribe.clone(),
             narrow: Cell::new(false),
             fitting: Cell::new(false),
             show_title: RefCell::default(),
@@ -218,6 +221,29 @@ impl Parts {
         });
     }
 
+    /// Stacked, everything is centred under the cover (asked by the user);
+    /// beside it, everything starts at the cover's edge.
+    fn align(&self, centred: bool) {
+        let (align, xalign, justify) = if centred {
+            (gtk::Align::Center, 0.5, gtk::Justification::Center)
+        } else {
+            (gtk::Align::Start, 0.0, gtk::Justification::Left)
+        };
+        self.cover.widget().set_halign(align);
+        for label in [
+            &self.category,
+            &self.title,
+            &self.author,
+            &self.description,
+            &self.read_more,
+        ] {
+            label.set_xalign(xalign);
+            label.set_justify(justify);
+        }
+        self.read_more.set_halign(align);
+        self.unsubscribe.set_halign(align);
+    }
+
     /// Lay out for the width: beside the cover, the text keeps to the
     /// cover's height, the description losing lines until it does; under
     /// it, the description stops at four lines. Read More shows when the
@@ -233,6 +259,7 @@ impl Parts {
             self.row.set_spacing(GAP);
             self.cover.set_size(COVER_SIZE);
         }
+        self.align(narrow);
         let width = if narrow {
             self.row.width()
         } else {

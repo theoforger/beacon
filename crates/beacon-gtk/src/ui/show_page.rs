@@ -106,10 +106,12 @@ impl Component for ShowPage {
 
                             append: model.hero.widget(),
 
+                            // Seasons 24px apart, as GNOME Podcasts spaces
+                            // its groups.
                             #[name = "episodes"]
                             gtk::Box {
                                 set_orientation: gtk::Orientation::Vertical,
-                                set_spacing: 6,
+                                set_spacing: 24,
                                 set_margin_top: 12,
                             },
                         },
@@ -303,7 +305,6 @@ impl ShowPage {
             .label_widget(&label)
             .child(list)
             .expanded(!self.folded.borrow().contains(&(show, key)))
-            .margin_top(12)
             .build();
         list.set_margin_top(6);
         let folded = self.folded.clone();

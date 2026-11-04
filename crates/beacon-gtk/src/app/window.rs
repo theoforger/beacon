@@ -8,6 +8,7 @@ use relm4::gtk::{self, gdk, gio, glib};
 use relm4::{ComponentController, adw};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
+use crate::ui::widgets::episode_row;
 
 /// The details pane's maximum width in the narrow layout: more than any
 /// window, so the fraction of 1.0 decides. `f64::MAX` overflows when GTK
@@ -131,6 +132,8 @@ impl App {
             "visible",
             Some(&false.to_value()),
         );
+        breakpoint.connect_apply(|_| episode_row::set_narrow(true));
+        breakpoint.connect_unapply(|_| episode_row::set_narrow(false));
         breakpoint.add_setter(
             self.sidebar.widgets().library(),
             "mode",

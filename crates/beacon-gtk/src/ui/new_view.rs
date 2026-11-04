@@ -62,12 +62,14 @@ impl Component for NewView {
                     adw::Clamp {
                         set_maximum_size: 900,
 
+                        // GNOME Podcasts' spacing (`home_episode_list.ui`):
+                        // 32px above and below, groups 24px apart.
                         #[name = "groups"]
                         gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
-                            set_spacing: 6,
-                            set_margin_top: 6,
-                            set_margin_bottom: 24,
+                            set_spacing: 24,
+                            set_margin_top: 32,
+                            set_margin_bottom: 32,
                             set_margin_start: 12,
                             set_margin_end: 12,
                         },
@@ -163,13 +165,18 @@ impl Component for NewView {
             let heading = gtk::Label::builder()
                 .label(&title)
                 .xalign(0.0)
-                .margin_top(12)
                 .css_classes(["heading"])
                 .accessible_role(gtk::AccessibleRole::Heading)
                 .build();
             let list = new_list(&self.on_action, &title);
-            widgets.groups.append(&heading);
-            widgets.groups.append(&list);
+            // A heading 6px above its list, as in GNOME Podcasts.
+            let group = gtk::Box::builder()
+                .orientation(gtk::Orientation::Vertical)
+                .spacing(6)
+                .build();
+            group.append(&heading);
+            group.append(&list);
+            widgets.groups.append(&group);
             work.extend(items.into_iter().map(|item| (list.clone(), item)));
             self.lists.push(list);
         }

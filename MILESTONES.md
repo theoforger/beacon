@@ -182,6 +182,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
 - [x] Settle the sleep timer lengths and volume behaviour (open question 2; see `docs/decisions.md`, 2026-11-03)
 - [x] The now-playing area opens the details pane, and shows the episode's own cover as the details pane does (`Library::episode_cover`)
+- [x] Lists spaced and rows sized as in GNOME Podcasts; titles one line wide, two narrow; the narrow podcast header centred (2026-11-04)
 - [ ] Details pane: cover, show link, title, subtitle, actions (Play/Pause/Resume in accent; queue, favourite, download and played as icon-only state toggles), description, and chapters (current chapter grey and bold, click to seek)
 - [ ] MPRIS: compare candidate crates (last release, downloads, open issues), choose one, record it in decisions, and wire up media keys
 - [ ] Flatpak: add `--socket=pulseaudio` (done) and the MPRIS D-Bus name (`--own-name=org.mpris.MediaPlayer2.com.theoforger.Beacon`, with media keys)
