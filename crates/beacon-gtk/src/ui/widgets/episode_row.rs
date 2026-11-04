@@ -218,7 +218,14 @@ impl EpisodeRow {
             show_identity,
         };
         let _ = root.imp().parts.set(parts);
-        ROWS.with_borrow_mut(|rows| rows.push(root.downgrade()));
+        ROWS.with_borrow_mut(|rows| {
+            // Rows come and go with every list rebuilt; drop the gone ones
+            // whenever the list doubles, so it never grows without end.
+            if rows.len() >= 64 && rows.len().is_power_of_two() {
+                rows.retain(|row| row.upgrade().is_some());
+            }
+            rows.push(root.downgrade());
+        });
         root
     }
 

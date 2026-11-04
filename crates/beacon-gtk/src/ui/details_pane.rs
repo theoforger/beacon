@@ -41,6 +41,10 @@ pub struct DetailsPane {
     cover: Cover,
     /// The shown episode's own cover, when it has one and it has arrived.
     own_cover: Option<(EpisodeId, PathBuf)>,
+    /// The long subtitle and the description's markup, made once per
+    /// episode rather than on every update.
+    subtitle: String,
+    description: String,
 }
 
 #[relm4::component(pub)]
@@ -115,9 +119,9 @@ impl SimpleComponent for DetailsPane {
                                 set_wrap: true,
                                 add_css_class: "dim-label",
                                 #[watch]
-                                set_label: &model.episode.as_ref().map(|e| format::long_subtitle(&e.episode)).unwrap_or_default(),
+                                set_label: &model.subtitle,
                                 #[watch]
-                                update_property: &[gtk::accessible::Property::Label(&model.episode.as_ref().map(|e| format::spoken(&format::long_subtitle(&e.episode))).unwrap_or_default())],
+                                update_property: &[gtk::accessible::Property::Label(&format::spoken(&model.subtitle))],
                             },
                             gtk::Label {
                                 set_margin_top: 18,
@@ -140,7 +144,7 @@ impl SimpleComponent for DetailsPane {
                                 // the browser through the portal.
                                 set_use_markup: true,
                                 #[watch]
-                                set_markup: &model.episode.as_ref().and_then(|e| e.episode.info.description.as_deref()).map(text::markup).unwrap_or_default(),
+                                set_markup: &model.description,
                             },
                         },
                     },
@@ -158,6 +162,8 @@ impl SimpleComponent for DetailsPane {
             episode: None,
             cover: Cover::new(COVER_SIZE),
             own_cover: None,
+            subtitle: String::new(),
+            description: String::new(),
         };
         let widgets = view_output!();
         links::arrow_keys_between_links(&widgets.description);
@@ -181,6 +187,16 @@ impl SimpleComponent for DetailsPane {
                 }
                 let cover = self.own_cover.as_ref().map(|(_, path)| path.as_path());
                 self.cover.set(cover.or(item.cover.as_deref()));
+                let info = &item.episode.info;
+                let changed = self.episode.as_ref().map(|e| &e.episode.info) != Some(info);
+                if changed {
+                    self.subtitle = format::long_subtitle(&item.episode);
+                    self.description = info
+                        .description
+                        .as_deref()
+                        .map(text::markup)
+                        .unwrap_or_default();
+                }
                 self.episode = Some(*item);
             }
             DetailsPaneInput::EpisodeCover(id, path) => {
@@ -192,6 +208,8 @@ impl SimpleComponent for DetailsPane {
             DetailsPaneInput::Clear => {
                 self.episode = None;
                 self.own_cover = None;
+                self.subtitle.clear();
+                self.description.clear();
             }
         }
     }

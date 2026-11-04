@@ -146,19 +146,8 @@ impl Player {
         self.play.pause();
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "used by the playback test"))]
-    pub fn stop(&self) {
-        self.play.stop();
-    }
-
     pub fn seek(&self, position: Duration) {
         self.play.seek(clock_time(position));
-    }
-
-    /// The position now, if the stream has one.
-    #[cfg_attr(not(test), expect(dead_code, reason = "used by the playback test"))]
-    pub fn position(&self) -> Option<Duration> {
-        self.play.position().map(Duration::from)
     }
 
     pub fn set_rate(&self, rate: f64) {
@@ -168,6 +157,19 @@ impl Player {
     /// Beacon's own stream volume, from 0 to 1.
     pub fn set_volume(&self, volume: f64) {
         self.play.set_volume(volume.clamp(0.0, 1.0));
+    }
+}
+
+/// What only the playback test needs.
+#[cfg(test)]
+impl Player {
+    fn stop(&self) {
+        self.play.stop();
+    }
+
+    /// The position now, if the stream has one.
+    fn position(&self) -> Option<Duration> {
+        self.play.position().map(Duration::from)
     }
 }
 

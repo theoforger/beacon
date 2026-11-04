@@ -104,7 +104,7 @@ impl Component for Sidebar {
         });
 
         let model = Sidebar { badges };
-        model.select(&widgets, Location::Shows);
+        widgets.select(Location::Shows);
         ComponentParts { model, widgets }
     }
 
@@ -116,7 +116,7 @@ impl Component for Sidebar {
         _root: &Self::Root,
     ) {
         match message {
-            SidebarInput::Select(location) => self.select(widgets, location),
+            SidebarInput::Select(location) => widgets.select(location),
             SidebarInput::SetCounts(counts) => {
                 for (location, badge) in &self.badges {
                     let count = match location {
@@ -133,16 +133,13 @@ impl Component for Sidebar {
     }
 }
 
-impl Sidebar {
-    fn select(&self, widgets: &SidebarWidgets, location: Location) {
+impl SidebarWidgets {
+    fn select(&self, location: Location) {
         let index = Location::ALL.iter().position(|&l| l == location);
-        widgets
-            .library
+        self.library
             .set_selected(index.map_or(gtk::INVALID_LIST_POSITION, |i| i as u32));
     }
-}
 
-impl SidebarWidgets {
     /// Follows the window's narrow layout.
     pub fn library(&self) -> &adw::Sidebar {
         &self.library

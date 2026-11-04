@@ -69,6 +69,9 @@ pub struct PlayerBar {
     duration: Option<Duration>,
     /// Ignore the seek bar's own changes while the bar sets it.
     setting: std::rc::Rc<std::cell::Cell<bool>>,
+    /// The second the times show, so they change once a second rather than
+    /// with each of the player's four position updates.
+    shown_second: Option<(u64, u64)>,
 }
 
 pub struct PlayerBarWidgets {
@@ -402,6 +405,7 @@ impl Component for PlayerBar {
             episode: None,
             duration: None,
             setting,
+            shown_second: None,
         };
         let widgets = PlayerBarWidgets {
             root,
@@ -470,6 +474,7 @@ impl Component for PlayerBar {
                     .update_property(&[gtk::accessible::Property::Label(&label)]);
             }
             PlayerBarInput::Position(position) => set_position(self, widgets, position),
+            PlayerBarInput::Duration(duration) if Some(duration) == self.duration => {}
             PlayerBarInput::Duration(duration) => self.duration = Some(duration),
             PlayerBarInput::Favorite(favorite) => set_favorite(&widgets.favorite, favorite),
             PlayerBarInput::Rate(rate) => {
@@ -516,13 +521,17 @@ impl Component for PlayerBar {
     }
 }
 
-fn set_position(bar: &PlayerBar, widgets: &PlayerBarWidgets, position: Duration) {
+fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Duration) {
     let total = bar.duration.unwrap_or_default();
     widgets.seek.set_range(
         0.0,
         total.as_secs_f64().max(position.as_secs_f64()).max(1.0),
     );
     widgets.seek.set_value(position.as_secs_f64());
+    let second = (position.as_secs(), total.as_secs());
+    if bar.shown_second.replace(second) == Some(second) {
+        return;
+    }
     widgets.elapsed.set_label(&format::clock(position));
     let left = total.saturating_sub(position);
     // Translators: time left in the episode, as in "-33:28".

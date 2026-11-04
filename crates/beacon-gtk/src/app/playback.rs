@@ -113,7 +113,7 @@ impl App {
         let start = playback::resume_position(&episode.state, duration);
         player.load(&uri, start);
         // The episode it replaces keeps where it got to.
-        self.save_position(sender, Parts::EPISODE);
+        self.save_position(sender, Parts::PROGRESS);
         self.now_playing = Some(NowPlaying {
             id: episode.id,
             show_id: episode.show_id,
@@ -188,7 +188,7 @@ impl App {
                 self.bar.emit(PlayerBarInput::State(state));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
-                    self.save_position(sender, Parts::EPISODE);
+                    self.save_position(sender, Parts::PROGRESS);
                 }
             }
             PlayerEvent::Finished => {

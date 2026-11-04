@@ -61,6 +61,14 @@ impl Parts {
     };
     /// Everything an episode's state shows up in.
     pub(super) const EPISODE: Parts = Parts::ALL;
+    /// Where an episode got to: its progress bar in New and on its page,
+    /// and the details. Not the Shows grid or the counts.
+    pub(super) const PROGRESS: Parts = Parts {
+        new: true,
+        page: true,
+        details: true,
+        ..Parts::NONE
+    };
     const NEW: Parts = Parts {
         new: true,
         ..Parts::NONE
