@@ -55,7 +55,7 @@ fn show_info(channel: &Channel) -> ShowInfo {
             .or_else(|| itunes.and_then(|i| non_empty(i.summary.as_deref()))),
         link: url(Some(channel.link())),
         image_url: url(itunes.and_then(|i| i.image.as_deref()))
-            .or_else(|| url(channel.image().map(|i| i.url()))),
+            .or_else(|| url(channel.image().map(rss::Image::url))),
         category: itunes
             .and_then(|i| i.categories.first())
             .map(|c| c.text.trim().to_owned())
@@ -83,7 +83,7 @@ fn parse_item(item: &Item, channel: &Channel) -> ParsedEpisode {
 
     // Identity must survive refreshes. Without a GUID, the enclosure URL is
     // the most stable thing an item has.
-    let guid = non_empty(item.guid().map(|g| g.value()))
+    let guid = non_empty(item.guid().map(rss::Guid::value))
         .or_else(|| enclosure.as_ref().map(|e| e.url.to_string()))
         .or_else(|| non_empty(item.link()))
         .or_else(|| non_empty(item.title()))

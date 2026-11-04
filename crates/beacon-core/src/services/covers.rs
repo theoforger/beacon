@@ -2,6 +2,7 @@
 
 //! Disk cache for cover art, keyed by the image URL.
 
+use std::fmt::Write;
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
@@ -27,7 +28,12 @@ impl CoverCache {
     /// Where the cover for `url` is, or will be, stored.
     pub fn path_for(&self, url: &Url) -> PathBuf {
         let digest = Sha256::digest(url.as_str().as_bytes());
-        let name: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+        let name = digest
+            .iter()
+            .fold(String::with_capacity(64), |mut name, b| {
+                let _ = write!(name, "{b:02x}");
+                name
+            });
         self.dir.join(name)
     }
 
