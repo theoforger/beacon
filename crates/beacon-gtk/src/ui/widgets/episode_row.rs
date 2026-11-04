@@ -6,9 +6,10 @@
 //! as the HIG checklist allows; activating the row opens the details. A
 //! `GtkListBoxRow` for a `boxed-list`, as GNOME Podcasts' episode row is.
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
+use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
 use relm4::gtk::subclass::prelude::*;
 use relm4::gtk::{self, gio, glib, pango, prelude::*};
@@ -19,6 +20,28 @@ use crate::ui::models::{EpisodeItem, RowAction};
 
 /// Called with the row's episode when one of its actions is chosen.
 pub type OnRowAction = Rc<dyn Fn(&EpisodeItem, RowAction)>;
+
+thread_local! {
+    /// The episode playing, if any, and whether it is playing or paused.
+    static PLAYING: Cell<Option<(EpisodeId, bool)>> = const { Cell::new(None) };
+    /// Every row made, so the playing one can show Pause without a reload.
+    static ROWS: RefCell<Vec<glib::WeakRef<EpisodeRow>>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Tell the rows which episode is in the player and whether it plays: its
+/// row's button shows Pause while it does.
+pub fn show_playing(playing: Option<(EpisodeId, bool)>) {
+    PLAYING.set(playing);
+    ROWS.with_borrow_mut(|rows| {
+        rows.retain(|row| match row.upgrade() {
+            Some(row) => {
+                row.show_play_state();
+                true
+            }
+            None => false,
+        });
+    });
+}
 
 const COVER_SIZE: i32 = 48;
 
@@ -58,6 +81,7 @@ pub struct Parts {
     subtitle: gtk::Label,
     progress: gtk::ProgressBar,
     menu: gtk::MenuButton,
+    play: gtk::Button,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
     /// Whether the row shows its show, by cover and in the subtitle; not
     /// on the show's own page.
@@ -189,11 +213,32 @@ impl EpisodeRow {
             subtitle,
             progress,
             menu,
+            play,
             episode,
             show_identity,
         };
         let _ = root.imp().parts.set(parts);
+        ROWS.with_borrow_mut(|rows| rows.push(root.downgrade()));
         root
+    }
+
+    /// Play, or Pause while this row's episode plays.
+    fn show_play_state(&self) {
+        let Some(parts) = self.imp().parts.get() else {
+            return;
+        };
+        let id = parts.episode.borrow().as_ref().map(|item| item.episode.id);
+        let playing = matches!(PLAYING.get(), Some((now, true)) if Some(now) == id);
+        let (icon, label) = if playing {
+            ("media-playback-pause-symbolic", gettext("Pause"))
+        } else {
+            ("media-playback-start-symbolic", gettext("Play"))
+        };
+        parts.play.set_icon_name(icon);
+        parts.play.set_tooltip_text(Some(&label));
+        parts
+            .play
+            .update_property(&[gtk::accessible::Property::Label(&label)]);
     }
 
     /// The episode the row shows.
@@ -208,6 +253,7 @@ impl EpisodeRow {
         let episode = &item.episode;
         let state = &episode.state;
         parts.episode.replace(Some(item.clone()));
+        self.show_play_state();
         if parts.show_identity {
             parts.cover.set(item.cover.as_deref());
         }

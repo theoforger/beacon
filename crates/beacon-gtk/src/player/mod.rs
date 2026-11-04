@@ -146,18 +146,17 @@ impl Player {
         self.play.pause();
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "the player bar, next in M4"))]
+    #[cfg_attr(not(test), expect(dead_code, reason = "used by the playback test"))]
     pub fn stop(&self) {
         self.play.stop();
     }
 
-    #[expect(dead_code, reason = "the player bar's seek bar and skips, next in M4")]
     pub fn seek(&self, position: Duration) {
         self.play.seek(clock_time(position));
     }
 
     /// The position now, if the stream has one.
-    #[cfg_attr(not(test), expect(dead_code, reason = "the player bar, next in M4"))]
+    #[cfg_attr(not(test), expect(dead_code, reason = "used by the playback test"))]
     pub fn position(&self) -> Option<Duration> {
         self.play.position().map(Duration::from)
     }

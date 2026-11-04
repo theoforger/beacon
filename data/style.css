@@ -67,3 +67,10 @@
   padding: 4px;
   background-color: var(--accent-bg-color);
 }
+
+/* The player bar's Play and Pause: neutral and round, a little larger than
+ * the controls beside it, as in the mockup. */
+.play-button {
+  min-width: 44px;
+  min-height: 44px;
+}

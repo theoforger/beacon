@@ -9,21 +9,26 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use beacon_core::PlaybackError;
-use beacon_core::model::{Episode, EpisodeId};
+use beacon_core::model::{Episode, EpisodeId, ShowId};
 use beacon_core::playback;
 use beacon_core::services::library::Library;
-use relm4::ComponentSender;
 use relm4::gtk::{gio, glib, prelude::*};
+use relm4::{ComponentController, ComponentSender};
 
 use super::library::Parts;
-use super::{App, AppMsg, AppWidgets, toast};
+use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::player::{PlaybackState, Player, PlayerEvent};
 use crate::ui::errors;
+use crate::ui::models::EpisodeItem;
+use crate::ui::player_bar::{NowPlayingCard, PlayerBarInput};
+use crate::ui::widgets::episode_row;
 
 /// The episode in the player.
 #[derive(Debug, Clone)]
 pub struct NowPlaying {
     pub id: EpisodeId,
+    pub show_id: ShowId,
+    pub favorite: bool,
     pub duration: Option<Duration>,
     pub position: Duration,
     /// The position last written to the store.
@@ -41,14 +46,14 @@ pub type LastPosition = Rc<Cell<Option<(EpisodeId, Duration)>>>;
 pub(super) fn start_player(
     settings: &gio::Settings,
     sender: &ComponentSender<App>,
-) -> Result<Player, PlaybackError> {
+) -> Result<Rc<Player>, PlaybackError> {
     let input = sender.input_sender().clone();
     let player = Player::new(&glib::MainContext::default(), move |event| {
         input.emit(AppMsg::Player(event));
     })?;
     player.set_volume(settings.double("volume"));
     player.set_rate(playback::nearest_rate(settings.double("playback-rate")));
-    Ok(player)
+    Ok(Rc::new(player))
 }
 
 /// Write where playback got to, when the window closes. The window is going
@@ -78,11 +83,12 @@ impl App {
     /// pause or resume it if it is the one playing.
     pub(super) fn play_episode(
         &mut self,
-        episode: &Episode,
+        item: &EpisodeItem,
         widgets: &AppWidgets,
         sender: &ComponentSender<Self>,
     ) {
-        let Some(player) = &self.player else {
+        let episode = &item.episode;
+        let Some(player) = self.player.clone() else {
             let err = self
                 .player_error
                 .clone()
@@ -110,12 +116,41 @@ impl App {
         self.save_position(sender, Parts::EPISODE);
         self.now_playing = Some(NowPlaying {
             id: episode.id,
+            show_id: episode.show_id,
+            favorite: episode.state.favorite,
             duration,
             position: start,
             saved: start,
             state: PlaybackState::Buffering,
         });
         self.last_position.set(Some((episode.id, start)));
+        self.bar
+            .emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+                id: episode.id,
+                title: episode.info.title.clone(),
+                show_title: item.show_title.clone(),
+                cover: item.cover.clone(),
+                favorite: episode.state.favorite,
+                duration,
+            }))));
+        self.bar.emit(PlayerBarInput::Position(start));
+        self.fetch_episode_cover(episode.id, sender);
+        // Playing takes an episode off the queue: the queue is what comes
+        // next, as in a music app (the Now Playing group, M5).
+        let id = episode.id;
+        self.job(sender, Parts::EPISODE, false, move |store| {
+            store.dequeue(id)
+        });
+    }
+
+    /// Fetch the episode's own cover for the player bar and the details
+    /// pane; the show's stands in until it comes, or if it never does.
+    pub(super) fn fetch_episode_cover(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
+        if let Some(library) = self.library.clone() {
+            sender.oneshot_command(async move {
+                AppCommand::EpisodeCover(id, library.episode_cover(id).await.ok().flatten())
+            });
+        }
     }
 
     pub(super) fn player_event(
@@ -131,20 +166,26 @@ impl App {
                 };
                 now.position = position;
                 self.last_position.set(Some((now.id, position)));
+                self.bar.emit(PlayerBarInput::Position(position));
                 if playback::should_save(now.saved, position) {
                     self.save_position(sender, Parts::NONE);
                 }
+                self.check_sleep_timer(sender);
             }
             PlayerEvent::Duration(duration) => {
                 if let Some(now) = &mut self.now_playing {
                     now.duration = Some(duration);
                 }
+                self.bar.emit(PlayerBarInput::Duration(duration));
             }
             PlayerEvent::State(state) => {
                 let Some(now) = &mut self.now_playing else {
                     return;
                 };
                 now.state = state;
+                let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
+                episode_row::show_playing(Some((now.id, playing)));
+                self.bar.emit(PlayerBarInput::State(state));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(sender, Parts::EPISODE);
@@ -155,6 +196,11 @@ impl App {
                     return;
                 };
                 self.last_position.set(None);
+                episode_row::show_playing(None);
+                self.bar.emit(PlayerBarInput::State(PlaybackState::Stopped));
+                // "End of Episode" has done its work; nothing plays next yet
+                // (auto-continue arrives with the queue, M5).
+                self.end_sleep_timer();
                 let Some(when) = self.library.as_ref().map(|l| l.now()) else {
                     return;
                 };
@@ -182,13 +228,11 @@ impl App {
         });
     }
 
-    /// Remember the volume and speed for next time.
-    #[expect(dead_code, reason = "the player bar's volume and speed, next in M4")]
-    pub(super) fn remember_playback_settings(&self, volume: f64, rate: f64) {
-        for (key, value) in [("volume", volume), ("playback-rate", rate)] {
-            if let Err(err) = self.settings.set_double(key, value) {
-                tracing::warn!("could not remember {key}: {err}");
-            }
+    /// Remember a playback setting (`volume`, `playback-rate`) for next
+    /// time.
+    pub(super) fn remember(&self, key: &str, value: f64) {
+        if let Err(err) = self.settings.set_double(key, value) {
+            tracing::warn!("could not remember {key}: {err}");
         }
     }
 }

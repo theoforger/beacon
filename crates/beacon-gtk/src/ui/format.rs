@@ -29,6 +29,24 @@ pub fn subtitle(episode: &Episode, show_title: &str) -> String {
     parts.join(&gettext(" · "))
 }
 
+/// A position or length on a clock: "18:42", or "1:02:05" past an hour.
+pub fn clock(duration: Duration) -> String {
+    let secs = duration.as_secs();
+    let (hours, minutes, seconds) = (secs / 3600, secs / 60 % 60, secs % 60);
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{seconds:02}")
+    } else {
+        format!("{minutes}:{seconds:02}")
+    }
+}
+
+/// A playback speed as the speed menu shows it, as in GNOME Podcasts:
+/// "1.25×".
+pub fn rate(rate: f64) -> String {
+    // Translators: a playback speed, as in "1.25×".
+    gettext("{rate}×").replace("{rate}", &format!("{rate:.2}"))
+}
+
 /// A subtitle as a screen reader should say it: the dots between its parts
 /// are read aloud ("middle dot"), so they become pauses.
 pub fn spoken(subtitle: &str) -> String {
@@ -167,6 +185,15 @@ pub fn recency_title(group: RecencyGroup) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clocks_show_hours_only_past_an_hour() {
+        assert_eq!(clock(Duration::from_secs(0)), "0:00");
+        assert_eq!(clock(Duration::from_secs(18 * 60 + 42)), "18:42");
+        assert_eq!(clock(Duration::from_secs(3725)), "1:02:05");
+        assert_eq!(rate(1.0), "1.00×");
+        assert_eq!(rate(0.75), "0.75×");
+    }
 
     #[test]
     fn subtitles_are_spoken_without_their_dots() {

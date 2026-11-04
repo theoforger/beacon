@@ -6,6 +6,9 @@
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/queue-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/funnel-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/moon-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/skip-back-10-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/skip-forward-30-symbolic.svg</file>
     <file alias="icons/scalable/apps/com.theoforger.Beacon-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/com.theoforger.Beacon-symbolic.svg</file>
   </gresource>
 </gresources>

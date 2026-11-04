@@ -5,6 +5,7 @@
 //! library; `library.rs` turns its data into view models and applies what
 //! the views ask for.
 
+mod controls;
 mod library;
 mod playback;
 mod window;
@@ -31,9 +32,10 @@ use crate::config::APP_ID;
 use crate::navigation::Location;
 use crate::player::{Player, PlayerEvent};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
-use crate::ui::details_pane::{DetailsPane, DetailsPaneInput, DetailsPaneOutput};
+use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
 use crate::ui::dialogs::about;
-use crate::ui::player_bar::PlayerBar;
+use crate::ui::models::EpisodeItem;
+use crate::ui::player_bar::{PlayerBar, PlayerBarInput, PlayerBarOutput};
 use crate::ui::sidebar::{Sidebar, SidebarInput, SidebarOutput};
 use crate::ui::{errors, labels};
 
@@ -61,6 +63,10 @@ pub enum AppMsg {
     /// The user confirmed unsubscribing in the dialog.
     ConfirmUnsubscribe(ShowId),
     Player(PlayerEvent),
+    /// What the player bar asks for.
+    Bar(PlayerBarOutput),
+    /// The sleep timer faded playback out and paused it.
+    SleepTimerDone,
 }
 
 #[derive(Debug)]
@@ -68,8 +74,10 @@ pub enum AppCommand {
     Loaded(Box<Result<library::Loaded, StoreError>>),
     Subscribed(Url, Result<ShowId, LibraryError>),
     Refreshed(RefreshSummary),
-    /// An episode's own cover, fetched for the details pane.
+    /// An episode's own cover, fetched for the details pane and the bar.
     EpisodeCover(EpisodeId, Option<PathBuf>),
+    /// The episode Next Episode found, if any.
+    PlayNext(Option<Box<EpisodeItem>>),
 }
 
 pub struct App {
@@ -90,7 +98,7 @@ pub struct App {
     refresh: gio::SimpleAction,
     /// Plays episodes; `None` when the audio system could not start, with
     /// the reason in `player_error`.
-    player: Option<Player>,
+    player: Option<Rc<Player>>,
     player_error: Option<PlaybackError>,
     now_playing: Option<playback::NowPlaying>,
     last_position: playback::LastPosition,
@@ -100,7 +108,8 @@ pub struct App {
     sidebar: Controller<Sidebar>,
     content: Controller<Content>,
     details: Controller<DetailsPane>,
-    _player: Controller<PlayerBar>,
+    bar: Controller<PlayerBar>,
+    sleep: controls::Sleep,
 }
 
 #[relm4::component(pub)]
@@ -152,7 +161,7 @@ impl Component for App {
                         set_sidebar = model.details.widget(),
                     },
 
-                    add_bottom_bar = model._player.widget(),
+                    add_bottom_bar = model.bar.widget(),
                 },
             },
         }
@@ -177,7 +186,9 @@ impl Component for App {
             .forward(sender.input_sender(), |DetailsPaneOutput::Close| {
                 AppMsg::CloseDetails
             });
-        let player = PlayerBar::builder().launch(()).detach();
+        let bar = PlayerBar::builder()
+            .launch(())
+            .forward(sender.input_sender(), AppMsg::Bar);
 
         let mut actions = RelmActionGroup::<WindowActionGroup>::new();
         let window = root.clone();
@@ -227,7 +238,8 @@ impl Component for App {
             sidebar,
             content,
             details,
-            _player: player,
+            bar,
+            sleep: controls::Sleep::default(),
         };
         let widgets = view_output!();
 
@@ -245,6 +257,14 @@ impl Component for App {
         model.manage_focus(&widgets);
         model.content.widgets().capture_typing(&root);
 
+        model
+            .bar
+            .emit(PlayerBarInput::Volume(model.settings.double("volume")));
+        model
+            .bar
+            .emit(PlayerBarInput::Rate(beacon_core::playback::nearest_rate(
+                model.settings.double("playback-rate"),
+            )));
         match playback::start_player(&model.settings, &sender) {
             Ok(player) => model.player = Some(player),
             Err(err) => {
@@ -299,6 +319,8 @@ impl Component for App {
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
             AppMsg::Player(event) => self.player_event(event, widgets, &sender),
+            AppMsg::Bar(output) => self.bar_output(output, widgets, &sender),
+            AppMsg::SleepTimerDone => self.end_sleep_timer(),
         }
     }
 
@@ -315,10 +337,9 @@ impl Component for App {
                 self.subscribed(&url, result, widgets, &sender);
             }
             AppCommand::Refreshed(summary) => self.refreshed(&summary, widgets, &sender),
-            AppCommand::EpisodeCover(id, Some(path)) => {
-                self.details.emit(DetailsPaneInput::EpisodeCover(id, path));
-            }
-            AppCommand::EpisodeCover(_, None) => {}
+            AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
+            AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
+            AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),
         }
     }
 }

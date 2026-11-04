@@ -24,6 +24,7 @@ use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{self, EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::page_filters;
+use crate::ui::player_bar::PlayerBarInput;
 use crate::ui::sidebar::{Counts, SidebarInput};
 
 /// Where New's filter menu choices are remembered, by menu group.
@@ -242,6 +243,7 @@ impl App {
                 new: counts.new_episodes,
                 queue: counts.queue,
             }));
+            self.set_queue_length(counts.queue);
         }
     }
 
@@ -313,7 +315,7 @@ impl App {
         let id = item.episode.id;
         let state = item.episode.state.clone();
         match action {
-            RowAction::Play => self.play_episode(&item.episode, widgets, sender),
+            RowAction::Play => self.play_episode(&item, widgets, sender),
             RowAction::ShowDetails => {
                 // Show what the row already knows at once; viewing clears
                 // the blue dot for good, which the reload then shows.
@@ -321,11 +323,7 @@ impl App {
                 self.details.emit(DetailsPaneInput::Show(Box::new(item)));
                 // The episode's own cover, as GNOME Podcasts shows it in its
                 // details; rows keep the show's.
-                if let Some(library) = self.library.clone() {
-                    sender.oneshot_command(async move {
-                        AppCommand::EpisodeCover(id, library.episode_cover(id).await.ok().flatten())
-                    });
-                }
+                self.fetch_episode_cover(id, sender);
                 self.focus_details(widgets);
                 widgets.details_split.set_show_sidebar(true);
                 self.job(sender, Parts::EPISODE, false, move |store| {
@@ -346,6 +344,13 @@ impl App {
                 self.job(sender, Parts::EPISODE, false, move |store| {
                     store.set_favorite(id, !state.favorite)
                 });
+                // The player bar's star follows when it is the playing one.
+                if let Some(now) = &mut self.now_playing
+                    && now.id == id
+                {
+                    now.favorite = !state.favorite;
+                    self.bar.emit(PlayerBarInput::Favorite(!state.favorite));
+                }
             }
             // Never touches the queue.
             RowAction::TogglePlayed => {

@@ -74,7 +74,7 @@ pub fn is_finished(position: Duration, duration: Option<Duration>) -> bool {
 pub enum SleepTimer {
     #[default]
     Off,
-    /// Pause after this many minutes of playback time.
+    /// Pause this many minutes after it is chosen.
     Minutes(u32),
     /// Pause when the current episode ends, instead of going on to the next.
     EndOfEpisode,

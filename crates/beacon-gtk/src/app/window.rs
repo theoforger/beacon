@@ -119,6 +119,18 @@ impl App {
             "visible",
             Some(&true.to_value()),
         );
+        // The player bar stacks, and leaves out speed, sleep timer and
+        // volume, as the mockup's narrow layout does.
+        breakpoint.add_setter(
+            self.bar.widgets().bar(),
+            "orientation",
+            Some(&gtk::Orientation::Vertical.to_value()),
+        );
+        breakpoint.add_setter(
+            self.bar.widgets().extras(),
+            "visible",
+            Some(&false.to_value()),
+        );
         breakpoint.add_setter(
             self.sidebar.widgets().library(),
             "mode",
