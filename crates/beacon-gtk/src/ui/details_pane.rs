@@ -12,6 +12,7 @@ use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
 
 use crate::ui::covers::Cover;
 use crate::ui::format;
+use crate::ui::links;
 use crate::ui::models::EpisodeItem;
 
 /// As in the mockup at 1440px wide.
@@ -119,6 +120,7 @@ impl SimpleComponent for DetailsPane {
                                 #[watch]
                                 set_visible: model.episode.as_ref().is_some_and(|e| e.episode.info.description.is_some()),
                             },
+                            #[name = "description"]
                             gtk::Label {
                                 set_xalign: 0.0,
                                 set_wrap: true,
@@ -149,6 +151,7 @@ impl SimpleComponent for DetailsPane {
             cover: Cover::new(COVER_SIZE),
         };
         let widgets = view_output!();
+        links::arrow_keys_between_links(&widgets.description);
         ComponentParts { model, widgets }
     }
 

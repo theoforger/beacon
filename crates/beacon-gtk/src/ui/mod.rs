@@ -10,6 +10,7 @@ pub mod episode_list;
 pub mod errors;
 pub mod format;
 pub mod labels;
+pub mod links;
 pub mod models;
 pub mod new_view;
 pub mod page_filters;

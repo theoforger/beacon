@@ -7,13 +7,15 @@
 
 use beacon_core::text;
 use gettextrs::gettext;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, glib, pango};
 
 use crate::ui::covers::Cover;
+use crate::ui::dialogs::description;
+use crate::ui::links;
 use crate::ui::models::ShowPageData;
 
 /// The cover beside the text, and above it when narrow (the mockup's `xl`).
@@ -23,20 +25,40 @@ const NARROW_COVER_SIZE: i32 = 150;
 /// wants about 320px beside a 200px cover and its 24px gap.
 const NARROW_WIDTH: f64 = 560.0;
 
-pub struct ShowHero {
-    root: gtk::Overlay,
+/// The most description lines: beside the cover, as many of these as fit
+/// its height; under it, GNOME Podcasts' four (`read_more_label.rs`).
+const WIDE_LINES: i32 = 6;
+const NARROW_LINES: i32 = 4;
+/// Enough lines for any description, to measure all of it.
+const ALL_LINES: i32 = 10_000;
+
+/// The hero's widgets, shared with the handlers that fit it to its width.
+struct Parts {
     cover: Cover,
+    row: gtk::Box,
+    text: gtk::Box,
     category: gtk::Label,
     title: gtk::Label,
     author: gtk::Label,
     description: gtk::Label,
+    read_more: gtk::Button,
+    narrow: Cell<bool>,
+    /// A fit waits for the next turn of the main loop.
+    fitting: Cell<bool>,
+    show_title: RefCell<String>,
+    markup: RefCell<String>,
+}
+
+pub struct ShowHero {
+    root: gtk::Overlay,
+    parts: Rc<Parts>,
     pub unsubscribe: gtk::Button,
 }
 
 impl ShowHero {
     pub fn new() -> Self {
         let cover = Cover::new(COVER_SIZE);
-        cover.widget().set_valign(gtk::Align::End);
+        cover.widget().set_valign(gtk::Align::Start);
         let label = |classes: &[&str], lines: i32| {
             gtk::Label::builder()
                 .wrap(true)
@@ -51,26 +73,42 @@ impl ShowHero {
         let title = label(&["title-1"], 3);
         title.set_accessible_role(gtk::AccessibleRole::Heading);
         let author = label(&["dim-label"], 2);
-        let description = label(&[], 6);
+        let description = label(&[], WIDE_LINES);
         description.set_margin_top(4);
         description.set_use_markup(true);
+        links::arrow_keys_between_links(&description);
+
+        // Opens the whole description when it does not fit, as GNOME
+        // Podcasts' Read More does; in a dialog rather than in place, so the
+        // header keeps the cover's height.
+        let read_more = gtk::Button::builder()
+            .label(gettext("_Read More"))
+            .use_underline(true)
+            .halign(gtk::Align::Start)
+            .visible(false)
+            .css_classes(["flat", "read-more"])
+            .build();
+        read_more.update_property(&[gtk::accessible::Property::Description(&gettext(
+            "Shows the whole description",
+        ))]);
 
         let unsubscribe = gtk::Button::builder()
             .label(gettext("_Unsubscribe"))
             .use_underline(true)
             .halign(gtk::Align::Start)
-            .margin_top(8)
+            .margin_top(6)
             .build();
 
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
-            .spacing(4)
+            .spacing(2)
             .hexpand(true)
-            .valign(gtk::Align::End)
+            .valign(gtk::Align::Start)
             .build();
         for part in [&category, &title, &author, &description] {
             text.append(part);
         }
+        text.append(&read_more);
         text.append(&unsubscribe);
 
         let row = gtk::Box::builder()
@@ -92,40 +130,38 @@ impl ShowHero {
             .build();
         let root = gtk::Overlay::builder().child(&row).build();
         root.add_overlay(&probe);
-        let narrow = Rc::new(Cell::new(false));
-        let (row_ref, text_ref, cover_ref) = (row.downgrade(), text.downgrade(), cover.clone());
-        probe.connect_resize(move |_, width, _| {
-            let wanted = f64::from(width) < NARROW_WIDTH;
-            if narrow.replace(wanted) == wanted {
-                return;
-            }
-            // Not while being allocated: on the next turn of the main loop.
-            let (row, text, cover) = (row_ref.clone(), text_ref.clone(), cover_ref.clone());
-            glib::idle_add_local_once(move || {
-                let (Some(row), Some(text)) = (row.upgrade(), text.upgrade()) else {
-                    return;
-                };
-                if wanted {
-                    row.set_orientation(gtk::Orientation::Vertical);
-                    row.set_spacing(12);
-                    text.set_valign(gtk::Align::Start);
-                    cover.set_size(NARROW_COVER_SIZE);
-                } else {
-                    row.set_orientation(gtk::Orientation::Horizontal);
-                    row.set_spacing(24);
-                    text.set_valign(gtk::Align::End);
-                    cover.set_size(COVER_SIZE);
-                }
-            });
-        });
 
-        Self {
-            root,
+        let parts = Rc::new(Parts {
             cover,
+            row,
+            text,
             category,
             title,
             author,
             description,
+            read_more,
+            narrow: Cell::new(false),
+            fitting: Cell::new(false),
+            show_title: RefCell::default(),
+            markup: RefCell::default(),
+        });
+        let weak = Rc::downgrade(&parts);
+        probe.connect_resize(move |_, width, _| {
+            if let Some(parts) = weak.upgrade() {
+                parts.narrow.set(f64::from(width) < NARROW_WIDTH);
+                Parts::fit_later(&parts);
+            }
+        });
+        let weak = Rc::downgrade(&parts);
+        parts.read_more.connect_clicked(move |button| {
+            if let Some(parts) = weak.upgrade() {
+                description::present(button, &parts.show_title.borrow(), &parts.markup.borrow());
+            }
+        });
+
+        Self {
+            root,
+            parts,
             unsubscribe,
         }
     }
@@ -136,14 +172,80 @@ impl ShowHero {
 
     pub fn update(&self, data: &ShowPageData) {
         let info = &data.show.info;
-        self.cover.set(data.show.cover_path.as_deref());
-        set_text(&self.category, info.category.as_deref());
-        self.title.set_label(&info.title);
-        set_text(&self.author, info.author.as_deref());
-        let description = info.description.as_deref().map(text::markup);
-        let description = description.unwrap_or_default();
-        self.description.set_markup(&description);
-        self.description.set_visible(!description.is_empty());
+        let parts = &self.parts;
+        parts.cover.set(data.show.cover_path.as_deref());
+        set_text(&parts.category, info.category.as_deref());
+        parts.title.set_label(&info.title);
+        set_text(&parts.author, info.author.as_deref());
+        let markup = info
+            .description
+            .as_deref()
+            .map(text::markup)
+            .unwrap_or_default();
+        parts.description.set_markup(&markup);
+        parts.description.set_visible(!markup.is_empty());
+        parts.show_title.replace(info.title.clone());
+        parts.markup.replace(markup);
+        Parts::fit_later(parts);
+    }
+}
+
+impl Parts {
+    /// Fit the hero on the next turn of the main loop: not while it is being
+    /// allocated, and once for several changes.
+    fn fit_later(parts: &Rc<Self>) {
+        if parts.fitting.replace(true) {
+            return;
+        }
+        let weak = Rc::downgrade(parts);
+        glib::idle_add_local_once(move || {
+            if let Some(parts) = weak.upgrade() {
+                parts.fitting.set(false);
+                parts.fit();
+            }
+        });
+    }
+
+    /// Lay out for the width: beside the cover, the text keeps to the
+    /// cover's height, the description losing lines until it does; under
+    /// it, the description stops at four lines. Read More shows when the
+    /// description is cut short.
+    fn fit(&self) {
+        let narrow = self.narrow.get();
+        if narrow {
+            self.row.set_orientation(gtk::Orientation::Vertical);
+            self.row.set_spacing(12);
+            self.cover.set_size(NARROW_COVER_SIZE);
+        } else {
+            self.row.set_orientation(gtk::Orientation::Horizontal);
+            self.row.set_spacing(24);
+            self.cover.set_size(COVER_SIZE);
+        }
+        let width = if narrow {
+            self.row.width()
+        } else {
+            self.row.width() - COVER_SIZE - 24
+        };
+        if width <= 0 || !self.description.is_visible() {
+            self.read_more.set_visible(false);
+            return;
+        }
+        let height = |widget: &gtk::Label| widget.measure(gtk::Orientation::Vertical, width).1;
+        // Not -1: GTK passes it to Pango, which takes it as one line.
+        self.description.set_lines(ALL_LINES);
+        let whole = height(&self.description);
+        let mut lines = if narrow { NARROW_LINES } else { WIDE_LINES };
+        self.description.set_lines(lines);
+        if !narrow {
+            // Measure with Read More showing: it shows whenever lines go.
+            self.read_more.set_visible(true);
+            while lines > 1 && self.text.measure(gtk::Orientation::Vertical, width).1 > COVER_SIZE {
+                lines -= 1;
+                self.description.set_lines(lines);
+            }
+        }
+        self.read_more
+            .set_visible(height(&self.description) < whole);
     }
 }
 
