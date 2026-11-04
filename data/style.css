@@ -67,9 +67,3 @@
   padding: 4px;
   background-color: var(--accent-bg-color);
 }
-
-/* Read More on a podcast page: a flat button whose text lines up with the
- * description above it. */
-.read-more {
-  margin-left: -10px;
-}

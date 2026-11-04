@@ -26,3 +26,29 @@ pub fn arrow_keys_between_links(label: &gtk::Label) {
     });
     label.add_controller(keys);
 }
+
+/// Make a description selectable, for copying, without its whole text being
+/// selected each time it takes keyboard focus: the desktop's
+/// `gtk-label-select-on-focus` does that, and descriptions take focus for
+/// their links. The arrow keys move between links (see above); Shift with
+/// the arrows, and the pointer, select.
+pub fn selectable_description(label: &gtk::Label) {
+    label.set_selectable(true);
+    let focus = gtk::EventControllerFocus::new();
+    let weak = label.downgrade();
+    focus.connect_enter(move |_| {
+        let weak = weak.clone();
+        // The label selects everything after focus arrives.
+        glib::idle_add_local_once(move || {
+            if let Some(label) = weak.upgrade()
+                && let Some((start, end)) = label.selection_bounds()
+                && start == 0
+                && end == label.text().chars().count() as i32
+            {
+                label.select_region(0, 0);
+            }
+        });
+    });
+    label.add_controller(focus);
+    arrow_keys_between_links(label);
+}

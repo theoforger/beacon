@@ -29,6 +29,8 @@ const NARROW_WIDTH: f64 = 560.0;
 /// its height; under it, GNOME Podcasts' four (`read_more_label.rs`).
 const WIDE_LINES: i32 = 6;
 const NARROW_LINES: i32 = 4;
+/// The Read More link's address, handled here rather than opened.
+const READ_MORE: &str = "beacon:read-more";
 /// Enough lines for any description, to measure all of it.
 const ALL_LINES: i32 = 10_000;
 
@@ -41,7 +43,7 @@ struct Parts {
     title: gtk::Label,
     author: gtk::Label,
     description: gtk::Label,
-    read_more: gtk::Button,
+    read_more: gtk::Label,
     narrow: Cell<bool>,
     /// A fit waits for the next turn of the main loop.
     fitting: Cell<bool>,
@@ -76,21 +78,23 @@ impl ShowHero {
         let description = label(&[], WIDE_LINES);
         description.set_margin_top(4);
         description.set_use_markup(true);
-        links::arrow_keys_between_links(&description);
+        links::selectable_description(&description);
 
         // Opens the whole description when it does not fit, as GNOME
         // Podcasts' Read More does; in a dialog rather than in place, so the
-        // header keeps the cover's height.
-        let read_more = gtk::Button::builder()
-            .label(gettext("_Read More"))
-            .use_underline(true)
-            .halign(gtk::Align::Start)
+        // header keeps the cover's height. A link on one line under the text
+        // rather than a button, to leave the description more room (asked by
+        // the user; the HIG says nothing on links). It cannot end the
+        // description's last line: the ellipsis would cut it off.
+        let read_more = gtk::Label::builder()
+            .use_markup(true)
+            .label(format!(
+                "<a href=\"{READ_MORE}\">{}</a>",
+                glib::markup_escape_text(&gettext("Read More"))
+            ))
+            .xalign(0.0)
             .visible(false)
-            .css_classes(["flat", "read-more"])
             .build();
-        read_more.update_property(&[gtk::accessible::Property::Description(&gettext(
-            "Shows the whole description",
-        ))]);
 
         let unsubscribe = gtk::Button::builder()
             .label(gettext("_Unsubscribe"))
@@ -153,10 +157,14 @@ impl ShowHero {
             }
         });
         let weak = Rc::downgrade(&parts);
-        parts.read_more.connect_clicked(move |button| {
-            if let Some(parts) = weak.upgrade() {
-                description::present(button, &parts.show_title.borrow(), &parts.markup.borrow());
+        parts.read_more.connect_activate_link(move |label, uri| {
+            if uri != READ_MORE {
+                return glib::Propagation::Proceed;
             }
+            if let Some(parts) = weak.upgrade() {
+                description::present(label, &parts.show_title.borrow(), &parts.markup.borrow());
+            }
+            glib::Propagation::Stop
         });
 
         Self {
