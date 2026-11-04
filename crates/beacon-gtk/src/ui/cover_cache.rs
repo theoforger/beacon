@@ -2,10 +2,12 @@
 
 //! Decoding cover images and keeping the results. Covers can be several
 //! thousand pixels wide, so each is decoded once, on GIO's worker threads,
-//! at the size it is drawn, and kept for the session.
+//! at the size it is drawn, and kept while there is room: the cache holds
+//! up to 64MB of pixels, dropping the covers used longest ago first.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
 use relm4::gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
@@ -15,10 +17,70 @@ use crate::ui::widgets::smooth_texture::SmoothTexture;
 /// A cover image and the pixels it is decoded at.
 pub type Key = (PathBuf, i32);
 
+/// Pixels kept, in bytes: hundreds of row covers and a few dozen large
+/// ones. Covers on screen stay alive in their widgets whatever the cache
+/// drops; a dropped one is decoded again if shown again.
+const BYTES_KEPT: usize = 64 * 1024 * 1024;
+
+/// A cache that keeps its most recently used entries up to a size in
+/// bytes.
+#[derive(Debug)]
+struct Bounded<K, V> {
+    entries: HashMap<K, (V, usize)>,
+    /// Least recently used first.
+    order: VecDeque<K>,
+    bytes: usize,
+    limit: usize,
+}
+
+impl<K: Eq + Hash + Clone, V> Bounded<K, V> {
+    fn new(limit: usize) -> Self {
+        Self {
+            entries: HashMap::new(),
+            order: VecDeque::new(),
+            bytes: 0,
+            limit,
+        }
+    }
+
+    /// The entry for `key`, which becomes the most recently used.
+    fn get(&mut self, key: &K) -> Option<&V> {
+        if self.entries.contains_key(key)
+            && let Some(at) = self.order.iter().position(|k| k == key)
+            && let Some(used) = self.order.remove(at)
+        {
+            self.order.push_back(used);
+        }
+        self.entries.get(key).map(|(value, _)| value)
+    }
+
+    fn insert(&mut self, key: K, value: V, bytes: usize) {
+        self.remove(&key);
+        self.entries.insert(key.clone(), (value, bytes));
+        self.order.push_back(key);
+        self.bytes += bytes;
+        // Always keep the newest, however large.
+        while self.bytes > self.limit && self.order.len() > 1 {
+            if let Some(oldest) = self.order.pop_front()
+                && let Some((_, freed)) = self.entries.remove(&oldest)
+            {
+                self.bytes -= freed;
+            }
+        }
+    }
+
+    fn remove(&mut self, key: &K) {
+        if let Some((_, freed)) = self.entries.remove(key) {
+            self.bytes -= freed;
+            self.order.retain(|k| k != key);
+        }
+    }
+}
+
 thread_local! {
     /// Decoded covers; `None` marks one that could not be read.
-    static TEXTURES: RefCell<HashMap<Key, Option<SmoothTexture>>> =
-        RefCell::new(HashMap::new());
+    static TEXTURES: RefCell<Bounded<Key, Option<SmoothTexture>>> =
+        RefCell::new(Bounded::new(BYTES_KEPT));
     /// The size each grid cover was last decoded at, so a resize replaces
     /// the old texture in `TEXTURES` instead of adding to it.
     static FILLING: RefCell<HashMap<PathBuf, i32>> = RefCell::new(HashMap::new());
@@ -32,7 +94,7 @@ pub fn device_pixels(width: i32, scale: f64) -> i32 {
 }
 
 pub fn cached(key: &Key) -> Option<Option<SmoothTexture>> {
-    TEXTURES.with_borrow(|cache| cache.get(key).cloned())
+    TEXTURES.with_borrow_mut(|cache| cache.get(key).cloned())
 }
 
 /// The width and height to ask the decoder for, so that a `width` by
@@ -121,13 +183,50 @@ pub fn store(key: &Key, texture: Option<SmoothTexture>, filling: bool) {
                 cache.remove(&(key.0.clone(), old));
             }
         }
-        cache.insert(key.clone(), texture);
+        // A square of RGBA pixels, about; a failed decode costs nothing.
+        let side = usize::try_from(key.1).unwrap_or(0);
+        let bytes = if texture.is_some() {
+            side * side * 4
+        } else {
+            0
+        };
+        cache.insert(key.clone(), texture, bytes);
     });
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_cache_drops_its_oldest_entries_past_its_size() {
+        let mut cache = Bounded::new(100);
+        cache.insert("a", 1, 40);
+        cache.insert("b", 2, 40);
+        cache.insert("c", 3, 40);
+        assert_eq!(cache.get(&"a"), None);
+        assert_eq!(cache.get(&"b").copied(), Some(2));
+        assert_eq!(cache.get(&"c").copied(), Some(3));
+        assert_eq!(cache.bytes, 80);
+
+        // Replacing an entry frees what it held, and makes it the newest.
+        cache.insert("b", 4, 40);
+        cache.insert("d", 5, 40);
+        assert_eq!(cache.get(&"c"), None);
+        assert_eq!(cache.get(&"b").copied(), Some(4));
+        assert_eq!(cache.get(&"d").copied(), Some(5));
+
+        // Using an entry keeps it: the one used longest ago goes instead.
+        assert_eq!(cache.get(&"b"), Some(&4));
+        cache.insert("e", 7, 40);
+        assert_eq!(cache.get(&"d"), None);
+        assert_eq!(cache.get(&"b"), Some(&4));
+
+        // The newest stays even when it alone is over the size.
+        cache.insert("huge", 6, 500);
+        assert_eq!(cache.get(&"huge"), Some(&6));
+        assert_eq!(cache.order.len(), 1);
+    }
 
     #[test]
     fn covers_decode_sharp_enough_before_the_scale_is_known() {
