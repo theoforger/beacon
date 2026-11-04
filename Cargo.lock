@@ -88,6 +88,7 @@ name = "beacon-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "httpmock",
  "linkify",
  "reqwest",

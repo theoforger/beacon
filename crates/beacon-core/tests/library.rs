@@ -412,3 +412,44 @@ async fn an_episode_with_its_own_image_has_its_own_cover() {
         None
     );
 }
+
+#[tokio::test]
+async fn refreshing_everything_fetches_feeds_side_by_side() {
+    let server = MockServer::start_async().await;
+    let paths = ["/a.xml", "/b.xml", "/c.xml", "/d.xml"];
+    let mut subscribed = Vec::new();
+    for path in paths {
+        subscribed.push(serve(&server, path, fixture("plain.xml", &server)).await);
+    }
+    let setup = library();
+    for path in paths {
+        setup
+            .library
+            .subscribe(&feed_url(&server, path))
+            .await
+            .unwrap();
+    }
+    for mock in subscribed {
+        mock.delete_async().await;
+    }
+    // Each feed now takes 300ms to answer.
+    for path in paths {
+        let body = fixture("plain-updated.xml", &server);
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path(path);
+                then.status(200)
+                    .delay(Duration::from_millis(300))
+                    .body(body);
+            })
+            .await;
+    }
+
+    let started = std::time::Instant::now();
+    let summary = setup.library.refresh_all().await;
+    let took = started.elapsed();
+    assert_eq!(summary.added, 4);
+    assert!(summary.failed.is_empty());
+    // One after another would take at least 1.2s.
+    assert!(took < Duration::from_millis(900), "refresh took {took:?}");
+}

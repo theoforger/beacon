@@ -11,6 +11,7 @@ publish = false
 
 [dependencies]
 chrono = "0.4.45"
+futures-util = "0.3.34"
 linkify = "0.11.0"
 reqwest = { version = "0.13.5", features = ["stream"] }
 rss = { version = "2.1.2", default-features = false }

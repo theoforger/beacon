@@ -8,6 +8,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use futures_util::StreamExt;
 use url::Url;
 
 use crate::error::{LibraryError, StoreError};
@@ -26,6 +27,10 @@ pub struct RefreshSummary {
     /// Shows whose feed could not be refreshed, with the reason.
     pub failed: Vec<(ShowId, LibraryError)>,
 }
+
+/// Feeds fetched at once by a refresh of everything: enough to overlap the
+/// waiting, few enough to be polite to the network and to podcast hosts.
+const REFRESH_AT_ONCE: usize = 4;
 
 pub struct Library {
     store: Mutex<Store>,
@@ -105,8 +110,9 @@ impl Library {
         Ok(stats)
     }
 
-    /// Refresh every show, one after another. A feed that fails does not
-    /// stop the others.
+    /// Refresh every show, a few at a time, so a library of many feeds is
+    /// not as slow as all of them added up. A feed that fails does not stop
+    /// the others.
     pub async fn refresh_all(&self) -> RefreshSummary {
         let shows = match self.lock().shows() {
             Ok(shows) => shows,
@@ -117,11 +123,14 @@ impl Library {
                 };
             }
         };
+        let mut results = futures_util::stream::iter(shows)
+            .map(|show| async move { (show.id, self.refresh(show.id).await) })
+            .buffer_unordered(REFRESH_AT_ONCE);
         let mut summary = RefreshSummary::default();
-        for show in shows {
-            match self.refresh(show.id).await {
+        while let Some((id, result)) = results.next().await {
+            match result {
                 Ok(stats) => summary.added += stats.added,
-                Err(err) => summary.failed.push((show.id, err)),
+                Err(err) => summary.failed.push((id, err)),
             }
         }
         summary
@@ -165,6 +174,6 @@ impl Library {
         // every multi-step write is a transaction.
         self.store
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
