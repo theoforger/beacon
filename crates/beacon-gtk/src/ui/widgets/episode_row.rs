@@ -59,13 +59,16 @@ pub struct Parts {
     progress: gtk::ProgressBar,
     menu: gtk::MenuButton,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
-    /// Whether the subtitle names the show; not on the show's own page.
-    show_name: bool,
+    /// Whether the row shows its show, by cover and in the subtitle; not
+    /// on the show's own page.
+    show_identity: bool,
 }
 
 impl EpisodeRow {
-    /// A row whose subtitle names the show when `show_name` is set.
-    pub fn new(on_action: OnRowAction, show_name: bool) -> Self {
+    /// A row that shows its show, by cover and in the subtitle, when
+    /// `show_identity` is set; on the show's own page it would only repeat
+    /// on every row.
+    pub fn new(on_action: OnRowAction, show_identity: bool) -> Self {
         let root: Self = glib::Object::new();
         let content = gtk::Box::builder()
             .spacing(12)
@@ -139,6 +142,9 @@ impl EpisodeRow {
             .build();
         menu.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
 
+        // GNOME Podcasts shows the cover on every row; Beacon leaves it out
+        // on a podcast page, where it is the page's own (asked by the user).
+        cover.widget().set_visible(show_identity);
         content.append(cover.widget());
         content.append(&text);
         content.append(&play);
@@ -184,7 +190,7 @@ impl EpisodeRow {
             progress,
             menu,
             episode,
-            show_name,
+            show_identity,
         };
         let _ = root.imp().parts.set(parts);
         root
@@ -202,7 +208,9 @@ impl EpisodeRow {
         let episode = &item.episode;
         let state = &episode.state;
         parts.episode.replace(Some(item.clone()));
-        parts.cover.set(item.cover.as_deref());
+        if parts.show_identity {
+            parts.cover.set(item.cover.as_deref());
+        }
         parts.dot.set_visible(state.is_new());
         parts.title.set_label(&episode.info.title);
         parts.check.set_visible(state.played);
@@ -213,7 +221,7 @@ impl EpisodeRow {
         } else {
             parts.title.remove_css_class("dim-label");
         }
-        let show_title = if parts.show_name {
+        let show_title = if parts.show_identity {
             item.show_title.as_str()
         } else {
             ""

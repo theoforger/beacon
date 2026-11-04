@@ -276,7 +276,8 @@ impl ShowPage {
             self.lists.push(list);
         }
         self.shown = Some((show, shape));
-        // The page is the show's own: its name would repeat on every row.
+        // The page is the show's own: its name and cover would repeat on
+        // every row.
         self.fill.start(work, self.on_action.clone(), false);
     }
 

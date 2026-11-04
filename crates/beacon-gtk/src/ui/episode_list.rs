@@ -96,7 +96,7 @@ struct Fill {
     allowance: Cell<usize>,
     running: Cell<bool>,
     on_action: RefCell<Option<OnRowAction>>,
-    show_names: Cell<bool>,
+    show_identity: Cell<bool>,
 }
 
 /// Fills lists with rows a page at a time, each page a little at a time so
@@ -116,18 +116,18 @@ impl std::fmt::Debug for LazyFill {
 
 impl LazyFill {
     /// Add a row for each item to its list, the first page now. Rows name
-    /// their show in the subtitle when `show_names` is set.
+    /// their show, by cover and in the subtitle, when `show_identity` is set.
     pub fn start(
         &self,
         work: Vec<(gtk::ListBox, EpisodeItem)>,
         on_action: OnRowAction,
-        show_names: bool,
+        show_identity: bool,
     ) {
         let fill = &self.inner;
         fill.generation.set(fill.generation.get() + 1);
         fill.pending.replace(work.into());
         fill.on_action.replace(Some(on_action));
-        fill.show_names.set(show_names);
+        fill.show_identity.set(show_identity);
         fill.allowance.set(PAGE);
         fill.running.set(false);
         self.run();
@@ -202,7 +202,7 @@ impl LazyFill {
                     let Some(on_action) = fill.on_action.borrow().clone() else {
                         break;
                     };
-                    let row = EpisodeRow::new(on_action, fill.show_names.get());
+                    let row = EpisodeRow::new(on_action, fill.show_identity.get());
                     row.bind(&item);
                     list.append(&row);
                     fill.allowance.set(fill.allowance.get() - 1);

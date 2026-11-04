@@ -120,7 +120,7 @@ Read the design's files from that link. Match how it looks.
 **Episode rows**
 
 - Episode lists are `boxed-list` `GtkListBox`es, one per recency group or season, as in GNOME Podcasts (decided 2026-10-30, despite the HIG's preference for list views on long lists). Rows are added lazily so long feeds never block the UI.
-- Cover, title (two lines at most), and a subtitle of show, season and episode, date and length. The subtitle does not show time left.
+- Cover, title (two lines at most), and a subtitle of show, season and episode, date and length. The subtitle does not show time left. On a podcast page, rows leave out the cover and the show name, which are the page's own (changed 2026-11-04).
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.
 - The row play button has no fill, blends into the row, and gives hover feedback. It shows pause while playing.
