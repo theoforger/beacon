@@ -128,7 +128,7 @@ impl EpisodeRow {
             .action_name("row.play")
             .tooltip_text(gettext("Play"))
             .valign(gtk::Align::Center)
-            .css_classes(["flat", "circular"])
+            .css_classes(["flat"])
             .build();
         play.update_property(&[gtk::accessible::Property::Label(&gettext("Play"))]);
         let menu = gtk::MenuButton::builder()

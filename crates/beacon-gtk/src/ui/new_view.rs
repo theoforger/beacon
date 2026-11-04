@@ -55,6 +55,7 @@ impl Component for NewView {
             gtk::Stack {
                 set_vexpand: true,
 
+                #[name = "scrolled"]
                 add_named[Some("list")] = &gtk::ScrolledWindow {
                     set_hscrollbar_policy: gtk::PolicyType::Never,
 
@@ -96,6 +97,7 @@ impl Component for NewView {
             lists: Vec::new(),
         };
         let widgets = view_output!();
+        model.fill.follow(&widgets.scrolled);
 
         ComponentParts { model, widgets }
     }
@@ -145,7 +147,7 @@ impl Component for NewView {
         let groups = group(items);
         let shape: Vec<_> = groups.iter().map(|(g, items)| (*g, ids(items))).collect();
         let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, items)| items).collect();
-        if shape == self.shown && update_in_place(&self.lists, &all) {
+        if shape == self.shown && update_in_place(&self.lists, &all, &self.fill) {
             return;
         }
 

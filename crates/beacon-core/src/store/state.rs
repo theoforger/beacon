@@ -59,6 +59,17 @@ impl Store {
         )?)
     }
 
+    /// Mark every episode of a show unplayed, each starting over as one
+    /// marked unplayed does. Seen flags stay, so no blue dots come back.
+    /// Returns how many changed.
+    pub fn mark_all_unplayed(&self, show: ShowId) -> Result<usize, StoreError> {
+        Ok(self.conn.execute(
+            "UPDATE episodes SET played = 0, played_at = NULL, position_secs = 0
+             WHERE show_id = ?1 AND played = 1",
+            [show.0],
+        )?)
+    }
+
     /// Where playback of an episode got to, saved while it plays and when
     /// it stops. Saved to the second.
     pub fn set_position(&self, id: EpisodeId, position: Duration) -> Result<(), StoreError> {

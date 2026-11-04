@@ -59,7 +59,8 @@ pub enum ContentOutput {
     /// A choice in New's filter menu.
     NewPrefsChanged(ShowPrefs),
     ShowPrefsChanged(ShowId, ShowPrefs),
-    MarkAllPlayed(ShowId),
+    /// Mark every episode of a show played (`true`) or unplayed.
+    MarkAll(ShowId, bool),
     Unsubscribe(ShowId),
     FeedAddressCopied,
     Subscribe(Url),
@@ -184,7 +185,7 @@ impl Component for Content {
                 ShowPageOutput::PrefsChanged(id, prefs) => {
                     ContentOutput::ShowPrefsChanged(id, prefs)
                 }
-                ShowPageOutput::MarkAllPlayed(id) => ContentOutput::MarkAllPlayed(id),
+                ShowPageOutput::MarkAll(id, played) => ContentOutput::MarkAll(id, played),
                 ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
                 ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
             },

@@ -179,3 +179,28 @@ fn positions_are_saved_and_a_finished_episode_starts_over() {
     // Finishing is not dequeuing: moving on is the player's job.
     assert_eq!(store.queue().unwrap(), [id]);
 }
+
+#[test]
+fn marking_a_show_unplayed_starts_it_over_and_keeps_the_queue() {
+    let (mut store, show) = store_with_show();
+    store
+        .sync_episodes(show, &[episode("a", "A", 1), episode("b", "B", 2)], now())
+        .unwrap();
+    let ids: Vec<_> = store.episodes(show).unwrap().iter().map(|e| e.id).collect();
+    store.mark_seen(ids[0]).unwrap();
+    store.enqueue(ids[1]).unwrap();
+    store.mark_all_played(show, now()).unwrap();
+    store
+        .set_position(ids[0], std::time::Duration::from_secs(90))
+        .unwrap();
+
+    assert_eq!(store.mark_all_unplayed(show).unwrap(), 2);
+    for id in &ids {
+        let state = store.episode(*id).unwrap().unwrap().state;
+        assert!(!state.played && state.played_at.is_none());
+        assert_eq!(state.position, std::time::Duration::ZERO);
+    }
+    // The seen episode keeps no dot; the queue is untouched.
+    assert!(!store.episode(ids[0]).unwrap().unwrap().state.is_new());
+    assert_eq!(store.queue().unwrap(), [ids[1]]);
+}

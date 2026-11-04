@@ -272,11 +272,15 @@ impl App {
                     store.set_show_prefs(id, prefs)
                 });
             }
-            ContentOutput::MarkAllPlayed(id) => {
+            ContentOutput::MarkAll(id, played) => {
                 let now = self.library.as_ref().map(|l| l.now());
                 if let Some(now) = now {
                     self.job(sender, Parts::EPISODE, false, move |store| {
-                        store.mark_all_played(id, now).map(|_| ())
+                        if played {
+                            store.mark_all_played(id, now).map(|_| ())
+                        } else {
+                            store.mark_all_unplayed(id).map(|_| ())
+                        }
                     });
                 }
             }

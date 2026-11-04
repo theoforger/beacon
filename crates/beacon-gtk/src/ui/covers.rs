@@ -29,8 +29,8 @@ const SETTLE: Duration = Duration::from_millis(150);
 /// How a cover is sized.
 #[derive(Debug, Clone, Copy)]
 enum Mode {
-    /// `size` logical pixels square.
-    Fixed(i32),
+    /// A set size, in logical pixels (`State::pixels`).
+    Fixed,
     /// As wide as its column; decoded at the device pixels it is drawn at.
     Filling,
 }
@@ -39,7 +39,8 @@ enum Mode {
 #[derive(Debug, Default)]
 struct State {
     path: RefCell<Option<PathBuf>>,
-    /// A filling cover's width in device pixels; 0 until first allocated.
+    /// A fixed cover's size in logical pixels; a filling cover's width in
+    /// device pixels, 0 until first allocated.
     pixels: Cell<i32>,
     /// The cover this widget should show now; a decode that finishes after
     /// the widget moved on to another cover or size is dropped.
@@ -94,7 +95,21 @@ impl Cover {
             .halign(gtk::Align::Start)
             .valign(gtk::Align::Center)
             .build();
-        Self::build(root, size, Mode::Fixed(size))
+        let this = Self::build(root, size, Mode::Fixed);
+        this.state.pixels.set(size);
+        this
+    }
+
+    /// Change a fixed cover's size, decoding it again for the new one.
+    pub fn set_size(&self, size: i32) {
+        if !matches!(self.mode, Mode::Fixed) || self.state.pixels.replace(size) == size {
+            return;
+        }
+        if let Some(base) = self.root.child() {
+            base.set_size_request(size, size);
+        }
+        self.placeholder.set_pixel_size(size / 3);
+        self.load();
     }
 
     /// A cover as wide as it is given, at least `min` pixels, and as tall as
@@ -213,7 +228,8 @@ impl Cover {
         let path = self.state.path.borrow().clone();
         let key = match (path, self.mode) {
             (None, _) => None,
-            (Some(path), Mode::Fixed(size)) => {
+            (Some(path), Mode::Fixed) => {
+                let size = self.state.pixels.get();
                 Some((path, decode_size(size, self.root.scale_factor())))
             }
             (Some(path), Mode::Filling) => match self.state.pixels.get() {

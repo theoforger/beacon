@@ -30,7 +30,8 @@ pub enum ShowPageInput {
     Set(Box<ShowPageData>),
     /// A choice in the filter menu: the group's action name and the value.
     Choose(page_filters::Choice),
-    MarkAllPlayed,
+    /// Mark All as Played, or as Unplayed when every episode is played.
+    MarkAll,
     CopyFeedAddress,
     Unsubscribe,
 }
@@ -39,7 +40,8 @@ pub enum ShowPageInput {
 pub enum ShowPageOutput {
     Action(Box<EpisodeItem>, RowAction),
     PrefsChanged(ShowId, ShowPrefs),
-    MarkAllPlayed(ShowId),
+    /// Mark every episode of the show played (`true`) or unplayed.
+    MarkAll(ShowId, bool),
     Unsubscribe(ShowId),
     FeedAddressCopied,
 }
@@ -55,6 +57,8 @@ pub struct ShowPage {
     hero: ShowHero,
     /// The filter menu's radio groups, by action name.
     filter: page_filters::FilterButton,
+    /// More Options: Mark All, Download All Episodes, Copy Feed Address.
+    more: gtk::MenuButton,
     on_action: OnRowAction,
     fill: LazyFill,
     /// What the lists show now, to update in place when only states change.
@@ -84,6 +88,7 @@ impl Component for ShowPage {
                 },
 
                 #[wrap(Some)]
+                #[name = "scrolled"]
                 set_content = &gtk::ScrolledWindow {
                     set_hscrollbar_policy: gtk::PolicyType::Never,
 
@@ -123,6 +128,7 @@ impl Component for ShowPage {
         let model = ShowPage {
             data: None,
             hero: ShowHero::new(),
+            more: more_button(),
             filter: page_filters::FilterButton::new({
                 let s = sender.clone();
                 move |choice| s.input(ShowPageInput::Choose(choice))
@@ -134,15 +140,20 @@ impl Component for ShowPage {
             folded: Rc::default(),
         };
         let widgets = view_output!();
+        model.fill.follow(&widgets.scrolled);
 
-        // Sort and filter, as in GNOME Podcasts, left of the details toggle.
+        // The details toggle at the far end, as on every page; then the
+        // show's More Options menu, which the HIG puts in the header bar
+        // ("Secondary menus are located in the header bar"), as GNOME
+        // Podcasts does; then sort and filter.
         widgets.header.pack_end(&details_toggle);
+        widgets.header.pack_end(&model.more);
         widgets.header.pack_end(model.filter.widget());
 
         let actions = gio::SimpleActionGroup::new();
-        let mark_all = gio::SimpleAction::new("mark-all-played", None);
+        let mark_all = gio::SimpleAction::new("mark-all", None);
         let s = sender.clone();
-        mark_all.connect_activate(move |_, _| s.input(ShowPageInput::MarkAllPlayed));
+        mark_all.connect_activate(move |_, _| s.input(ShowPageInput::MarkAll));
         actions.add_action(&mark_all);
         let copy = gio::SimpleAction::new("copy-feed", None);
         let s = sender.clone();
@@ -170,6 +181,9 @@ impl Component for ShowPage {
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
                 self.hero.update(&data);
+                if self.data.as_ref().map(|d| d.all_played) != Some(data.all_played) {
+                    self.more.set_menu_model(Some(&more_menu(data.all_played)));
+                }
                 self.filter.set_prefs(&data.prefs);
                 self.show_episodes(&widgets.episodes, &data);
                 self.data = Some(*data);
@@ -177,9 +191,10 @@ impl Component for ShowPage {
             ShowPageInput::Choose(choice) => {
                 self.change_prefs(&sender, |p| *p = choice.apply(*p));
             }
-            ShowPageInput::MarkAllPlayed => {
+            ShowPageInput::MarkAll => {
                 if let Some(data) = &self.data {
-                    let _ = sender.output(ShowPageOutput::MarkAllPlayed(data.show.id));
+                    let played = !data.all_played;
+                    let _ = sender.output(ShowPageOutput::MarkAll(data.show.id, played));
                 }
             }
             ShowPageInput::CopyFeedAddress => {
@@ -229,7 +244,8 @@ impl ShowPage {
             .map(|(key, _, items)| (*key, ids(*items)))
             .collect();
         let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, _, items)| *items).collect();
-        if self.shown.as_ref() == Some(&(show, shape.clone())) && update_in_place(&self.lists, &all)
+        if self.shown.as_ref() == Some(&(show, shape.clone()))
+            && update_in_place(&self.lists, &all, &self.fill)
         {
             return;
         }
@@ -315,4 +331,34 @@ fn empty_label(prefs: &ShowPrefs) -> gtk::Label {
         .margin_top(24)
         .css_classes(["dim-label"])
         .build()
+}
+
+/// The page's More Options button, in its header bar.
+fn more_button() -> gtk::MenuButton {
+    let more = gtk::MenuButton::builder()
+        .icon_name("view-more-symbolic")
+        .tooltip_text(gettext("More Options"))
+        .menu_model(&more_menu(false))
+        .build();
+    more.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
+    more
+}
+
+/// More Options, offering to mark every episode played, or unplayed when
+/// every one already is.
+fn more_menu(all_played: bool) -> gio::Menu {
+    let menu = gio::Menu::new();
+    let mark_all = if all_played {
+        gettext("Mark All as _Unplayed")
+    } else {
+        gettext("Mark All as _Played")
+    };
+    menu.append(Some(&mark_all), Some("show.mark-all"));
+    // Downloads arrive in M5; the item stays disabled until then.
+    menu.append(
+        Some(&gettext("_Download All Episodes")),
+        Some("show.download-all"),
+    );
+    menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
+    menu
 }

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! Episode lists as `boxed-list` `GtkListBox`es, as in GNOME Podcasts, and
-//! its way of keeping long lists from blocking the UI: rows are added a few
-//! at a time at idle priority (GNOME Podcasts' `lazy_load`), and a list
-//! whose episodes are unchanged is updated in place instead of rebuilt.
+//! the ways of keeping long lists from slowing the UI: rows are added a page
+//! at a time as the list is scrolled, each page a little at a time at idle
+//! priority (GNOME Podcasts' `lazy_load`), and a list whose episodes are
+//! unchanged is updated in place, only changed rows bound again.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::VecDeque;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
@@ -56,70 +58,171 @@ fn rows(lists: &[gtk::ListBox]) -> Vec<EpisodeRow> {
     rows
 }
 
-/// If `lists` already show exactly these episodes in this order, rebind
-/// their rows to the new state and return true. Otherwise change nothing.
-pub fn update_in_place(lists: &[gtk::ListBox], items: &[&EpisodeItem]) -> bool {
+/// If `lists` and the rows still to come already hold exactly these
+/// episodes in this order, bring them up to date and return true: rows whose
+/// episode changed are bound again, the others left alone, and the rows
+/// still to come take the new items. Otherwise change nothing.
+pub fn update_in_place(lists: &[gtk::ListBox], items: &[&EpisodeItem], fill: &LazyFill) -> bool {
     let rows = rows(lists);
-    let same = rows.len() == items.len()
-        && rows
+    if rows.len() + fill.pending() != items.len()
+        || !rows
             .iter()
             .zip(items)
-            .all(|(row, item)| row.item().map(|i| i.episode.id) == Some(item.episode.id));
-    if same {
-        for (row, item) in rows.iter().zip(items) {
+            .all(|(row, item)| row.item().map(|i| i.episode.id) == Some(item.episode.id))
+    {
+        return false;
+    }
+    for (row, item) in rows.iter().zip(items) {
+        if row.item().as_ref() != Some(*item) {
             row.bind(item);
         }
     }
-    same
+    fill.replace_pending(items[rows.len()..].iter().map(|item| (*item).clone()));
+    true
 }
 
-/// Fills lists with rows a chunk at a time. Starting a new fill cancels the
-/// one before.
-#[derive(Debug, Default, Clone)]
+/// Rows added at a time: about two screens. A `GtkListBox` lays out every
+/// row it holds, so a long feed gets its rows a page at a time, as the list
+/// is scrolled towards its end.
+const PAGE: usize = 40;
+
+#[derive(Default)]
+struct Fill {
+    /// Bumped by each new fill, ending the one before.
+    generation: Cell<u64>,
+    /// Rows still to add, with the list each goes in.
+    pending: RefCell<VecDeque<(gtk::ListBox, EpisodeItem)>>,
+    /// Rows that may be added before the list is scrolled further.
+    allowance: Cell<usize>,
+    running: Cell<bool>,
+    on_action: RefCell<Option<OnRowAction>>,
+    show_names: Cell<bool>,
+}
+
+/// Fills lists with rows a page at a time, each page a little at a time so
+/// the main loop keeps its frames. Starting a new fill ends the one before.
+#[derive(Default, Clone)]
 pub struct LazyFill {
-    generation: Rc<Cell<u64>>,
+    inner: Rc<Fill>,
+}
+
+impl std::fmt::Debug for LazyFill {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LazyFill")
+            .field("pending", &self.pending())
+            .finish_non_exhaustive()
+    }
 }
 
 impl LazyFill {
-    /// Append a row for each item to its list, a chunk at a time, yielding to
-    /// the main loop in between.
-    /// Rows name their show in the subtitle when `show_names` is set.
+    /// Add a row for each item to its list, the first page now. Rows name
+    /// their show in the subtitle when `show_names` is set.
     pub fn start(
         &self,
         work: Vec<(gtk::ListBox, EpisodeItem)>,
         on_action: OnRowAction,
         show_names: bool,
     ) {
-        let generation = self.generation.get() + 1;
-        self.generation.set(generation);
-        let current = self.generation.clone();
-        glib::spawn_future_local(async move {
-            let (rows, all) = (work.len(), Instant::now());
-            let mut work = work.into_iter().peekable();
-            while work.peek().is_some() {
-                if current.get() != generation {
-                    return;
-                }
-                let started = Instant::now();
-                // At least one row a turn, however slow the machine.
-                for (list, item) in work.by_ref() {
-                    let row = EpisodeRow::new(on_action.clone(), show_names);
-                    row.bind(&item);
-                    list.append(&row);
-                    if started.elapsed() >= BUDGET {
-                        break;
-                    }
-                }
-                glib::timeout_future_with_priority(glib::Priority::DEFAULT_IDLE, Duration::ZERO)
-                    .await;
-            }
-            tracing::debug!("filled {rows} episode rows in {:?}", all.elapsed());
-        });
+        let fill = &self.inner;
+        fill.generation.set(fill.generation.get() + 1);
+        fill.pending.replace(work.into());
+        fill.on_action.replace(Some(on_action));
+        fill.show_names.set(show_names);
+        fill.allowance.set(PAGE);
+        fill.running.set(false);
+        self.run();
+    }
+
+    /// Add the next page of rows, if there are any.
+    pub fn more(&self) {
+        if self.pending() == 0 {
+            return;
+        }
+        self.inner
+            .allowance
+            .set(self.inner.allowance.get().max(PAGE));
+        self.run();
+    }
+
+    /// Rows not added yet.
+    pub fn pending(&self) -> usize {
+        self.inner.pending.borrow().len()
+    }
+
+    /// Give the rows not added yet new items, keeping the lists they go in.
+    fn replace_pending(&self, items: impl Iterator<Item = EpisodeItem>) {
+        for ((_, item), new) in self.inner.pending.borrow_mut().iter_mut().zip(items) {
+            *item = new;
+        }
     }
 
     /// Stop any fill in progress.
     pub fn cancel(&self) {
-        self.generation.set(self.generation.get() + 1);
+        let fill = &self.inner;
+        fill.generation.set(fill.generation.get() + 1);
+        fill.pending.borrow_mut().clear();
+        fill.running.set(false);
+    }
+
+    /// Add more rows whenever `scrolled` comes within a screen of its end,
+    /// or its content does not fill it yet.
+    pub fn follow(&self, scrolled: &gtk::ScrolledWindow) {
+        let adjustment = scrolled.vadjustment();
+        let check = {
+            let fill = self.clone();
+            move |adjustment: &gtk::Adjustment| {
+                let end = adjustment.upper() - adjustment.page_size();
+                if adjustment.value() >= end - adjustment.page_size() {
+                    fill.more();
+                }
+            }
+        };
+        adjustment.connect_value_changed(check.clone());
+        adjustment.connect_changed(check);
+    }
+
+    fn run(&self) {
+        let fill = self.inner.clone();
+        if fill.running.replace(true) {
+            return;
+        }
+        let generation = fill.generation.get();
+        glib::spawn_future_local(async move {
+            let started = Instant::now();
+            loop {
+                if fill.generation.get() != generation {
+                    return;
+                }
+                let turn = Instant::now();
+                // At least one row a turn, however slow the machine.
+                while fill.allowance.get() > 0 {
+                    let Some((list, item)) = fill.pending.borrow_mut().pop_front() else {
+                        break;
+                    };
+                    let Some(on_action) = fill.on_action.borrow().clone() else {
+                        break;
+                    };
+                    let row = EpisodeRow::new(on_action, fill.show_names.get());
+                    row.bind(&item);
+                    list.append(&row);
+                    fill.allowance.set(fill.allowance.get() - 1);
+                    if turn.elapsed() >= BUDGET {
+                        break;
+                    }
+                }
+                if fill.allowance.get() == 0 || fill.pending.borrow().is_empty() {
+                    fill.running.set(false);
+                    tracing::debug!(
+                        "added a page of episode rows in {:?}, {} to come",
+                        started.elapsed(),
+                        fill.pending.borrow().len()
+                    );
+                    return;
+                }
+                glib::timeout_future_with_priority(glib::Priority::DEFAULT_IDLE, Duration::ZERO)
+                    .await;
+            }
+        });
     }
 }
 

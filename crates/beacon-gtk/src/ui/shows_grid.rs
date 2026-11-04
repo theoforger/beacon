@@ -37,6 +37,8 @@ enum Tile {
 
 pub struct ShowsGrid {
     tiles: gio::ListStore,
+    /// The cards shown, so a reload that changes nothing rebuilds nothing.
+    cards: Option<Vec<ShowCard>>,
     empty: bool,
 }
 
@@ -101,6 +103,7 @@ impl SimpleComponent for ShowsGrid {
     ) -> ComponentParts<Self> {
         let model = ShowsGrid {
             tiles: gio::ListStore::new::<glib::BoxedAnyObject>(),
+            cards: None,
             empty: true,
         };
         let widgets = view_output!();
@@ -133,6 +136,10 @@ impl SimpleComponent for ShowsGrid {
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         let ShowsGridInput::SetCards(cards) = message;
+        if self.cards.as_ref() == Some(&cards) {
+            return;
+        }
+        self.cards = Some(cards.clone());
         self.empty = cards.is_empty();
         let tiles: Vec<glib::BoxedAnyObject> = cards
             .into_iter()
