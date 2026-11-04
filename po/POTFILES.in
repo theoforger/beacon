@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Files with translatable strings. Keep sorted.
+crates/beacon-gtk/src/app/actions.rs
 crates/beacon-gtk/src/app/library.rs
 crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
@@ -12,7 +13,8 @@ crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs
 crates/beacon-gtk/src/ui/new_view.rs
 crates/beacon-gtk/src/ui/page_filters.rs
-crates/beacon-gtk/src/ui/player_bar.rs
+crates/beacon-gtk/src/ui/player_bar/build.rs
+crates/beacon-gtk/src/ui/player_bar/mod.rs
 crates/beacon-gtk/src/ui/show_hero.rs
 crates/beacon-gtk/src/ui/show_page.rs
 crates/beacon-gtk/src/ui/shows_grid.rs

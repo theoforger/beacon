@@ -5,6 +5,7 @@
 //! library; `library.rs` turns its data into view models and applies what
 //! the views ask for.
 
+mod actions;
 mod controls;
 mod library;
 mod playback;
