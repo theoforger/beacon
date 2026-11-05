@@ -49,6 +49,13 @@ pub struct Player {
     start: Arc<Mutex<Option<gst::ClockTime>>>,
 }
 
+/// Seek to the start `load` asked for, once.
+fn seek_pending(play: &gst_play::Play, start: &Mutex<Option<gst::ClockTime>>) {
+    if let Some(position) = start.lock().ok().and_then(|mut s| s.take()) {
+        play.seek(position);
+    }
+}
+
 impl Player {
     /// A player whose events arrive on `context`, playing to the default
     /// audio output.
@@ -76,6 +83,9 @@ impl Player {
         let play = gst_play::Play::new(None::<gst_play::PlayVideoRenderer>);
         let mut config = play.config();
         config.set_position_update_interval(POSITION_INTERVAL_MS);
+        // Exact seeks: a chapter, or a skip, lands on its second rather
+        // than the nearest keyframe, seconds away in an Ogg or MP3 stream.
+        config.set_seek_accurate(true);
         // Rarely fails, and only for a bad config; the default interval
         // then applies.
         if let Err(err) = play.set_config(config) {
@@ -93,12 +103,20 @@ impl Player {
                 gst_play::PlayState::Playing => PlaybackState::Playing,
                 _ => PlaybackState::Stopped,
             };
+            // An HTTP stream plays before it is known to be seekable; the
+            // seek then waits for the media info that says it is.
             if matches!(state, PlaybackState::Paused | PlaybackState::Playing)
-                && let Some(position) = seek.1.lock().ok().and_then(|mut s| s.take())
+                && seek.0.media_info().is_some_and(|info| info.is_seekable())
             {
-                seek.0.seek(position);
+                seek_pending(&seek.0, &seek.1);
             }
             emit(PlayerEvent::State(state));
+        });
+        let seek = (play.clone(), start.clone());
+        signals.connect_media_info_updated(move |_, info| {
+            if info.is_seekable() {
+                seek_pending(&seek.0, &seek.1);
+            }
         });
         let emit = on_event.clone();
         signals.connect_position_updated(move |_, position| {

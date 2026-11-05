@@ -13,7 +13,7 @@ use relm4::{ComponentController, ComponentSender};
 use super::library::Parts;
 use super::{App, AppCommand, AppMsg, AppWidgets};
 use crate::player::PlaybackState;
-use crate::ui::details_pane::DetailsPaneInput;
+use crate::ui::details_pane::{DetailsPaneInput, DetailsPaneOutput};
 use crate::ui::models;
 use crate::ui::player_bar::{PlayerBarInput, PlayerBarOutput};
 
@@ -111,12 +111,12 @@ impl App {
                         ..Parts::NONE
                     },
                 );
-                self.fetch_episode_cover(id, sender);
+                self.load_details(id, sender);
             }
         }
     }
 
-    fn seek(&mut self, to: Duration) {
+    pub(super) fn seek(&mut self, to: Duration) {
         let Some(now) = &mut self.now_playing else {
             return;
         };
@@ -188,6 +188,32 @@ impl App {
         }
         self.sleep = Sleep::default();
         self.bar.emit(PlayerBarInput::SleepTimer(SleepTimer::Off));
+    }
+
+    /// What the details pane asks for.
+    pub(super) fn details_output(
+        &mut self,
+        output: DetailsPaneOutput,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) {
+        match output {
+            DetailsPaneOutput::Close => widgets.details_split.set_show_sidebar(false),
+            DetailsPaneOutput::Action(item, action) => {
+                self.row_action(*item, action, widgets, sender);
+            }
+            DetailsPaneOutput::OpenShow(show) => {
+                // The full-page details of the narrow layout would hide it.
+                if widgets.details_split.is_collapsed() {
+                    widgets.details_split.set_show_sidebar(false);
+                }
+                widgets.split_view.set_show_content(true);
+                self.open_show(show, sender);
+            }
+            DetailsPaneOutput::PlayFrom(item, start) => {
+                self.play_episode_from(&item, Some(start), widgets, sender);
+            }
+        }
     }
 
     /// The episode's own cover arrived: the bar and the details pane show it.

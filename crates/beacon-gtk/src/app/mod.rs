@@ -33,7 +33,7 @@ use crate::config::APP_ID;
 use crate::navigation::Location;
 use crate::player::{Player, PlayerEvent};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
-use crate::ui::details_pane::{DetailsPane, DetailsPaneOutput};
+use crate::ui::details_pane::{DetailsPane, DetailsPaneInput, DetailsPaneOutput};
 use crate::ui::dialogs::about;
 use crate::ui::models::EpisodeItem;
 use crate::ui::player_bar::{PlayerBar, PlayerBarInput, PlayerBarOutput};
@@ -55,7 +55,8 @@ relm4::new_stateless_action!(RefreshAction, WindowActionGroup, "refresh");
 pub enum AppMsg {
     Navigate(Location),
     AddPodcast,
-    CloseDetails,
+    /// What the details pane asks for.
+    Details(DetailsPaneOutput),
     ToggleSearch,
     /// Alt+Left or the Back key, wherever the focus is.
     GoBack,
@@ -79,6 +80,8 @@ pub enum AppCommand {
     EpisodeCover(EpisodeId, Option<PathBuf>),
     /// The episode Next Episode found, if any.
     PlayNext(Option<Box<EpisodeItem>>),
+    /// An episode's chapters, loaded for the details pane.
+    Chapters(EpisodeId, Vec<beacon_core::model::Chapter>),
 }
 
 pub struct App {
@@ -184,9 +187,7 @@ impl Component for App {
             .forward(sender.input_sender(), AppMsg::Content);
         let details = DetailsPane::builder()
             .launch(())
-            .forward(sender.input_sender(), |DetailsPaneOutput::Close| {
-                AppMsg::CloseDetails
-            });
+            .forward(sender.input_sender(), AppMsg::Details);
         let bar = PlayerBar::builder()
             .launch(())
             .forward(sender.input_sender(), AppMsg::Bar);
@@ -313,7 +314,7 @@ impl Component for App {
                 self.content.emit(ContentInput::OpenAdd);
                 widgets.split_view.set_show_content(true);
             }
-            AppMsg::CloseDetails => widgets.details_split.set_show_sidebar(false),
+            AppMsg::Details(output) => self.details_output(output, widgets, &sender),
             AppMsg::GoBack => self.go_back(widgets),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
             AppMsg::Refresh => self.start_refresh(&sender),
@@ -341,6 +342,9 @@ impl Component for App {
             AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
             AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),
+            AppCommand::Chapters(id, chapters) => {
+                self.details.emit(DetailsPaneInput::Chapters(id, chapters));
+            }
         }
     }
 }

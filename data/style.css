@@ -74,3 +74,20 @@
   min-width: 44px;
   min-height: 44px;
 }
+
+/* The details pane's show link: the show's name, clickable, lined up with
+ * the text under it. */
+.show-link {
+  padding: 2px 6px;
+  margin-left: -6px;
+}
+
+/* The chapter playing: a grey background and bold text, as the
+ * requirements ask. */
+.current-chapter {
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.current-chapter label {
+  font-weight: bold;
+}

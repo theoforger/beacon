@@ -79,7 +79,7 @@ impl App {
         }
     }
 
-    fn row_action(
+    pub(super) fn row_action(
         &mut self,
         item: EpisodeItem,
         action: RowAction,
@@ -99,8 +99,8 @@ impl App {
                 self.details_episode = Some((id, item.episode.show_id));
                 self.details.emit(DetailsPaneInput::Show(Box::new(item)));
                 // The episode's own cover, as GNOME Podcasts shows it in its
-                // details; rows keep the show's.
-                self.fetch_episode_cover(id, sender);
+                // details (rows keep the show's), and its chapters.
+                self.load_details(id, sender);
                 self.focus_details(widgets);
                 widgets.details_split.set_show_sidebar(true);
                 self.job(sender, Parts::EPISODE, false, move |store| {
@@ -138,7 +138,7 @@ impl App {
         }
     }
 
-    fn open_show(&mut self, id: ShowId, sender: &ComponentSender<Self>) {
+    pub(super) fn open_show(&mut self, id: ShowId, sender: &ComponentSender<Self>) {
         self.last_show = Some(id);
         self.job(sender, Parts::PAGE, true, |_| Ok(()));
     }

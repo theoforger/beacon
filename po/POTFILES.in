@@ -6,7 +6,8 @@ crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
 crates/beacon-gtk/src/ui/add_page.rs
 crates/beacon-gtk/src/ui/content.rs
-crates/beacon-gtk/src/ui/details_pane.rs
+crates/beacon-gtk/src/ui/details_pane/build.rs
+crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
 crates/beacon-gtk/src/ui/errors.rs
 crates/beacon-gtk/src/ui/format.rs

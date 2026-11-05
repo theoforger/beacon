@@ -36,9 +36,10 @@ impl App {
         let focus = widgets.details_split.root().and_then(|root| root.focus());
         self.details_origin
             .replace(focus.map(|widget| widget.downgrade()));
-        let pane = self.details.widget().clone();
+        // Its first action, Play: the description's links come after.
+        let play = self.details.widgets().play_button().clone();
         glib::idle_add_local_once(move || {
-            pane.child_focus(gtk::DirectionType::TabForward);
+            play.grab_focus();
         });
     }
 

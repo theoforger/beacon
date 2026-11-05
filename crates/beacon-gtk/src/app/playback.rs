@@ -18,6 +18,7 @@ use relm4::{ComponentController, ComponentSender};
 use super::library::Parts;
 use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::player::{PlaybackState, Player, PlayerEvent};
+use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::EpisodeItem;
 use crate::ui::player_bar::{NowPlayingCard, PlayerBarInput};
@@ -87,6 +88,19 @@ impl App {
         widgets: &AppWidgets,
         sender: &ComponentSender<Self>,
     ) {
+        self.play_episode_from(item, None, widgets, sender);
+    }
+
+    /// Play `item` from `start` (a chapter), or from where it was left; if
+    /// it is the one playing, seek there, or without `start` pause or
+    /// resume it.
+    pub(super) fn play_episode_from(
+        &mut self,
+        item: &EpisodeItem,
+        start: Option<Duration>,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) {
         let episode = &item.episode;
         let Some(player) = self.player.clone() else {
             let err = self
@@ -96,10 +110,21 @@ impl App {
             toast(&widgets.toasts, &errors::playback(&err));
             return;
         };
-        if let Some(now) = &self.now_playing
-            && now.id == episode.id
+        if let Some(state) = self
+            .now_playing
+            .as_ref()
+            .filter(|now| now.id == episode.id)
+            .map(|now| now.state)
         {
-            match now.state {
+            let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
+            if let Some(start) = start {
+                self.seek(start);
+                if !playing {
+                    player.play();
+                }
+                return;
+            }
+            match state {
                 PlaybackState::Playing | PlaybackState::Buffering => player.pause(),
                 PlaybackState::Paused | PlaybackState::Stopped => player.play(),
             }
@@ -110,7 +135,7 @@ impl App {
             return;
         };
         let duration = episode.info.duration;
-        let start = playback::resume_position(&episode.state, duration);
+        let start = start.unwrap_or_else(|| playback::resume_position(&episode.state, duration));
         player.load(&uri, start);
         // The episode it replaces keeps where it got to.
         self.save_position(sender, Parts::PROGRESS);
@@ -143,6 +168,31 @@ impl App {
         });
     }
 
+    /// The episode in the player, whether it plays, and where it is.
+    pub(super) fn playback_state(&self) -> Option<(EpisodeId, bool, Duration)> {
+        self.now_playing.as_ref().map(|now| {
+            let playing = matches!(now.state, PlaybackState::Playing | PlaybackState::Buffering);
+            (now.id, playing, now.position)
+        })
+    }
+
+    /// Everything the details pane loads for an episode beyond what its row
+    /// knows: its own cover and its chapters, and where playback is.
+    pub(super) fn load_details(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
+        self.fetch_episode_cover(id, sender);
+        self.details
+            .emit(DetailsPaneInput::Playback(self.playback_state()));
+        if let Some(library) = self.library.clone() {
+            sender.oneshot_command(async move {
+                let chapters = library.chapters(id).await.unwrap_or_else(|err| {
+                    tracing::warn!("could not load the chapters of {id:?}: {err}");
+                    Vec::new()
+                });
+                AppCommand::Chapters(id, chapters)
+            });
+        }
+    }
+
     /// Fetch the episode's own cover for the player bar and the details
     /// pane; the show's stands in until it comes, or if it never does.
     pub(super) fn fetch_episode_cover(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
@@ -165,9 +215,12 @@ impl App {
                     return;
                 };
                 now.position = position;
+                let due = playback::should_save(now.saved, position);
                 self.last_position.set(Some((now.id, position)));
                 self.bar.emit(PlayerBarInput::Position(position));
-                if playback::should_save(now.saved, position) {
+                self.details
+                    .emit(DetailsPaneInput::Playback(self.playback_state()));
+                if due {
                     self.save_position(sender, Parts::NONE);
                 }
                 self.check_sleep_timer(sender);
@@ -186,6 +239,8 @@ impl App {
                 let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
                 episode_row::show_playing(Some((now.id, playing)));
                 self.bar.emit(PlayerBarInput::State(state));
+                self.details
+                    .emit(DetailsPaneInput::Playback(self.playback_state()));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(sender, Parts::PROGRESS);
@@ -198,6 +253,7 @@ impl App {
                 self.last_position.set(None);
                 episode_row::show_playing(None);
                 self.bar.emit(PlayerBarInput::State(PlaybackState::Stopped));
+                self.details.emit(DetailsPaneInput::Playback(None));
                 // "End of Episode" has done its work; nothing plays next yet
                 // (auto-continue arrives with the queue, M5).
                 self.end_sleep_timer();

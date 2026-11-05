@@ -6,6 +6,12 @@
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/queue-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/funnel-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/download-done-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/download-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/mark-played-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/mark-unplayed-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/queue-add-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/queue-added-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/moon-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/skip-back-10-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/skip-forward-30-symbolic.svg</file>
