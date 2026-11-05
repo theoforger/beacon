@@ -6,6 +6,7 @@
 #   shot.sh SIZE SCHEME OUT [STEP...]
 #   STEP: key:NAME[+NAME…]   e.g. key:F10, key:Control_L+f
 #         click:X,Y[,BUTTON]  e.g. click:28,27, click:860,450,8 (mouse back)
+#         move:X,Y             e.g. move:1188,148 (hover, no click)
 #         type:TEXT            e.g. type:http://127.0.0.1:8765/feed.xml
 #         wait:SECONDS         e.g. wait:3
 #
@@ -32,6 +33,7 @@ for step in "$@"; do
     case $step in
         key:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' key $(echo "${step#key:}" | tr + ' '); sleep 1;" ;;
         click:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' click $(echo "${step#click:}" | tr , ' '); sleep 1;" ;;
+        move:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' move $(echo "${step#move:}" | tr , ' '); sleep 1;" ;;
         type:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' type '${step#type:}'; sleep 1;" ;;
         wait:*) steps="$steps sleep ${step#wait:};" ;;
         *) echo "unknown step: $step" >&2; exit 2 ;;

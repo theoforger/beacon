@@ -4,6 +4,7 @@
 
     input.py key NAME...          press NAMEs together (for example Control_L f)
     input.py click X Y [BUTTON]   move the pointer and click (8 is the back button)
+    input.py move X Y             move the pointer only, to hover
     input.py type TEXT            type TEXT (ASCII only)
 """
 
@@ -36,6 +37,8 @@ def main(args):
         time.sleep(0.2)
         xtest.fake_input(d, X.ButtonPress, button)
         xtest.fake_input(d, X.ButtonRelease, button)
+    elif args[0] == "move":
+        xtest.fake_input(d, X.MotionNotify, x=int(args[1]), y=int(args[2]))
     elif args[0] == "type":
         for char in " ".join(args[1:]):
             keysym = XK.string_to_keysym(NAMES.get(char, char))

@@ -173,7 +173,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Carried from M3: the details pane's extra space between the cover and the show name
+- [x] Carried from M3: the details pane's extra space between the cover and the show name (gone with the rebuilt pane; `docs/hig-reviews/m4.md`)
 - [x] `PlayerService` wrapping `gstreamer-play`, publishing state; position saved periodically and on close (`player/`, `app/playback.rs`; a row's Play starts, pauses and resumes)
 - [x] After the user's review of step 1 (2026-11-03): square row Play button; Mark All as Unplayed when every episode is played; links and formatting in descriptions; the podcast page header in the mockup's layout with More Options in the header bar; long lists paged and reloads rebinding only changed rows
 - [x] After review (2026-11-03): the podcast page header keeps the cover's height, with Read More opening the whole description in a dialog; arrow keys move between a description's links
@@ -197,9 +197,9 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
 - [ ] Accessibility and translation checks pass
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] Tests: unit tests for new logic, integration test for each feature's main scenario (playback, chapters, selection, MPRIS on a session bus; the narrow layout measured with a display)
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
@@ -226,7 +226,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
@@ -257,7 +257,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
@@ -287,7 +287,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
@@ -312,7 +312,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
