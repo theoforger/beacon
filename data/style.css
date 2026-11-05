@@ -91,3 +91,10 @@
 .current-chapter label {
   font-weight: bold;
 }
+
+/* A row's progress bar. Adwaita gives a horizontal progress bar's trough a
+   minimum width of 150px, which made a partly played row too wide for a
+   360px window; the bar takes the width of the text above it instead. */
+progressbar.horizontal.episode-progress > trough {
+  min-width: 0;
+}

@@ -133,7 +133,9 @@ pub(super) fn widgets(
         .orientation(gtk::Orientation::Horizontal)
         .draw_value(false)
         .hexpand(true)
-        .width_request(240)
+        // Room enough to seek with, and with the times beside it narrow
+        // enough for a 360px window; it grows with wider ones.
+        .width_request(160)
         .build();
     seek.update_property(&[gtk::accessible::Property::Label(&gettext("Seek"))]);
     seek.connect_value_changed({

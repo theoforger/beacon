@@ -187,7 +187,11 @@ impl EpisodeRow {
             .css_classes(["dim-label", "caption"])
             .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
+        // Narrower than Adwaita lets a progress bar be (see `style.css`).
+        // Added, not set: setting the classes would drop `horizontal`, which
+        // Adwaita draws the bar by.
         let progress = gtk::ProgressBar::new();
+        progress.add_css_class("episode-progress");
         // GNOME Podcasts' spacing between title and subtitle.
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)

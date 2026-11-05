@@ -12,6 +12,8 @@ pub mod format;
 pub mod labels;
 pub mod links;
 pub mod models;
+#[cfg(test)]
+mod narrow_tests;
 pub mod new_view;
 pub mod page_filters;
 pub mod player_bar;
