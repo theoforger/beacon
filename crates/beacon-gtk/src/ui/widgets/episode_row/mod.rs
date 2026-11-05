@@ -6,8 +6,8 @@
 //! as the HIG checklist allows; activating the row opens the details. A
 //! `GtkListBoxRow` for a `boxed-list`, as GNOME Podcasts' episode row is.
 //!
-//! In selection mode the play button and menu give way to a check box,
-//! which also shows on hover; a secondary click or a long press selects.
+//! In selection mode the play button and menu give way to a check box.
+//! The menu's Select, a secondary click or a long press selects.
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
@@ -109,7 +109,6 @@ glib::wrapper! {
 
 pub struct Parts {
     select: gtk::CheckButton,
-    hovered: Cell<bool>,
     selection: Selection,
     cover: Cover,
     dot: gtk::Box,
@@ -257,11 +256,20 @@ impl EpisodeRow {
             });
             actions.add_action(&entry);
         }
+        // The menu's Select: select this episode, starting selection mode.
+        let select_action = gio::SimpleAction::new("select", None);
+        let (shown, selection) = (episode.clone(), setup.selection.clone());
+        select_action.connect_activate(move |_, _| {
+            let id = shown.borrow().as_ref().map(|item| item.episode.id);
+            if let Some(id) = id {
+                selection.set(id, true);
+            }
+        });
+        actions.add_action(&select_action);
         root.insert_action_group("row", Some(&actions));
 
         let parts = Parts {
             select,
-            hovered: Cell::new(false),
             selection: setup.selection.clone(),
             cover,
             dot,

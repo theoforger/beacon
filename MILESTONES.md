@@ -184,7 +184,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] The now-playing area opens the details pane, and shows the episode's own cover as the details pane does (`Library::episode_cover`)
 - [x] Lists spaced and rows sized as in GNOME Podcasts; titles one line wide, two narrow; the narrow podcast header centred (2026-11-04)
 - [x] Details pane: cover, show link, title, subtitle, actions (Play/Pause/Resume in accent; queue, favourite, download and played as icon-only state toggles), description, and chapters (current chapter grey and bold, click to seek)
-- [x] Selection mode in episode lists (asked by the user 2026-11-04): check box on hover, secondary click, long press, a Select button and Ctrl+A; Cancel and the count in the header; Queue, Favourites, Download (M5) and Played in an action bar
+- [x] Selection mode in episode lists (asked by the user 2026-11-04): the row menu's Select (in place of a check box on hover, 2026-11-04), secondary click, long press, a Select button and Ctrl+A; Cancel and the count in the header; Queue, Favourites, Download (M5) and Played in an action bar
 - [ ] MPRIS: compare candidate crates (last release, downloads, open issues), choose one, record it in decisions, and wire up media keys
 - [ ] Flatpak: add `--socket=pulseaudio` (done) and the MPRIS D-Bus name (`--own-name=org.mpris.MediaPlayer2.com.theoforger.Beacon`, with media keys)
 
