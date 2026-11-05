@@ -4,6 +4,8 @@
 //! as typed events on the main loop; the rules (where to resume, how far to
 //! skip, when to save) live in `beacon_core::playback`.
 
+pub mod mpris;
+
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 

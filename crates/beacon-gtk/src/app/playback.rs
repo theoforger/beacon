@@ -17,6 +17,7 @@ use relm4::{ComponentController, ComponentSender};
 
 use super::library::Parts;
 use super::{App, AppCommand, AppMsg, AppWidgets, toast};
+use crate::player::mpris::Track;
 use crate::player::{PlaybackState, Player, PlayerEvent};
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
@@ -159,6 +160,14 @@ impl App {
                 duration,
             }))));
         self.bar.emit(PlayerBarInput::Position(start));
+        self.media.set_track(Some(Track {
+            id: episode.id,
+            title: episode.info.title.clone(),
+            show: item.show_title.clone(),
+            cover: item.cover.clone(),
+            duration,
+        }));
+        self.media.set_position(start);
         self.fetch_episode_cover(episode.id, sender);
         // Playing takes an episode off the queue: the queue is what comes
         // next, as in a music app (the Now Playing group, M5).
@@ -218,6 +227,7 @@ impl App {
                 let due = playback::should_save(now.saved, position);
                 self.last_position.set(Some((now.id, position)));
                 self.bar.emit(PlayerBarInput::Position(position));
+                self.media.set_position(position);
                 self.details
                     .emit(DetailsPaneInput::Playback(self.playback_state()));
                 if due {
@@ -228,6 +238,8 @@ impl App {
             PlayerEvent::Duration(duration) => {
                 if let Some(now) = &mut self.now_playing {
                     now.duration = Some(duration);
+                    self.media
+                        .update_track(now.id, |track| track.duration = Some(duration));
                 }
                 self.bar.emit(PlayerBarInput::Duration(duration));
             }
@@ -239,6 +251,7 @@ impl App {
                 let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
                 episode_row::show_playing(Some((now.id, playing)));
                 self.bar.emit(PlayerBarInput::State(state));
+                self.media.set_state(state);
                 self.details
                     .emit(DetailsPaneInput::Playback(self.playback_state()));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
@@ -253,6 +266,8 @@ impl App {
                 self.last_position.set(None);
                 episode_row::show_playing(None);
                 self.bar.emit(PlayerBarInput::State(PlaybackState::Stopped));
+                self.media.set_state(PlaybackState::Stopped);
+                self.media.set_track(None);
                 self.details.emit(DetailsPaneInput::Playback(None));
                 // "End of Episode" has done its work; nothing plays next yet
                 // (auto-continue arrives with the queue, M5).

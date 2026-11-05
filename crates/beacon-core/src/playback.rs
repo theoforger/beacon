@@ -49,6 +49,41 @@ pub fn skip_forward(position: Duration, duration: Option<Duration>) -> Duration 
     }
 }
 
+/// Where a relative seek from another app (media keys, the desktop's
+/// media controls) lands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SeekBy {
+    To(Duration),
+    /// Past the end: as MPRIS asks, this acts like Next.
+    PastEnd,
+}
+
+/// Seek `offset_micros` from `position`, never before the start; past the
+/// end when the length is known is `PastEnd`.
+pub fn seek_by(position: Duration, offset_micros: i64, duration: Option<Duration>) -> SeekBy {
+    let offset = Duration::from_micros(offset_micros.unsigned_abs());
+    let target = if offset_micros < 0 {
+        position.saturating_sub(offset)
+    } else {
+        position + offset
+    };
+    match duration {
+        Some(end) if target > end => SeekBy::PastEnd,
+        _ => SeekBy::To(target),
+    }
+}
+
+/// Where a seek to an absolute position from another app lands: nowhere
+/// when it is past the end, as MPRIS asks ("If the Position argument is ...
+/// greater than the track length, do nothing").
+pub fn seek_to(position_micros: i64, duration: Option<Duration>) -> Option<Duration> {
+    let position = Duration::from_micros(u64::try_from(position_micros).ok()?);
+    match duration {
+        Some(end) if position > end => None,
+        _ => Some(position),
+    }
+}
+
 /// The offered speed closest to `rate`, so a stored or odd value never
 /// leaves the speed menu with nothing checked.
 pub fn nearest_rate(rate: f64) -> f64 {
@@ -118,6 +153,32 @@ pub fn current_chapter(chapters: &[Chapter], position: Duration) -> Option<usize
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn relative_seeks_stop_at_the_start_and_go_next_past_the_end() {
+        let at = Duration::from_secs(20);
+        let end = Some(Duration::from_secs(60));
+        assert_eq!(
+            seek_by(at, 10_000_000, end),
+            SeekBy::To(Duration::from_secs(30))
+        );
+        assert_eq!(seek_by(at, -30_000_000, end), SeekBy::To(Duration::ZERO));
+        assert_eq!(seek_by(at, 50_000_000, end), SeekBy::PastEnd);
+        // Unknown length: no end to pass.
+        assert_eq!(
+            seek_by(at, 50_000_000, None),
+            SeekBy::To(Duration::from_secs(70))
+        );
+    }
+
+    #[test]
+    fn absolute_seeks_outside_the_episode_do_nothing() {
+        let end = Some(Duration::from_secs(60));
+        assert_eq!(seek_to(5_000_000, end), Some(Duration::from_secs(5)));
+        assert_eq!(seek_to(-1, end), None);
+        assert_eq!(seek_to(61_000_000, end), None);
+        assert_eq!(seek_to(61_000_000, None), Some(Duration::from_secs(61)));
+    }
+
     use super::*;
 
     fn secs(s: u64) -> Duration {

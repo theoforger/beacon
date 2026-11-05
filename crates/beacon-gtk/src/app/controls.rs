@@ -125,6 +125,7 @@ impl App {
             player.seek(to);
         }
         self.bar.emit(PlayerBarInput::Position(to));
+        self.media.seeked(to);
     }
 
     /// Next Episode: the first episode in the queue. Until auto-continue
@@ -223,6 +224,7 @@ impl App {
         path: std::path::PathBuf,
     ) {
         self.bar.emit(PlayerBarInput::Cover(id, path.clone()));
+        self.media.set_cover(id, path.clone());
         self.details.emit(DetailsPaneInput::EpisodeCover(id, path));
     }
 }

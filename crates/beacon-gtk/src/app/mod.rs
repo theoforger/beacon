@@ -8,6 +8,7 @@
 mod actions;
 mod controls;
 mod library;
+mod media;
 mod playback;
 mod window;
 
@@ -31,6 +32,7 @@ use url::Url;
 
 use crate::config::APP_ID;
 use crate::navigation::Location;
+use crate::player::mpris::MediaControl;
 use crate::player::{Player, PlayerEvent};
 use crate::ui::content::{Content, ContentInput, ContentOutput};
 use crate::ui::details_pane::{DetailsPane, DetailsPaneInput, DetailsPaneOutput};
@@ -69,6 +71,8 @@ pub enum AppMsg {
     Bar(PlayerBarOutput),
     /// The sleep timer faded playback out and paused it.
     SleepTimerDone,
+    /// What media keys or the desktop's media controls ask for.
+    Media(MediaControl),
 }
 
 #[derive(Debug)]
@@ -104,6 +108,8 @@ pub struct App {
     /// the reason in `player_error`.
     player: Option<Rc<Player>>,
     player_error: Option<PlaybackError>,
+    /// Media keys and the desktop's media controls (MPRIS).
+    media: media::Media,
     now_playing: Option<playback::NowPlaying>,
     last_position: playback::LastPosition,
     /// Where focus was when a row opened the details pane, to return to
@@ -235,6 +241,7 @@ impl Component for App {
             details_origin: Rc::default(),
             player: None,
             player_error: None,
+            media: media::Media::default(),
             now_playing: None,
             last_position: Rc::default(),
             sidebar,
@@ -268,7 +275,10 @@ impl Component for App {
                 model.settings.double("playback-rate"),
             )));
         match playback::start_player(&model.settings, &sender) {
-            Ok(player) => model.player = Some(player),
+            Ok(player) => {
+                model.player = Some(player);
+                model.media.start(&sender);
+            }
             Err(err) => {
                 tracing::warn!("{err}");
                 model.player_error = Some(err);
@@ -322,6 +332,7 @@ impl Component for App {
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
             AppMsg::Player(event) => self.player_event(event, widgets, &sender),
             AppMsg::Bar(output) => self.bar_output(output, widgets, &sender),
+            AppMsg::Media(control) => self.media_control(control, widgets, &sender, root),
             AppMsg::SleepTimerDone => self.end_sleep_timer(),
         }
     }
