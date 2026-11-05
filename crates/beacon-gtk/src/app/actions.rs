@@ -5,7 +5,7 @@
 //! job on the store (`library.rs`).
 
 use beacon_core::LibraryError;
-use beacon_core::model::ShowId;
+use beacon_core::model::{EpisodeChange, EpisodeId, ShowId};
 use beacon_core::services::library::RefreshSummary;
 use gettextrs::{gettext, ngettext};
 use relm4::adw::prelude::*;
@@ -35,6 +35,7 @@ impl App {
             ContentOutput::Action(item, action) => self.row_action(*item, action, widgets, sender),
             ContentOutput::OpenShow(id) => self.open_show(id, sender),
             ContentOutput::GoBack => self.go_back(widgets),
+            ContentOutput::Change(ids, change) => self.change_episodes(ids, change, sender),
             ContentOutput::NewPrefsChanged(prefs) => {
                 for (group, value) in page_filters::states(&prefs) {
                     let Some((_, key)) = NEW_KEYS.iter().find(|(g, _)| *g == group) else {
@@ -77,6 +78,28 @@ impl App {
                 });
             }
         }
+    }
+
+    /// Selection mode's actions: one change to every selected episode.
+    fn change_episodes(
+        &mut self,
+        ids: Vec<EpisodeId>,
+        change: EpisodeChange,
+        sender: &ComponentSender<Self>,
+    ) {
+        let Some(now) = self.library.as_ref().map(|l| l.now()) else {
+            return;
+        };
+        // The player bar's star follows when the playing one is selected.
+        if let (EpisodeChange::Favorite(favorite), Some(playing)) = (change, &mut self.now_playing)
+            && ids.contains(&playing.id)
+        {
+            playing.favorite = favorite;
+            self.bar.emit(PlayerBarInput::Favorite(favorite));
+        }
+        self.job(sender, Parts::EPISODE, false, move |store| {
+            store.change_episodes(&ids, change, now)
+        });
     }
 
     pub(super) fn row_action(

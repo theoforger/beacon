@@ -16,7 +16,8 @@ use relm4::{Component, ComponentParts, ComponentSender, adw};
 use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
-use crate::ui::widgets::episode_row::OnRowAction;
+use crate::ui::selection::Selection;
+use crate::ui::widgets::episode_row::RowSetup;
 
 #[derive(Debug)]
 pub enum NewViewInput {
@@ -33,7 +34,7 @@ pub enum NewViewOutput {
 }
 
 pub struct NewView {
-    on_action: OnRowAction,
+    rows: RowSetup,
     fill: LazyFill,
     /// What the lists show now: each group and its episodes.
     shown: Vec<(RecencyGroup, Vec<EpisodeId>)>,
@@ -42,7 +43,8 @@ pub struct NewView {
 
 #[relm4::component(pub)]
 impl Component for NewView {
-    type Init = ();
+    /// The section's selection, whose bar is in the content header.
+    type Init = Selection;
     type Input = NewViewInput;
     type Output = NewViewOutput;
     type CommandOutput = ();
@@ -85,15 +87,19 @@ impl Component for NewView {
     }
 
     fn init(
-        _init: Self::Init,
+        selection: Self::Init,
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let on_action: OnRowAction = Rc::new(move |item, action| {
-            let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
-        });
+        let rows = RowSetup {
+            on_action: Rc::new(move |item, action| {
+                let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
+            }),
+            show_identity: true,
+            selection,
+        };
         let model = NewView {
-            on_action,
+            rows,
             fill: LazyFill::default(),
             shown: Vec::new(),
             lists: Vec::new(),
@@ -149,6 +155,9 @@ impl Component for NewView {
         let groups = group(items);
         let shape: Vec<_> = groups.iter().map(|(g, items)| (*g, ids(items))).collect();
         let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, items)| items).collect();
+        self.rows
+            .selection
+            .set_items(all.iter().map(|item| (*item).clone()).collect());
         if shape == self.shown && update_in_place(&self.lists, &all, &self.fill) {
             return;
         }
@@ -168,7 +177,7 @@ impl Component for NewView {
                 .css_classes(["heading"])
                 .accessible_role(gtk::AccessibleRole::Heading)
                 .build();
-            let list = new_list(&self.on_action, &title);
+            let list = new_list(&self.rows, &title);
             // A heading 6px above its list, as in GNOME Podcasts.
             let group = gtk::Box::builder()
                 .orientation(gtk::Orientation::Vertical)
@@ -181,7 +190,7 @@ impl Component for NewView {
             self.lists.push(list);
         }
         self.shown = shape;
-        self.fill.start(work, self.on_action.clone(), true);
+        self.fill.start(work, self.rows.clone());
     }
 }
 

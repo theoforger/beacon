@@ -223,3 +223,49 @@ async fn show_prefs_survive_a_restart() {
     drop(library);
     assert_eq!(Store::open(&db).unwrap().show_prefs(show).unwrap(), prefs);
 }
+
+/// M4, selection mode: select several episodes of a podcast page, queue
+/// them, mark them played and favourite them, each in one change; what the
+/// page's toggles then offer is to undo each.
+#[tokio::test]
+async fn selected_episodes_change_together() {
+    use beacon_core::model::EpisodeChange;
+
+    let server = MockServer::start_async().await;
+    let (library, show) =
+        subscribed(&server, "seasons.xml", Store::open_in_memory().unwrap()).await;
+    library.with_store(|store| {
+        let episodes = store.episodes(show).unwrap();
+        let chosen: Vec<_> = episodes.iter().take(2).map(|e| e.id).collect();
+        for change in [
+            EpisodeChange::Queued(true),
+            EpisodeChange::Played(true),
+            EpisodeChange::Favorite(true),
+        ] {
+            store.change_episodes(&chosen, change, now()).unwrap();
+        }
+        assert_eq!(store.queue().unwrap(), chosen);
+        let queue = store.queue().unwrap();
+        let states: Vec<_> = chosen
+            .iter()
+            .map(|id| store.episode(*id).unwrap().unwrap().state)
+            .collect();
+        assert!(states.iter().all(|s| s.played && s.favorite));
+        assert_eq!(
+            EpisodeChange::offered(
+                chosen
+                    .iter()
+                    .zip(&states)
+                    .map(|(id, s)| (queue.contains(id), s))
+            ),
+            [
+                EpisodeChange::Queued(false),
+                EpisodeChange::Favorite(false),
+                EpisodeChange::Played(false),
+            ]
+        );
+        // The rest of the show is untouched.
+        let rest = store.episode(episodes[2].id).unwrap().unwrap().state;
+        assert!(!rest.played && !rest.favorite);
+    });
+}

@@ -5,6 +5,9 @@
 //! when partly played, a flat play button and the row menu. Two controls,
 //! as the HIG checklist allows; activating the row opens the details. A
 //! `GtkListBoxRow` for a `boxed-list`, as GNOME Podcasts' episode row is.
+//!
+//! In selection mode the play button and menu give way to a check box,
+//! which also shows on hover; a secondary click or a long press selects.
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
@@ -17,9 +20,23 @@ use relm4::gtk::{self, gio, glib, pango, prelude::*};
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
+use crate::ui::selection::Selection;
+
+mod menu;
+mod selecting;
+use menu::menu_for;
 
 /// Called with the row's episode when one of its actions is chosen.
 pub type OnRowAction = Rc<dyn Fn(&EpisodeItem, RowAction)>;
+
+/// What a page's rows share: where their actions go, whether they show
+/// their show (not on the show's own page), and the page's selection.
+#[derive(Clone)]
+pub struct RowSetup {
+    pub on_action: OnRowAction,
+    pub show_identity: bool,
+    pub selection: Selection,
+}
 
 thread_local! {
     /// The episode playing, if any, and whether it is playing or paused.
@@ -91,6 +108,9 @@ glib::wrapper! {
 }
 
 pub struct Parts {
+    select: gtk::CheckButton,
+    hovered: Cell<bool>,
+    selection: Selection,
     cover: Cover,
     dot: gtk::Box,
     title: gtk::Label,
@@ -107,9 +127,10 @@ pub struct Parts {
 
 impl EpisodeRow {
     /// A row that shows its show, by cover and in the subtitle, when
-    /// `show_identity` is set; on the show's own page it would only repeat
-    /// on every row.
-    pub fn new(on_action: OnRowAction, show_identity: bool) -> Self {
+    /// `setup.show_identity` is set; on the show's own page it would only
+    /// repeat on every row.
+    pub fn new(setup: &RowSetup) -> Self {
+        let show_identity = setup.show_identity;
         let root: Self = glib::Object::new();
         let content = gtk::Box::builder()
             .spacing(12)
@@ -121,6 +142,15 @@ impl EpisodeRow {
             .build();
         root.set_child(Some(&content));
         let cover = Cover::new(COVER_SIZE);
+        // libadwaita's round selection check, as in GNOME's own selection
+        // modes; the row's name tells a screen reader which episode it is.
+        let select = gtk::CheckButton::builder()
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .tooltip_text(gettext("Select"))
+            .css_classes(["selection-mode"])
+            .build();
+        select.update_property(&[gtk::accessible::Property::Label(&gettext("Select"))]);
 
         // The dot, title, check and subtitle are left out of the
         // accessibility tree: the row's name says what they show (see
@@ -188,6 +218,7 @@ impl EpisodeRow {
         // GNOME Podcasts shows the cover on every row; Beacon leaves it out
         // on a podcast page, where it is the page's own (asked by the user).
         cover.widget().set_visible(show_identity);
+        content.append(&select);
         content.append(cover.widget());
         content.append(&text);
         content.append(&play);
@@ -212,7 +243,7 @@ impl EpisodeRow {
         ] {
             let entry = gio::SimpleAction::new(name, None);
             let episode = episode.clone();
-            let on_action = on_action.clone();
+            let on_action = setup.on_action.clone();
             entry.connect_activate(move |_, _| {
                 // Clone first: the action may rebind this row.
                 let item = episode.borrow().clone();
@@ -225,6 +256,9 @@ impl EpisodeRow {
         root.insert_action_group("row", Some(&actions));
 
         let parts = Parts {
+            select,
+            hovered: Cell::new(false),
+            selection: setup.selection.clone(),
             cover,
             dot,
             title,
@@ -237,6 +271,8 @@ impl EpisodeRow {
             show_identity,
         };
         let _ = root.imp().parts.set(parts);
+        root.connect_selection();
+        setup.selection.watch(&root);
         ROWS.with_borrow_mut(|rows| {
             // Rows come and go with every list rebuilt; drop the gone ones
             // whenever the list doubles, so it never grows without end.
@@ -290,6 +326,7 @@ impl EpisodeRow {
         let state = &episode.state;
         parts.episode.replace(Some(item.clone()));
         self.show_play_state();
+        self.show_selection();
         if parts.show_identity {
             parts.cover.set(item.cover.as_deref());
         }
@@ -335,44 +372,4 @@ impl EpisodeRow {
             parts.menu.set_menu_model(None::<&gio::MenuModel>);
         }
     }
-}
-
-/// The row menu, worded for the episode's current state.
-fn menu_for(item: &EpisodeItem) -> gio::Menu {
-    let state = &item.episode.state;
-    let details = gio::Menu::new();
-    details.append(Some(&gettext("Show _Details")), Some("row.details"));
-
-    let changes = gio::Menu::new();
-    changes.append(
-        Some(&if item.in_queue {
-            gettext("Remove From _Queue")
-        } else {
-            gettext("Add to _Queue")
-        }),
-        Some("row.queue"),
-    );
-    // Downloads arrive in M5; the item stays disabled until then.
-    changes.append(Some(&gettext("_Download")), Some("row.download"));
-    changes.append(
-        Some(&if state.favorite {
-            gettext("Remove From _Favorites")
-        } else {
-            gettext("Add to _Favorites")
-        }),
-        Some("row.favorite"),
-    );
-    changes.append(
-        Some(&if state.played {
-            gettext("Mark as _Unplayed")
-        } else {
-            gettext("Mark as _Played")
-        }),
-        Some("row.played"),
-    );
-
-    let menu = gio::Menu::new();
-    menu.append_section(None, &details);
-    menu.append_section(None, &changes);
-    menu
 }

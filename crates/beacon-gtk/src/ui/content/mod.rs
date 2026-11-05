@@ -9,7 +9,7 @@
 //! and their actions back.
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{ShowId, ShowPrefs};
+use beacon_core::model::{EpisodeChange, EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::{
@@ -23,8 +23,13 @@ use crate::ui::labels;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
 use crate::ui::page_filters;
+use crate::ui::selection::Selection;
+use crate::ui::selection_bar;
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
+
+mod sections;
+use sections::{bring_forward, empty_state, new_details_toggle, section_id};
 
 const ROOT_TAG: &str = "root";
 
@@ -50,6 +55,8 @@ pub enum ContentInput {
     SubscribeDone,
     /// A choice in New's filter menu: the group's action name and the value.
     ChooseNew(page_filters::Choice),
+    /// Whether the window has the narrow layout.
+    Narrow(bool),
 }
 
 #[derive(Debug)]
@@ -66,6 +73,8 @@ pub enum ContentOutput {
     Subscribe(Url),
     /// Leave the page showing, as Back does.
     GoBack,
+    /// A change to the selected episodes.
+    Change(Vec<EpisodeId>, EpisodeChange),
 }
 
 pub struct Content {
@@ -77,6 +86,13 @@ pub struct Content {
     new_prefs: ShowPrefs,
     /// New's filter button, shown only in New.
     new_filter: page_filters::FilterButton,
+    /// New's selection; its selection mode is the root page's.
+    new_selection: Selection,
+    /// The Select button, shown only in New, and not in the narrow layout,
+    /// where the header has no room for it.
+    new_select: gtk::Button,
+    location: Location,
+    narrow: bool,
 }
 
 #[relm4::component(pub)]
@@ -105,7 +121,9 @@ impl Component for Content {
                 set_title: &labels::title(Location::Shows),
 
                 #[wrap(Some)]
+                #[name = "root_toolbar"]
                 set_child = &adw::ToolbarView {
+                    #[name = "root_header"]
                     add_top_bar = &adw::HeaderBar {
                         // Only in Shows and New, where new episodes appear.
                         #[name = "refresh"]
@@ -170,8 +188,9 @@ impl Component for Content {
                 ShowsGridOutput::AddPodcast => input.emit(ContentInput::OpenAdd),
             }
         });
+        let new_selection = Selection::default();
         let new = NewView::builder()
-            .launch(())
+            .launch(new_selection.clone())
             .forward(&output, |message| match message {
                 NewViewOutput::Action(id, action) => ContentOutput::Action(id, action),
             });
@@ -188,6 +207,7 @@ impl Component for Content {
                 ShowPageOutput::MarkAll(id, played) => ContentOutput::MarkAll(id, played),
                 ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
                 ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
+                ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
             },
         );
         let add_page = AddPage::builder()
@@ -207,6 +227,10 @@ impl Component for Content {
                 let s = sender.clone();
                 move |choice| s.input(ContentInput::ChooseNew(choice))
             }),
+            new_select: selection_bar::select_button(&new_selection),
+            location: Location::Shows,
+            narrow: false,
+            new_selection,
         };
         model.new_filter.widget().set_visible(false);
         let widgets = view_output!();
@@ -237,6 +261,20 @@ impl Component for Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
+        model.new_select.set_visible(false);
+        widgets.root_header.pack_end(&model.new_select);
+        sections::attach_new_selection(
+            &widgets.root_toolbar,
+            &widgets.root_header,
+            &model.new_select,
+            &model.new_selection,
+            &widgets.search_bar,
+            &widgets.navigation,
+            Box::new(move |ids, change| {
+                let _ = output.send(ContentOutput::Change(ids, change));
+            }),
+        );
+
         for location in Location::ALL {
             let page: gtk::Widget = match location {
                 Location::Shows => model.shows.widget().clone().upcast(),
@@ -261,6 +299,9 @@ impl Component for Content {
             ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
+                self.new_selection.set_active(false);
+                self.location = location;
+                self.show_select();
                 self.new_filter
                     .widget()
                     .set_visible(location == Location::New);
@@ -304,6 +345,10 @@ impl Component for Content {
                 });
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
+            ContentInput::Narrow(narrow) => {
+                self.narrow = narrow;
+                self.show_select();
+            }
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {
@@ -315,16 +360,10 @@ impl Component for Content {
     }
 }
 
-/// Show `page`: push it, or go back to it if it is already further down.
-fn bring_forward(navigation: &adw::NavigationView, page: &adw::NavigationPage, tag: &str) {
-    if navigation.visible_page_tag().as_deref() == Some(tag) {
-        return;
-    }
-    match navigation.find_page(tag) {
-        Some(existing) => {
-            navigation.pop_to_page(&existing);
-        }
-        None => navigation.push(page),
+impl Content {
+    fn show_select(&self) {
+        self.new_select
+            .set_visible(self.location == Location::New && !self.narrow);
     }
 }
 
@@ -349,55 +388,12 @@ impl ContentWidgets {
     /// Ctrl+F: open the search bar, or close it if it is open. Only the root
     /// page has one.
     pub fn toggle_search(&self) {
-        if self.navigation.visible_page_tag().as_deref() != Some(ROOT_TAG) {
+        if self.navigation.visible_page_tag().as_deref() != Some(ROOT_TAG)
+            || !self.root_header.is_visible()
+        {
             return;
         }
         self.search_toggle
             .set_active(!self.search_toggle.is_active());
     }
-}
-
-fn new_details_toggle() -> gtk::ToggleButton {
-    let toggle = gtk::ToggleButton::builder()
-        .icon_name("sidebar-show-right-symbolic")
-        .tooltip_text(gettext("Episode Details"))
-        .build();
-    toggle.update_property(&[gtk::accessible::Property::Label(&gettext(
-        "Episode Details",
-    ))]);
-    toggle
-}
-
-fn section_id(location: Location) -> &'static str {
-    match location {
-        Location::Shows => "shows",
-        Location::New => "new",
-        Location::Queue => "queue",
-        Location::Favorites => "favorites",
-        Location::Downloaded => "downloaded",
-    }
-}
-
-/// Sections whose views arrive later (M5) show their empty state.
-fn empty_state(location: Location) -> adw::StatusPage {
-    let (title, description) = match location {
-        Location::Queue => (
-            gettext("Queue Is Empty"),
-            gettext("Add episodes to the queue to play them next"),
-        ),
-        Location::Favorites => (
-            gettext("No Favorites"),
-            gettext("Mark an episode as a favorite to find it here"),
-        ),
-        Location::Downloaded => (
-            gettext("No Downloads"),
-            gettext("Download an episode to listen offline"),
-        ),
-        Location::Shows | Location::New => unreachable!("Shows and New have their own views"),
-    };
-    adw::StatusPage::builder()
-        .icon_name(labels::icon(location))
-        .title(title)
-        .description(description)
-        .build()
 }

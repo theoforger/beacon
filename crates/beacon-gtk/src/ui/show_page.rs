@@ -10,7 +10,9 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::{
+    DownloadFilter, EpisodeChange, EpisodeFilter, EpisodeId, ShowId, ShowPrefs,
+};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gdk, gio, pango};
@@ -20,8 +22,10 @@ use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
+use crate::ui::selection::Selection;
+use crate::ui::selection_bar;
 use crate::ui::show_hero::ShowHero;
-use crate::ui::widgets::episode_row::OnRowAction;
+use crate::ui::widgets::episode_row::RowSetup;
 
 pub const SHOW_TAG: &str = "show";
 
@@ -44,6 +48,8 @@ pub enum ShowPageOutput {
     MarkAll(ShowId, bool),
     Unsubscribe(ShowId),
     FeedAddressCopied,
+    /// A change to the selected episodes.
+    Change(Vec<EpisodeId>, EpisodeChange),
 }
 
 /// A season, by number; `None` for the episodes without a season tag.
@@ -59,7 +65,7 @@ pub struct ShowPage {
     filter: page_filters::FilterButton,
     /// More Options: Mark All, Download All Episodes, Copy Feed Address.
     more: gtk::MenuButton,
-    on_action: OnRowAction,
+    rows: RowSetup,
     fill: LazyFill,
     /// What the lists show now, to update in place when only states change.
     shown: Option<Shape>,
@@ -84,6 +90,7 @@ impl Component for ShowPage {
             set_title: &gettext("Podcast"),
 
             #[wrap(Some)]
+            #[name = "toolbar"]
             set_child = &adw::ToolbarView {
                 #[name = "header"]
                 add_top_bar = &adw::HeaderBar {
@@ -127,9 +134,15 @@ impl Component for ShowPage {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let s = sender.clone();
-        let on_action: OnRowAction = Rc::new(move |item, action| {
-            let _ = s.output(ShowPageOutput::Action(Box::new(item.clone()), action));
-        });
+        // The page is the show's own: its name and cover would repeat on
+        // every row.
+        let rows = RowSetup {
+            on_action: Rc::new(move |item, action| {
+                let _ = s.output(ShowPageOutput::Action(Box::new(item.clone()), action));
+            }),
+            show_identity: false,
+            selection: Selection::default(),
+        };
         let model = ShowPage {
             data: None,
             hero: ShowHero::new(),
@@ -138,7 +151,7 @@ impl Component for ShowPage {
                 let s = sender.clone();
                 move |choice| s.input(ShowPageInput::Choose(choice))
             }),
-            on_action,
+            rows,
             fill: LazyFill::default(),
             shown: None,
             lists: Vec::new(),
@@ -154,6 +167,21 @@ impl Component for ShowPage {
         widgets.header.pack_end(&details_toggle);
         widgets.header.pack_end(&model.more);
         widgets.header.pack_end(model.filter.widget());
+        let select = selection_bar::select_button(&model.rows.selection);
+        widgets.header.pack_end(&select);
+        let s = sender.clone();
+        selection_bar::attach(
+            &widgets.toolbar,
+            &widgets.header,
+            &select,
+            &model.rows.selection,
+            Box::new(move |ids, change| {
+                let _ = s.output(ShowPageOutput::Change(ids, change));
+            }),
+        );
+        // Leaving the page leaves selection mode.
+        let selection = model.rows.selection.clone();
+        root.connect_hidden(move |_| selection.set_active(false));
 
         let actions = gio::SimpleActionGroup::new();
         let mark_all = gio::SimpleAction::new("mark-all", None);
@@ -183,6 +211,9 @@ impl Component for ShowPage {
     ) {
         match message {
             ShowPageInput::Set(data) => {
+                if self.data.as_ref().map(|d| d.show.id) != Some(data.show.id) {
+                    self.rows.selection.set_active(false);
+                }
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
                 self.hero.update(&data);
@@ -249,6 +280,9 @@ impl ShowPage {
             .map(|(key, _, items)| (*key, ids(*items)))
             .collect();
         let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, _, items)| *items).collect();
+        self.rows
+            .selection
+            .set_items(all.iter().map(|item| (*item).clone()).collect());
         if self.shown.as_ref() == Some(&(show, shape.clone()))
             && update_in_place(&self.lists, &all, &self.fill)
         {
@@ -272,7 +306,7 @@ impl ShowPage {
             // Translators: how a screen reader names a show's episode list
             // when the show has no seasons.
             let name = title.clone().unwrap_or_else(|| gettext("Episodes"));
-            let list = new_list(&self.on_action, &name);
+            let list = new_list(&self.rows, &name);
             match title {
                 Some(title) => container.append(&self.season(show, key, &title, &list)),
                 None => container.append(&list),
@@ -281,9 +315,7 @@ impl ShowPage {
             self.lists.push(list);
         }
         self.shown = Some((show, shape));
-        // The page is the show's own: its name and cover would repeat on
-        // every row.
-        self.fill.start(work, self.on_action.clone(), false);
+        self.fill.start(work, self.rows.clone());
     }
 
     /// A season: its title in a `GtkExpander`, unfolding to its list.

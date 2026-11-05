@@ -5,7 +5,8 @@ crates/beacon-gtk/src/app/library.rs
 crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
 crates/beacon-gtk/src/ui/add_page.rs
-crates/beacon-gtk/src/ui/content.rs
+crates/beacon-gtk/src/ui/content/mod.rs
+crates/beacon-gtk/src/ui/content/sections.rs
 crates/beacon-gtk/src/ui/details_pane/build.rs
 crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
@@ -16,11 +17,13 @@ crates/beacon-gtk/src/ui/new_view.rs
 crates/beacon-gtk/src/ui/page_filters.rs
 crates/beacon-gtk/src/ui/player_bar/build.rs
 crates/beacon-gtk/src/ui/player_bar/mod.rs
+crates/beacon-gtk/src/ui/selection_bar.rs
 crates/beacon-gtk/src/ui/show_hero.rs
 crates/beacon-gtk/src/ui/show_page.rs
 crates/beacon-gtk/src/ui/shows_grid.rs
 crates/beacon-gtk/src/ui/sidebar.rs
-crates/beacon-gtk/src/ui/widgets/episode_row.rs
+crates/beacon-gtk/src/ui/widgets/episode_row/menu.rs
+crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs
 data/com.theoforger.Beacon.desktop.in
 data/com.theoforger.Beacon.gschema.xml
 data/com.theoforger.Beacon.metainfo.xml.in

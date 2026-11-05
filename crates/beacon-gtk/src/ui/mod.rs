@@ -15,6 +15,8 @@ pub mod models;
 pub mod new_view;
 pub mod page_filters;
 pub mod player_bar;
+pub mod selection;
+pub mod selection_bar;
 pub mod show_hero;
 pub mod show_page;
 pub mod shows_grid;

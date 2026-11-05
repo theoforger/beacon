@@ -112,6 +112,36 @@ pub struct Episode {
     pub added_at: DateTime<Utc>,
 }
 
+/// A change made to several episodes at once, from selection mode: each
+/// sets a state to the value given, whatever each episode had.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EpisodeChange {
+    Queued(bool),
+    Favorite(bool),
+    Played(bool),
+}
+
+impl EpisodeChange {
+    /// What choosing each of selection mode's toggles does to `states`
+    /// (whether each is queued, and its state): set a state when any lacks
+    /// it, clear it when all have it, as a single episode's toggle would.
+    pub fn offered<'a>(
+        states: impl IntoIterator<Item = (bool, &'a EpisodeState)> + Clone,
+    ) -> [EpisodeChange; 3] {
+        let all = |has: fn(bool, &EpisodeState) -> bool| {
+            states
+                .clone()
+                .into_iter()
+                .all(|(queued, state)| has(queued, state))
+        };
+        [
+            EpisodeChange::Queued(!all(|queued, _| queued)),
+            EpisodeChange::Favorite(!all(|_, s| s.favorite)),
+            EpisodeChange::Played(!all(|_, s| s.played)),
+        ]
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QueueItem {
     pub episode_id: EpisodeId,
@@ -203,4 +233,35 @@ pub struct LibraryCounts {
     pub shows_with_new: u32,
     pub new_episodes: u32,
     pub queue: u32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn selection_toggles_set_unless_every_episode_has_the_state() {
+        let played = EpisodeState {
+            played: true,
+            favorite: true,
+            ..Default::default()
+        };
+        let fresh = EpisodeState::default();
+        assert_eq!(
+            EpisodeChange::offered([(true, &played), (false, &fresh)]),
+            [
+                EpisodeChange::Queued(true),
+                EpisodeChange::Favorite(true),
+                EpisodeChange::Played(true),
+            ]
+        );
+        assert_eq!(
+            EpisodeChange::offered([(true, &played), (true, &played)]),
+            [
+                EpisodeChange::Queued(false),
+                EpisodeChange::Favorite(false),
+                EpisodeChange::Played(false),
+            ]
+        );
+    }
 }

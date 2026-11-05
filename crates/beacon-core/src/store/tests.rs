@@ -3,7 +3,7 @@
 use chrono::TimeZone;
 
 use super::*;
-use crate::model::EpisodeInfo;
+use crate::model::{EpisodeChange, EpisodeInfo};
 
 fn now() -> DateTime<Utc> {
     Utc.with_ymd_and_hms(2026, 10, 28, 12, 0, 0).unwrap()
@@ -203,4 +203,55 @@ fn marking_a_show_unplayed_starts_it_over_and_keeps_the_queue() {
     // The seen episode keeps no dot; the queue is untouched.
     assert!(!store.episode(ids[0]).unwrap().unwrap().state.is_new());
     assert_eq!(store.queue().unwrap(), [ids[1]]);
+}
+
+#[test]
+fn a_change_applies_to_every_episode_chosen() {
+    let (mut store, show) = store_with_show();
+    store
+        .sync_episodes(
+            show,
+            &[
+                episode("a", "A", 1),
+                episode("b", "B", 2),
+                episode("c", "C", 3),
+            ],
+            now(),
+        )
+        .unwrap();
+    let ids: Vec<_> = store.episodes(show).unwrap().iter().map(|e| e.id).collect();
+    store.enqueue(ids[2]).unwrap();
+
+    // Queued in the order chosen, after what was queued; one already
+    // queued keeps its place.
+    let chosen = [ids[1], ids[2], ids[0]];
+    store
+        .change_episodes(&chosen, EpisodeChange::Queued(true), now())
+        .unwrap();
+    assert_eq!(store.queue().unwrap(), [ids[2], ids[1], ids[0]]);
+
+    store
+        .change_episodes(&ids[..2], EpisodeChange::Played(true), now())
+        .unwrap();
+    store
+        .change_episodes(&ids[1..], EpisodeChange::Favorite(true), now())
+        .unwrap();
+    let states: Vec<_> = ids
+        .iter()
+        .map(|id| store.episode(*id).unwrap().unwrap().state)
+        .collect();
+    assert_eq!(
+        states
+            .iter()
+            .map(|s| (s.played, s.favorite))
+            .collect::<Vec<_>>(),
+        [(true, false), (true, true), (false, true)]
+    );
+    // Marking played never touches the queue.
+    assert_eq!(store.queue().unwrap().len(), 3);
+
+    store
+        .change_episodes(&ids, EpisodeChange::Queued(false), now())
+        .unwrap();
+    assert!(store.queue().unwrap().is_empty());
 }

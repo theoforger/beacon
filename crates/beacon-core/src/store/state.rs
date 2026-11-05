@@ -13,7 +13,7 @@ use super::Store;
 use super::rows::{EPISODE_COLUMNS, episode_from_row};
 use crate::error::StoreError;
 use crate::model::{
-    DownloadFilter, Episode, EpisodeFilter, EpisodeId, ShowId, ShowPrefs, SortOrder,
+    DownloadFilter, Episode, EpisodeChange, EpisodeFilter, EpisodeId, ShowId, ShowPrefs, SortOrder,
 };
 
 impl Store {
@@ -126,6 +126,27 @@ impl Store {
     pub fn dequeue(&self, id: EpisodeId) -> Result<(), StoreError> {
         self.conn
             .execute("DELETE FROM queue WHERE episode_id = ?1", [id.0])?;
+        Ok(())
+    }
+
+    /// Apply `change` to every episode in `ids`, in one transaction.
+    /// Queued episodes join the end of the queue in the order given.
+    pub fn change_episodes(
+        &self,
+        ids: &[EpisodeId],
+        change: EpisodeChange,
+        now: DateTime<Utc>,
+    ) -> Result<(), StoreError> {
+        let tx = self.conn.unchecked_transaction()?;
+        for &id in ids {
+            match change {
+                EpisodeChange::Queued(true) => self.enqueue(id)?,
+                EpisodeChange::Queued(false) => self.dequeue(id)?,
+                EpisodeChange::Favorite(favorite) => self.set_favorite(id, favorite)?,
+                EpisodeChange::Played(played) => self.set_played(id, played, now)?,
+            }
+        }
+        tx.commit()?;
         Ok(())
     }
 

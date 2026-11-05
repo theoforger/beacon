@@ -15,16 +15,18 @@ use beacon_core::model::EpisodeId;
 use relm4::gtk::{self, glib, prelude::*};
 
 use crate::ui::models::{EpisodeItem, RowAction};
-use crate::ui::widgets::episode_row::{EpisodeRow, OnRowAction};
+use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
 
 /// Time spent adding rows before the main loop gets a turn, well inside a
 /// 60 Hz frame so scrolling and clicks stay smooth while a long feed fills.
 const BUDGET: Duration = Duration::from_millis(8);
 
 /// A boxed list whose rows open their episode's details when activated,
-/// named `label` for screen readers (the group or season it holds): its
-/// heading is a label, which focus never reaches, so the list says it.
-pub fn new_list(on_action: &OnRowAction, label: &str) -> gtk::ListBox {
+/// or in selection mode select it ("Clicking anywhere on a content item
+/// should toggle its selection state"), named `label` for screen readers
+/// (the group or season it holds): its heading is a label, which focus
+/// never reaches, so the list says it.
+pub fn new_list(setup: &RowSetup, label: &str) -> gtk::ListBox {
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
         // Tab visits the focused row's buttons, then leaves the list; the
@@ -34,10 +36,15 @@ pub fn new_list(on_action: &OnRowAction, label: &str) -> gtk::ListBox {
         .css_classes(["boxed-list"])
         .build();
     list.update_property(&[gtk::accessible::Property::Label(label)]);
-    let on_action = on_action.clone();
+    let setup = setup.clone();
     list.connect_row_activated(move |_, row| {
-        if let Some(item) = row.downcast_ref::<EpisodeRow>().and_then(EpisodeRow::item) {
-            on_action(&item, RowAction::ShowDetails);
+        let Some(item) = row.downcast_ref::<EpisodeRow>().and_then(EpisodeRow::item) else {
+            return;
+        };
+        if setup.selection.is_active() {
+            setup.selection.toggle(item.episode.id);
+        } else {
+            (setup.on_action)(&item, RowAction::ShowDetails);
         }
     });
     list
@@ -95,8 +102,7 @@ struct Fill {
     /// Rows that may be added before the list is scrolled further.
     allowance: Cell<usize>,
     running: Cell<bool>,
-    on_action: RefCell<Option<OnRowAction>>,
-    show_identity: Cell<bool>,
+    setup: RefCell<Option<RowSetup>>,
 }
 
 /// Fills lists with rows a page at a time, each page a little at a time so
@@ -115,19 +121,12 @@ impl std::fmt::Debug for LazyFill {
 }
 
 impl LazyFill {
-    /// Add a row for each item to its list, the first page now. Rows name
-    /// their show, by cover and in the subtitle, when `show_identity` is set.
-    pub fn start(
-        &self,
-        work: Vec<(gtk::ListBox, EpisodeItem)>,
-        on_action: OnRowAction,
-        show_identity: bool,
-    ) {
+    /// Add a row for each item to its list, the first page now.
+    pub fn start(&self, work: Vec<(gtk::ListBox, EpisodeItem)>, setup: RowSetup) {
         let fill = &self.inner;
         fill.generation.set(fill.generation.get() + 1);
         fill.pending.replace(work.into());
-        fill.on_action.replace(Some(on_action));
-        fill.show_identity.set(show_identity);
+        fill.setup.replace(Some(setup));
         fill.allowance.set(PAGE);
         fill.running.set(false);
         self.run();
@@ -199,10 +198,10 @@ impl LazyFill {
                     let Some((list, item)) = fill.pending.borrow_mut().pop_front() else {
                         break;
                     };
-                    let Some(on_action) = fill.on_action.borrow().clone() else {
+                    let Some(setup) = fill.setup.borrow().clone() else {
                         break;
                     };
-                    let row = EpisodeRow::new(on_action, fill.show_identity.get());
+                    let row = EpisodeRow::new(&setup);
                     row.bind(&item);
                     list.append(&row);
                     fill.allowance.set(fill.allowance.get() - 1);
