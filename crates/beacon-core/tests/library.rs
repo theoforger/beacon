@@ -453,3 +453,44 @@ async fn refreshing_everything_fetches_feeds_side_by_side() {
     // One after another would take at least 1.2s.
     assert!(took < Duration::from_millis(900), "refresh took {took:?}");
 }
+
+#[tokio::test]
+async fn chapters_files_are_fetched_once_and_kept() {
+    let server = MockServer::start_async().await;
+    serve(&server, "/feed.xml", fixture("chapters.xml", &server)).await;
+    let file = server
+        .mock_async(|when, then| {
+            when.method(GET).path("/chapters/pt1.json");
+            then.status(200).body(
+                r#"{"version":"1.2.0","chapters":[
+                    {"startTime":0,"title":"Dear reader"},
+                    {"startTime":95.5,"title":"The first letter"}]}"#,
+            );
+        })
+        .await;
+    let setup = library();
+    let id = setup
+        .library
+        .subscribe(&feed_url(&server, "/feed.xml"))
+        .await
+        .unwrap();
+    let episodes = setup
+        .library
+        .with_store(|store| store.episodes(id).unwrap());
+    let (inline, linked) = (episodes[0].id, episodes[1].id);
+
+    // The feed's own chapters need no fetch.
+    let chapters = setup.library.chapters(inline).await.unwrap();
+    assert_eq!(chapters.len(), 3);
+
+    // A chapters file is fetched the first time, then read from the store.
+    for _ in 0..2 {
+        let chapters = setup.library.chapters(linked).await.unwrap();
+        let summary: Vec<_> = chapters
+            .iter()
+            .map(|c| (c.start.as_millis(), c.title.as_str()))
+            .collect();
+        assert_eq!(summary, [(0, "Dear reader"), (95_500, "The first letter")]);
+    }
+    file.assert_calls_async(1).await;
+}

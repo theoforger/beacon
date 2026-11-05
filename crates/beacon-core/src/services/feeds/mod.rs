@@ -3,6 +3,7 @@
 //! Fetch and parse podcast feeds (RSS 2.0 with the iTunes, Podcasting 2.0 and
 //! Podlove Simple Chapters namespaces).
 
+pub mod chapters;
 mod namespaces;
 pub mod time;
 
@@ -12,7 +13,7 @@ use url::Url;
 use self::namespaces::{Extensions, PODCAST, PSC};
 use self::time::{parse_date, parse_npt};
 use crate::error::FeedError;
-use crate::model::{Enclosure, EpisodeInfo, ParsedEpisode, ParsedFeed, Season, ShowInfo};
+use crate::model::{Chapter, Enclosure, EpisodeInfo, ParsedEpisode, ParsedFeed, Season, ShowInfo};
 
 #[derive(Debug, Clone)]
 pub struct FeedClient {
@@ -32,6 +33,16 @@ impl FeedClient {
         }
         let body = response.bytes().await?;
         parse_feed(&body)
+    }
+
+    /// Fetch and parse an episode's Podcasting 2.0 JSON chapters.
+    pub async fn fetch_chapters(&self, url: &Url) -> Result<Vec<Chapter>, FeedError> {
+        let response = self.http.get(url.clone()).send().await?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(FeedError::Status(status.as_u16()));
+        }
+        chapters::parse(&response.bytes().await?)
     }
 }
 

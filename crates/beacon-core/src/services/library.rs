@@ -12,7 +12,7 @@ use futures_util::StreamExt;
 use url::Url;
 
 use crate::error::{LibraryError, StoreError};
-use crate::model::{EpisodeId, ShowId};
+use crate::model::{Chapter, EpisodeId, ShowId};
 use crate::services::clock::Clock;
 use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
@@ -167,6 +167,23 @@ impl Library {
             return Ok(None);
         };
         Ok(self.covers.fetch(&url).await.ok())
+    }
+
+    /// The episode's chapters: those the feed carries, or else those of its
+    /// chapters file, fetched the first time and then kept.
+    pub async fn chapters(&self, id: EpisodeId) -> Result<Vec<Chapter>, LibraryError> {
+        let (stored, url) = {
+            let store = self.lock();
+            let stored = store.chapters(id)?;
+            let url = store.episode(id)?.and_then(|e| e.info.chapters_url);
+            (stored, url)
+        };
+        let Some(url) = url.filter(|_| stored.is_empty()) else {
+            return Ok(stored);
+        };
+        let chapters = self.feeds.fetch_chapters(&url).await?;
+        self.lock().replace_chapters(id, &chapters)?;
+        Ok(chapters)
     }
 
     fn lock(&self) -> MutexGuard<'_, Store> {

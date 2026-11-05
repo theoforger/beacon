@@ -96,6 +96,8 @@ dependencies = [
  "rusqlite",
  "rusqlite_migration",
  "scraper",
+ "serde",
+ "serde_json",
  "sha2",
  "tempfile",
  "thiserror",

@@ -196,20 +196,7 @@ impl Store {
                 }
             };
             if !episode.chapters.is_empty() {
-                tx.execute("DELETE FROM chapters WHERE episode_id = ?1", [id])?;
-                for chapter in &episode.chapters {
-                    tx.execute(
-                        "INSERT OR REPLACE INTO chapters (episode_id, start_ms, title, url, image_url)
-                         VALUES (?1, ?2, ?3, ?4, ?5)",
-                        params![
-                            id,
-                            chapter.start.as_millis() as i64,
-                            chapter.title,
-                            chapter.url,
-                            chapter.image_url
-                        ],
-                    )?;
-                }
+                write_chapters(&tx, id, &episode.chapters)?;
             }
         }
         tx.commit()?;
@@ -238,6 +225,19 @@ impl Store {
             .query_map([show_id.0], episode_from_row)?
             .collect::<Result<_, _>>()?;
         Ok(episodes)
+    }
+
+    /// Keep an episode's chapters, fetched from its chapters file, in place
+    /// of any it had.
+    pub fn replace_chapters(
+        &mut self,
+        episode_id: EpisodeId,
+        chapters: &[Chapter],
+    ) -> Result<(), StoreError> {
+        let tx = self.conn.transaction()?;
+        write_chapters(&tx, episode_id.0, chapters)?;
+        tx.commit()?;
+        Ok(())
     }
 
     pub fn chapters(&self, episode_id: EpisodeId) -> Result<Vec<Chapter>, StoreError> {
@@ -278,3 +278,26 @@ fn fts_phrase(query: &str) -> String {
 
 #[cfg(test)]
 mod tests;
+
+/// Replace an episode's chapters with `chapters`.
+fn write_chapters(
+    tx: &rusqlite::Transaction<'_>,
+    episode_id: i64,
+    chapters: &[Chapter],
+) -> Result<(), StoreError> {
+    tx.execute("DELETE FROM chapters WHERE episode_id = ?1", [episode_id])?;
+    for chapter in chapters {
+        tx.execute(
+            "INSERT OR REPLACE INTO chapters (episode_id, start_ms, title, url, image_url)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                episode_id,
+                i64::try_from(chapter.start.as_millis()).unwrap_or(i64::MAX),
+                chapter.title,
+                chapter.url,
+                chapter.image_url
+            ],
+        )?;
+    }
+    Ok(())
+}
