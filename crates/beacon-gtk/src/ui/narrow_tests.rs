@@ -13,6 +13,7 @@ use chrono::Utc;
 use relm4::gtk::{self, gdk, prelude::*};
 use relm4::{Component, ComponentController, adw};
 
+use crate::ui::dialogs::description::text_height;
 use crate::ui::models::EpisodeItem;
 use crate::ui::player_bar::PlayerBar;
 use crate::ui::selection::Selection;
@@ -86,5 +87,23 @@ fn the_narrow_layout_fits_the_narrowest_window() {
     assert!(
         needed <= NARROWEST,
         "the narrow player bar needs {needed}px"
+    );
+
+    // Read More's dialog is as tall as its text at the width it gets: more
+    // lines in a narrow window, never the single line it measured before.
+    let text = gtk::Label::builder()
+        .label("A show description long enough to wrap onto several lines. ".repeat(8))
+        .wrap(true)
+        .margin_start(24)
+        .margin_end(24)
+        .build();
+    let line = gtk::Label::new(Some("One line"))
+        .measure(gtk::Orientation::Vertical, -1)
+        .1;
+    let narrow = text_height(&text, NARROWEST);
+    let wide = text_height(&text, 560);
+    assert!(
+        narrow > wide && wide > 3 * line,
+        "{narrow}px narrow, {wide}px wide"
     );
 }
