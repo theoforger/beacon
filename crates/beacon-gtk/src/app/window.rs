@@ -8,7 +8,6 @@ use relm4::gtk::{self, gdk, gio, glib};
 use relm4::{ComponentController, adw};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
-use crate::ui::content::ContentInput;
 use crate::ui::widgets::episode_row;
 
 /// The details pane's maximum width in the narrow layout: more than any
@@ -134,16 +133,8 @@ impl App {
             "visible",
             Some(&false.to_value()),
         );
-        let content = self.content.sender().clone();
-        breakpoint.connect_apply(move |_| {
-            episode_row::set_narrow(true);
-            content.emit(ContentInput::Narrow(true));
-        });
-        let content = self.content.sender().clone();
-        breakpoint.connect_unapply(move |_| {
-            episode_row::set_narrow(false);
-            content.emit(ContentInput::Narrow(false));
-        });
+        breakpoint.connect_apply(|_| episode_row::set_narrow(true));
+        breakpoint.connect_unapply(|_| episode_row::set_narrow(false));
         breakpoint.add_setter(
             self.sidebar.widgets().library(),
             "mode",

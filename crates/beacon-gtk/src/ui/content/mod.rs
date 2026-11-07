@@ -55,8 +55,6 @@ pub enum ContentInput {
     SubscribeDone,
     /// A choice in New's filter menu: the group's action name and the value.
     ChooseNew(page_filters::Choice),
-    /// Whether the window has the narrow layout.
-    Narrow(bool),
 }
 
 #[derive(Debug)]
@@ -88,11 +86,8 @@ pub struct Content {
     new_filter: page_filters::FilterButton,
     /// New's selection; its selection mode is the root page's.
     new_selection: Selection,
-    /// The Select button, shown only in New, and not in the narrow layout,
-    /// where the header has no room for it.
+    /// The Select button, shown only in New.
     new_select: gtk::Button,
-    location: Location,
-    narrow: bool,
 }
 
 #[relm4::component(pub)]
@@ -228,8 +223,6 @@ impl Component for Content {
                 move |choice| s.input(ContentInput::ChooseNew(choice))
             }),
             new_select: selection_bar::select_button(&new_selection),
-            location: Location::Shows,
-            narrow: false,
             new_selection,
         };
         model.new_filter.widget().set_visible(false);
@@ -300,8 +293,7 @@ impl Component for Content {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
                 self.new_selection.set_active(false);
-                self.location = location;
-                self.show_select();
+                self.new_select.set_visible(location == Location::New);
                 self.new_filter
                     .widget()
                     .set_visible(location == Location::New);
@@ -345,10 +337,6 @@ impl Component for Content {
                 });
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
-            ContentInput::Narrow(narrow) => {
-                self.narrow = narrow;
-                self.show_select();
-            }
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {
@@ -357,13 +345,6 @@ impl Component for Content {
                 }
             }
         }
-    }
-}
-
-impl Content {
-    fn show_select(&self) {
-        self.new_select
-            .set_visible(self.location == Location::New && !self.narrow);
     }
 }
 

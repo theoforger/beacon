@@ -4,3 +4,4 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
+| 2026-11-07 | `ui/selection_bar.rs` | Seen: New in selection mode at 360×640 light and dark (folded menu open) and 1440×900 light (icons). Still to check: the count's Select All / Select None menu, high contrast, a podcast page at about 520sp with the details pane open (icons fold), and Select All turning into Select None | 1440×900 dark and high contrast; 1100×800 with the details pane | Open New or a podcast page, press Select or Ctrl+A |
