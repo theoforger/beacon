@@ -248,7 +248,8 @@ impl Component for PlayerBar {
             }
             PlayerBarInput::State(state) => {
                 for play in [&widgets.play, &widgets.mini.play] {
-                    play_button::set_icon(play, Some(state));
+                    // The round button stays; only its icon spins.
+                    play_button::set_icon(play, Some(state), false);
                 }
             }
             PlayerBarInput::Position(position) => set_position(self, widgets, position),

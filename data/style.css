@@ -110,3 +110,16 @@ progressbar.horizontal.mini-progress > trough > progress {
   min-height: 3px;
   border-radius: 0;
 }
+
+/* The refresh indicator along the top of the content, as GNOME Podcasts'
+   overlaid progress bar: a thin pulsing line with no track. */
+progressbar.horizontal.refresh-progress > trough {
+  min-height: 3px;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+progressbar.horizontal.refresh-progress > trough > progress {
+  min-height: 3px;
+  border-radius: 0;
+}

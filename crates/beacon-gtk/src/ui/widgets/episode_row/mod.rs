@@ -318,7 +318,7 @@ impl EpisodeRow {
             .get()
             .filter(|(now, _)| Some(*now) == id)
             .map(|(_, state)| state);
-        play_button::set_icon(&parts.play, state);
+        play_button::set_icon(&parts.play, state, true);
     }
 
     /// The episode the row shows.

@@ -55,6 +55,8 @@ pub enum ContentInput {
     SubscribeDone,
     /// A choice in New's filter menu: the group's action name and the value.
     ChooseNew(page_filters::Choice),
+    /// Whether feeds are refreshing.
+    Refreshing(bool),
 }
 
 #[derive(Debug)]
@@ -88,6 +90,7 @@ pub struct Content {
     new_selection: Selection,
     /// The Select button, shown only in New.
     new_select: gtk::Button,
+    refresh_bar: sections::RefreshBar,
 }
 
 #[relm4::component(pub)]
@@ -158,9 +161,13 @@ impl Component for Content {
                     },
 
                     #[wrap(Some)]
-                    #[name = "stack"]
-                    set_content = &gtk::Stack {
-                        set_transition_type: gtk::StackTransitionType::Crossfade,
+                    set_content = &gtk::Overlay {
+                        #[wrap(Some)]
+                        #[name = "stack"]
+                        set_child = &gtk::Stack {
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
+                        },
+                        add_overlay: model.refresh_bar.widget(),
                     },
                 },
             },
@@ -223,6 +230,7 @@ impl Component for Content {
                 move |choice| s.input(ContentInput::ChooseNew(choice))
             }),
             new_select: selection_bar::select_button(&new_selection),
+            refresh_bar: sections::RefreshBar::new(),
             new_selection,
         };
         model.new_filter.widget().set_visible(false);
@@ -337,6 +345,7 @@ impl Component for Content {
                 });
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
+            ContentInput::Refreshing(running) => self.refresh_bar.set_running(running),
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {

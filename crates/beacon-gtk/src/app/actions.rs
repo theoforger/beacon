@@ -254,6 +254,7 @@ impl App {
             return;
         };
         self.refresh.set_enabled(false);
+        self.content.emit(ContentInput::Refreshing(true));
         sender.oneshot_command(async move {
             AppCommand::Refreshed(library.refresh_all().await, at_startup)
         });
@@ -267,6 +268,7 @@ impl App {
         sender: &ComponentSender<Self>,
     ) {
         self.refresh.set_enabled(true);
+        self.content.emit(ContentInput::Refreshing(false));
         self.reload(sender, Parts::ALL);
         for (show, err) in &summary.failed {
             tracing::warn!("could not refresh show {show:?}: {err}");

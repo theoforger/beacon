@@ -2,8 +2,12 @@
 
 //! The content pane's section pages and header toggles.
 
+use std::cell::RefCell;
+use std::time::Duration;
+
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
+use relm4::gtk::glib;
 use relm4::{adw, gtk};
 
 use crate::navigation::Location;
@@ -97,4 +101,57 @@ pub(super) fn attach_new_selection(
             search_bar.set_key_capture_widget(navigation.root().as_ref());
         }
     });
+}
+
+/// While feeds refresh, a thin bar pulses along the top of the content,
+/// under the header bar, as in GNOME Podcasts (`content_stack.rs`, an
+/// overlaid progress bar pulsed every 100ms).
+pub(super) struct RefreshBar {
+    bar: gtk::ProgressBar,
+    pulse: RefCell<Option<glib::SourceId>>,
+}
+
+impl RefreshBar {
+    pub(super) fn new() -> Self {
+        let bar = gtk::ProgressBar::builder()
+            .valign(gtk::Align::Start)
+            .visible(false)
+            .tooltip_text(gettext("Fetching feeds…"))
+            .build();
+        // Added, not set: setting the classes would drop `horizontal`.
+        bar.add_css_class("refresh-progress");
+        bar.update_property(&[gtk::accessible::Property::Label(&gettext("Fetching feeds"))]);
+        Self {
+            bar,
+            pulse: RefCell::default(),
+        }
+    }
+
+    pub(super) fn widget(&self) -> &gtk::ProgressBar {
+        &self.bar
+    }
+
+    pub(super) fn set_running(&self, running: bool) {
+        let mut pulse = self.pulse.borrow_mut();
+        if running == pulse.is_some() {
+            return;
+        }
+        self.bar.set_visible(running);
+        match pulse.take() {
+            Some(source) => source.remove(),
+            None => {
+                let bar = self.bar.downgrade();
+                *pulse = Some(glib::timeout_add_local(
+                    Duration::from_millis(100),
+                    move || match bar.upgrade() {
+                        Some(bar) => {
+                            bar.pulse();
+                            glib::ControlFlow::Continue
+                        }
+                        None => glib::ControlFlow::Break,
+                    },
+                ));
+            }
+        }
+    }
 }
