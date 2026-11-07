@@ -17,9 +17,11 @@ use gettextrs::gettext;
 use relm4::gtk::subclass::prelude::*;
 use relm4::gtk::{self, gio, glib, pango, prelude::*};
 
+use crate::player::PlaybackState;
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
+use crate::ui::play_button;
 use crate::ui::selection::Selection;
 
 mod menu;
@@ -39,8 +41,8 @@ pub struct RowSetup {
 }
 
 thread_local! {
-    /// The episode playing, if any, and whether it is playing or paused.
-    static PLAYING: Cell<Option<(EpisodeId, bool)>> = const { Cell::new(None) };
+    /// The episode in the player, if any, and what the player is doing.
+    static PLAYING: Cell<Option<(EpisodeId, PlaybackState)>> = const { Cell::new(None) };
     /// Whether the window has the narrow layout, where titles get two lines.
     static NARROW: Cell<bool> = const { Cell::new(false) };
     /// Every row made, so the playing one can show Pause without a reload.
@@ -60,7 +62,7 @@ pub fn set_narrow(narrow: bool) {
 
 /// Tell the rows which episode is in the player and whether it plays: its
 /// row's button shows Pause while it does.
-pub fn show_playing(playing: Option<(EpisodeId, bool)>) {
+pub fn show_playing(playing: Option<(EpisodeId, PlaybackState)>) {
     PLAYING.set(playing);
     ROWS.with_borrow_mut(|rows| {
         rows.retain(|row| match row.upgrade() {
@@ -312,17 +314,11 @@ impl EpisodeRow {
             return;
         };
         let id = parts.episode.borrow().as_ref().map(|item| item.episode.id);
-        let playing = matches!(PLAYING.get(), Some((now, true)) if Some(now) == id);
-        let (icon, label) = if playing {
-            ("media-playback-pause-symbolic", gettext("Pause"))
-        } else {
-            ("media-playback-start-symbolic", gettext("Play"))
-        };
-        parts.play.set_icon_name(icon);
-        parts.play.set_tooltip_text(Some(&label));
-        parts
-            .play
-            .update_property(&[gtk::accessible::Property::Label(&label)]);
+        let state = PLAYING
+            .get()
+            .filter(|(now, _)| Some(*now) == id)
+            .map(|(_, state)| state);
+        play_button::set_icon(&parts.play, state);
     }
 
     /// The episode the row shows.

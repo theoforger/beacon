@@ -22,6 +22,7 @@ use relm4::{Component, ComponentParts, ComponentSender};
 use crate::player::PlaybackState;
 use crate::ui::covers::Cover;
 use crate::ui::format;
+use crate::ui::play_button;
 
 mod build;
 mod compact;
@@ -246,16 +247,8 @@ impl Component for PlayerBar {
                 }
             }
             PlayerBarInput::State(state) => {
-                let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
-                let (icon, label) = if playing {
-                    ("media-playback-pause-symbolic", gettext("Pause"))
-                } else {
-                    ("media-playback-start-symbolic", gettext("Play"))
-                };
                 for play in [&widgets.play, &widgets.mini.play] {
-                    play.set_icon_name(icon);
-                    play.set_tooltip_text(Some(&label));
-                    play.update_property(&[gtk::accessible::Property::Label(&label)]);
+                    play_button::set_icon(play, Some(state));
                 }
             }
             PlayerBarInput::Position(position) => set_position(self, widgets, position),

@@ -16,6 +16,7 @@ crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs
 crates/beacon-gtk/src/ui/new_view.rs
 crates/beacon-gtk/src/ui/page_filters.rs
+crates/beacon-gtk/src/ui/play_button.rs
 crates/beacon-gtk/src/ui/player_bar/build.rs
 crates/beacon-gtk/src/ui/player_bar/compact.rs
 crates/beacon-gtk/src/ui/player_bar/mod.rs

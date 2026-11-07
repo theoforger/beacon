@@ -179,12 +179,11 @@ impl App {
         });
     }
 
-    /// The episode in the player, whether it plays, and where it is.
-    pub(super) fn playback_state(&self) -> Option<(EpisodeId, bool, Duration)> {
-        self.now_playing.as_ref().map(|now| {
-            let playing = matches!(now.state, PlaybackState::Playing | PlaybackState::Buffering);
-            (now.id, playing, now.position)
-        })
+    /// The episode in the player, what the player is doing, and where it is.
+    pub(super) fn playback_state(&self) -> Option<(EpisodeId, PlaybackState, Duration)> {
+        self.now_playing
+            .as_ref()
+            .map(|now| (now.id, now.state, now.position))
     }
 
     /// Everything the details pane loads for an episode beyond what its row
@@ -250,8 +249,7 @@ impl App {
                     return;
                 };
                 now.state = state;
-                let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
-                episode_row::show_playing(Some((now.id, playing)));
+                episode_row::show_playing(Some((now.id, state)));
                 self.bar.emit(PlayerBarInput::State(state));
                 self.media.set_state(state);
                 self.details

@@ -18,9 +18,11 @@ use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
 
+use crate::player::PlaybackState;
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
+use crate::ui::play_button;
 
 mod build;
 
@@ -36,7 +38,7 @@ pub enum DetailsPaneInput {
     /// The episode's chapters, once loaded.
     Chapters(EpisodeId, Vec<Chapter>),
     /// The episode in the player, whether it plays, and where it is.
-    Playback(Option<(EpisodeId, bool, Duration)>),
+    Playback(Option<(EpisodeId, PlaybackState, Duration)>),
     Clear,
     /// From the pane's own widgets: an action button, the show link, a
     /// chapter.
@@ -65,7 +67,7 @@ pub struct DetailsPane {
     /// The chapter shown as playing.
     current: Option<usize>,
     /// The episode in the player and whether it plays.
-    playing: Option<(EpisodeId, bool)>,
+    playing: Option<(EpisodeId, PlaybackState)>,
 }
 
 pub struct DetailsPaneWidgets {
@@ -249,13 +251,17 @@ impl DetailsPane {
         let Some(item) = &self.episode else {
             return;
         };
-        let label = match self.playing {
-            Some((id, true)) if id == item.episode.id => gettext("_Pause"),
-            Some((id, false)) if id == item.episode.id => gettext("_Resume"),
-            _ if item.episode.state.is_partly_played() => gettext("_Resume"),
-            _ => gettext("_Play"),
+        let state = self
+            .playing
+            .filter(|(id, _)| *id == item.episode.id)
+            .map(|(_, state)| state);
+        let label = match state {
+            Some(_) if play_button::is_playing(state) => gettext("_Pause"),
+            Some(_) => gettext("_Resume"),
+            None if item.episode.state.is_partly_played() => gettext("_Resume"),
+            None => gettext("_Play"),
         };
-        widgets.play.set_label(&label);
+        play_button::set_label(&widgets.play, play_button::is_loading(state), &label);
     }
 
     /// Show which chapter plays at `position`, if this episode is playing.

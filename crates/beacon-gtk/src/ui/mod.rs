@@ -16,6 +16,7 @@ pub mod models;
 mod narrow_tests;
 pub mod new_view;
 pub mod page_filters;
+pub mod play_button;
 pub mod player_bar;
 pub mod selection;
 pub mod selection_bar;
