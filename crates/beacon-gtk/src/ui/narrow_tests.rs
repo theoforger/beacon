@@ -77,17 +77,16 @@ fn the_narrow_layout_fits_the_narrowest_window() {
     let needed = minimum_width(&row) + AROUND_ROW;
     assert!(needed <= NARROWEST, "a partly played row needs {needed}px");
 
-    // The player bar spans the window, stacked as the narrow layout has it.
+    // The player spans the window: in the narrow layout, the slim bar and
+    // the sheet with the whole player, speed, sleep timer and volume kept.
     let bar = PlayerBar::builder().launch(()).detach();
-    bar.widgets()
-        .bar()
-        .set_orientation(gtk::Orientation::Vertical);
-    bar.widgets().extras().set_visible(false);
-    let needed = minimum_width(bar.widget());
-    assert!(
-        needed <= NARROWEST,
-        "the narrow player bar needs {needed}px"
-    );
+    bar.widgets().set_sheet(true);
+    for (part, needed) in [
+        ("slim bar", minimum_width(bar.widgets().mini())),
+        ("player sheet", minimum_width(bar.widget())),
+    ] {
+        assert!(needed <= NARROWEST, "the narrow {part} needs {needed}px");
+    }
 
     // Read More's dialog is as tall as its text at the width it gets: more
     // lines in a narrow window, never the single line it measured before.

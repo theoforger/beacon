@@ -168,6 +168,8 @@ impl App {
             duration,
         }));
         self.media.set_position(start);
+        // The narrow layout's slim bar now opens the player.
+        self.sheet.set_can_open(true);
         self.fetch_episode_cover(episode.id, sender);
         // Playing takes an episode off the queue: the queue is what comes
         // next, as in a music app (the Now Playing group, M5).

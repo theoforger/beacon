@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-07 07:19-0500\n"
+"POT-Creation-Date: 2026-11-07 07:29-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -71,7 +71,7 @@ msgstr[1] ""
 msgid "Subscribed to {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/mod.rs:135 crates/beacon-gtk/src/app/mod.rs:157
+#: crates/beacon-gtk/src/app/mod.rs:138 crates/beacon-gtk/src/app/mod.rs:165
 #: crates/beacon-gtk/src/main.rs:29 crates/beacon-gtk/src/player/mpris.rs:89
 #: crates/beacon-gtk/src/ui/dialogs/about.rs:11
 #: data/com.theoforger.Beacon.desktop.in:4
@@ -189,7 +189,7 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/details_pane/build.rs:104
 #: crates/beacon-gtk/src/ui/details_pane/build.rs:239
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:78
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:270
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:347
 #: crates/beacon-gtk/src/ui/selection_bar.rs:82
 msgid "Add to Favorites"
 msgstr ""
@@ -220,7 +220,7 @@ msgid "Remove From Queue"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/details_pane/build.rs:238
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:268
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:345
 #: crates/beacon-gtk/src/ui/selection_bar.rs:77
 msgid "Remove From Favorites"
 msgstr ""
@@ -558,10 +558,13 @@ msgid "Playback Controls"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:32
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:45
 msgid "Nothing Playing"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:66
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:121
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:124
 msgid "Show Episode Details"
 msgstr ""
 
@@ -570,7 +573,8 @@ msgid "Back 10 Seconds"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:89
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:183
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:73
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:253
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:208
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:212
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:319
@@ -619,26 +623,34 @@ msgstr ""
 msgid "Volume"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:181
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:43
+msgid "Now Playing"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:101
+msgid "Show Player"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:251
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:317
 msgid "Pause"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:201
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:271
 #, rust-format
 msgid "Playback Speed: {rate}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:225
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:295
 msgid "The sleep timer is on"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:255
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:332
 #, rust-format
 msgid "-{time}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:259
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:336
 #, rust-format
 msgid "{elapsed} of {total}"
 msgstr ""

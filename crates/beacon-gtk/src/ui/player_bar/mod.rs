@@ -24,6 +24,7 @@ use crate::ui::covers::Cover;
 use crate::ui::format;
 
 mod build;
+mod compact;
 
 const COVER_SIZE: i32 = 48;
 
@@ -52,6 +53,8 @@ pub enum PlayerBarInput {
     Volume(f64),
     SleepTimer(SleepTimer),
     HasNext(bool),
+    /// The narrow layout, where the bar is the bottom sheet's content.
+    Sheet(bool),
 }
 
 #[derive(Debug)]
@@ -79,6 +82,14 @@ pub struct PlayerBar {
 }
 
 pub struct PlayerBarWidgets {
+    pub(super) mini: compact::MiniBar,
+    pub(super) sheet_header: compact::SheetHeader,
+    pub(super) now_button: gtk::Button,
+    /// Holds the bar, or in the sheet the column.
+    pub(super) holder: gtk::Box,
+    pub(super) column: gtk::Box,
+    pub(super) start: gtk::Box,
+    pub(super) center: gtk::Box,
     pub(super) root: gtk::Stack,
     pub(super) bar: gtk::CenterBox,
     pub(super) extras: gtk::Box,
@@ -101,14 +112,47 @@ pub struct PlayerBarWidgets {
 }
 
 impl PlayerBarWidgets {
-    /// The bar, which the narrow layout stacks.
-    pub fn bar(&self) -> &gtk::CenterBox {
-        &self.bar
+    /// The narrow layout's slim bar, which opens the sheet the player is in.
+    pub fn mini(&self) -> &gtk::Stack {
+        &self.mini.root
     }
 
-    /// Speed, sleep timer and volume, which the narrow layout leaves out.
-    pub fn extras(&self) -> &gtk::Box {
-        &self.extras
+    /// Lay the player out for the narrow layout's bottom sheet, stacked under
+    /// a large cover with speed, sleep timer and volume kept, or as the wide
+    /// layout's bar.
+    pub fn set_sheet(&self, sheet: bool) {
+        if sheet == self.column.parent().is_some() {
+            return;
+        }
+        self.now_button.set_visible(!sheet);
+        self.sheet_header.root.set_visible(sheet);
+        self.extras.set_halign(if sheet {
+            gtk::Align::Center
+        } else {
+            gtk::Align::Fill
+        });
+        self.extras.set_margin_top(if sheet { 12 } else { 0 });
+        // A column rather than the bar stood on end: a vertical centre box
+        // keeps its middle centred, leaving a gap as tall as the cover.
+        if sheet {
+            self.bar.set_start_widget(None::<&gtk::Widget>);
+            self.bar.set_center_widget(None::<&gtk::Widget>);
+            self.bar.set_end_widget(None::<&gtk::Widget>);
+            for part in [&self.start, &self.center, &self.extras] {
+                self.column.append(part);
+            }
+            self.holder.remove(&self.bar);
+            self.holder.append(&self.column);
+        } else {
+            for part in [&self.start, &self.center, &self.extras] {
+                self.column.remove(part);
+            }
+            self.bar.set_start_widget(Some(&self.start));
+            self.bar.set_center_widget(Some(&self.center));
+            self.bar.set_end_widget(Some(&self.extras));
+            self.holder.remove(&self.column);
+            self.holder.append(&self.bar);
+        }
     }
 }
 
@@ -159,20 +203,46 @@ impl Component for PlayerBar {
             PlayerBarInput::Episode(None) => {
                 self.episode = None;
                 widgets.root.set_visible_child_name("nothing");
+                widgets.mini.root.set_visible_child_name("nothing");
             }
             PlayerBarInput::Episode(Some(card)) => {
                 self.episode = Some(card.id);
                 self.duration = card.duration;
-                widgets.cover.set(card.cover.as_deref());
-                widgets.title.set_label(&card.title);
-                widgets.show.set_label(&card.show_title);
+                for cover in [
+                    &widgets.cover,
+                    &widgets.mini.cover,
+                    &widgets.sheet_header.cover,
+                ] {
+                    cover.set(card.cover.as_deref());
+                }
+                for title in [
+                    &widgets.title,
+                    &widgets.mini.title,
+                    &widgets.sheet_header.title,
+                ] {
+                    title.set_label(&card.title);
+                }
+                for show in [
+                    &widgets.show,
+                    &widgets.mini.show,
+                    &widgets.sheet_header.show,
+                ] {
+                    show.set_label(&card.show_title);
+                }
+                widgets.mini.root.set_visible_child_name("player");
                 set_favorite(&widgets.favorite, card.favorite);
                 widgets.root.set_visible_child_name("player");
                 set_position(self, widgets, Duration::ZERO);
             }
             PlayerBarInput::Cover(id, path) => {
                 if self.episode == Some(id) {
-                    widgets.cover.set(Some(&path));
+                    for cover in [
+                        &widgets.cover,
+                        &widgets.mini.cover,
+                        &widgets.sheet_header.cover,
+                    ] {
+                        cover.set(Some(&path));
+                    }
                 }
             }
             PlayerBarInput::State(state) => {
@@ -182,11 +252,11 @@ impl Component for PlayerBar {
                 } else {
                     ("media-playback-start-symbolic", gettext("Play"))
                 };
-                widgets.play.set_icon_name(icon);
-                widgets.play.set_tooltip_text(Some(&label));
-                widgets
-                    .play
-                    .update_property(&[gtk::accessible::Property::Label(&label)]);
+                for play in [&widgets.play, &widgets.mini.play] {
+                    play.set_icon_name(icon);
+                    play.set_tooltip_text(Some(&label));
+                    play.update_property(&[gtk::accessible::Property::Label(&label)]);
+                }
             }
             PlayerBarInput::Position(position) => set_position(self, widgets, position),
             PlayerBarInput::Duration(duration) if Some(duration) == self.duration => {}
@@ -231,6 +301,7 @@ impl Component for PlayerBar {
                 }
             }
             PlayerBarInput::HasNext(has_next) => widgets.next.set_sensitive(has_next),
+            PlayerBarInput::Sheet(sheet) => widgets.set_sheet(sheet),
         }
         self.setting.set(false);
     }
@@ -243,6 +314,12 @@ fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Durat
         total.as_secs_f64().max(position.as_secs_f64()).max(1.0),
     );
     widgets.seek.set_value(position.as_secs_f64());
+    if !total.is_zero() {
+        widgets
+            .mini
+            .progress
+            .set_fraction((position.as_secs_f64() / total.as_secs_f64()).min(1.0));
+    }
     let second = (position.as_secs(), total.as_secs());
     if bar.shown_second.replace(second) == Some(second) {
         return;

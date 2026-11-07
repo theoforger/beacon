@@ -13,7 +13,7 @@ use relm4::ComponentSender;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gio, glib, pango};
 
-use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets};
+use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets, compact};
 use crate::ui::covers::Cover;
 use crate::ui::format;
 
@@ -274,14 +274,41 @@ pub(super) fn widgets(
         .margin_start(12)
         .margin_end(12)
         .build();
-    bar.set_start_widget(Some(&now_button));
+    // The sheet's header takes the now-playing button's place in the
+    // narrow layout's sheet.
+    let sheet_header = compact::sheet_header(sender);
+    let start = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .build();
+    start.append(&now_button);
+    start.append(&sheet_header.root);
+    bar.set_start_widget(Some(&start));
     bar.set_center_widget(Some(&center));
     bar.set_end_widget(Some(&extras));
-    root.add_named(&bar, Some("player"));
+    // The bar, or in the narrow layout's sheet the same parts in a column
+    // (`PlayerBarWidgets::set_sheet`).
+    let holder = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .build();
+    holder.append(&bar);
+    root.add_named(&holder, Some("player"));
     root.set_visible_child_name("nothing");
     root.insert_action_group("player", Some(&actions));
 
     PlayerBarWidgets {
+        mini: compact::mini_bar(sender),
+        sheet_header,
+        now_button,
+        holder,
+        column: gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(6)
+            .margin_start(12)
+            .margin_end(12)
+            .margin_bottom(24)
+            .build(),
+        start,
+        center,
         root,
         bar,
         extras,

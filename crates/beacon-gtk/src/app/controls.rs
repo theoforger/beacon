@@ -101,6 +101,8 @@ impl App {
                     return;
                 };
                 let (id, show) = (now.id, now.show_id);
+                // From the narrow layout's sheet: the details replace it.
+                self.sheet.set_open(false);
                 self.details_episode = Some((id, show));
                 self.focus_details(widgets);
                 widgets.details_split.set_show_sidebar(true);

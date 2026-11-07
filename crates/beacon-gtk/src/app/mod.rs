@@ -111,6 +111,8 @@ pub struct App {
     player_error: Option<PlaybackError>,
     /// Media keys and the desktop's media controls (MPRIS).
     media: media::Media,
+    /// The narrow layout's bottom sheet, holding the player.
+    sheet: adw::BottomSheet,
     now_playing: Option<playback::NowPlaying>,
     last_position: playback::LastPosition,
     /// Where focus was when a row opened the details pane, to return to
@@ -131,6 +133,7 @@ impl Component for App {
     type CommandOutput = AppCommand;
 
     view! {
+        #[root]
         main_window = adw::ApplicationWindow {
             set_title: Some(&gettext("Beacon")),
             set_width_request: 360,
@@ -138,44 +141,44 @@ impl Component for App {
 
             #[name = "toasts"]
             adw::ToastOverlay {
-                adw::ToolbarView {
-                    set_bottom_bar_style: adw::ToolbarStyle::RaisedBorder,
+                // The player bar under everything in wide windows; a slim bar
+                // opening a bottom sheet in narrow ones (`layouts`).
+                #[name = "layouts"]
+                adw::MultiLayoutView {},
+            },
+        },
 
-                    #[wrap(Some)]
-                    #[name = "details_split"]
-                    set_content = &adw::OverlaySplitView {
-                        set_sidebar_position: gtk::PackType::End,
-                        set_show_sidebar: false,
-                        set_max_sidebar_width: DETAILS_WIDTH,
-                        set_sidebar_width_fraction: 0.3,
+        // The main view: sidebar, content and details, set into each of
+        // `layouts`' layouts.
+        #[name = "details_split"]
+        adw::OverlaySplitView {
+            set_sidebar_position: gtk::PackType::End,
+            set_show_sidebar: false,
+            set_max_sidebar_width: DETAILS_WIDTH,
+            set_sidebar_width_fraction: 0.3,
 
-                        #[wrap(Some)]
-                        #[name = "split_view"]
-                        set_content = &adw::NavigationSplitView {
-                            #[wrap(Some)]
-                            set_sidebar = &adw::NavigationPage {
-                                set_title: &gettext("Beacon"),
-                                set_tag: Some("sidebar"),
-                                set_child: Some(model.sidebar.widget()),
-                            },
+            #[wrap(Some)]
+            #[name = "split_view"]
+            set_content = &adw::NavigationSplitView {
+                #[wrap(Some)]
+                set_sidebar = &adw::NavigationPage {
+                    set_title: &gettext("Beacon"),
+                    set_tag: Some("sidebar"),
+                    set_child: Some(model.sidebar.widget()),
+                },
 
-                            #[wrap(Some)]
-                            #[name = "content_page"]
-                            set_content = &adw::NavigationPage {
-                                set_title: &labels::title(Location::ALL[0]),
-                                set_tag: Some("content"),
-                                set_child: Some(model.content.widget()),
-                            },
-                        },
-
-                        #[wrap(Some)]
-                        set_sidebar = model.details.widget(),
-                    },
-
-                    add_bottom_bar = model.bar.widget(),
+                #[wrap(Some)]
+                #[name = "content_page"]
+                set_content = &adw::NavigationPage {
+                    set_title: &labels::title(Location::ALL[0]),
+                    set_tag: Some("content"),
+                    set_child: Some(model.content.widget()),
                 },
             },
-        }
+
+            #[wrap(Some)]
+            set_sidebar = model.details.widget(),
+        },
     }
 
     fn init(
@@ -243,6 +246,7 @@ impl Component for App {
             player: None,
             player_error: None,
             media: media::Media::default(),
+            sheet: adw::BottomSheet::builder().can_open(false).build(),
             now_playing: None,
             last_position: Rc::default(),
             sidebar,
@@ -263,6 +267,7 @@ impl Component for App {
             .sync_create()
             .build();
 
+        model.add_layouts(&widgets);
         root.add_breakpoint(model.narrow_breakpoint(&widgets));
         model.manage_focus(&widgets);
         model.content.widgets().capture_typing(&root);

@@ -8,6 +8,7 @@ use relm4::gtk::{self, gdk, gio, glib};
 use relm4::{ComponentController, adw};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
+use crate::ui::player_bar::PlayerBarInput;
 use crate::ui::widgets::episode_row;
 
 /// The details pane's maximum width in the narrow layout: more than any
@@ -85,6 +86,36 @@ impl App {
             });
     }
 
+    /// The two layouts around the main view and the player, as GNOME
+    /// Podcasts has them (`window.ui`): in wide windows the player bar under
+    /// everything; in narrow ones a slim bar that opens a bottom sheet with
+    /// the whole player. The narrow breakpoint switches between them.
+    pub(super) fn add_layouts(&self, widgets: &AppWidgets) {
+        let wide = adw::ToolbarView::builder()
+            .bottom_bar_style(adw::ToolbarStyle::RaisedBorder)
+            .content(&adw::LayoutSlot::new("main"))
+            .build();
+        wide.add_bottom_bar(&adw::LayoutSlot::new("player"));
+        widgets.layouts.add_layout(named_layout("wide", &wide));
+
+        let main = adw::LayoutSlot::new("main");
+        // The content ends above the slim bar, not under it.
+        self.sheet
+            .bind_property("bottom-bar-height", &main, "margin-bottom")
+            .sync_create()
+            .build();
+        self.sheet.set_content(Some(&main));
+        self.sheet.set_sheet(Some(&adw::LayoutSlot::new("player")));
+        self.sheet
+            .set_bottom_bar(Some(&adw::LayoutSlot::new("mini")));
+        widgets
+            .layouts
+            .add_layout(named_layout("narrow", &self.sheet));
+        widgets.layouts.set_child("main", &widgets.details_split);
+        widgets.layouts.set_child("player", self.bar.widget());
+        widgets.layouts.set_child("mini", self.bar.widgets().mini());
+    }
+
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.
@@ -121,20 +152,20 @@ impl App {
             "visible",
             Some(&true.to_value()),
         );
-        // The player bar stacks, and leaves out speed, sleep timer and
-        // volume, as the mockup's narrow layout does.
-        breakpoint.add_setter(
-            self.bar.widgets().bar(),
-            "orientation",
-            Some(&gtk::Orientation::Vertical.to_value()),
-        );
-        breakpoint.add_setter(
-            self.bar.widgets().extras(),
-            "visible",
-            Some(&false.to_value()),
-        );
-        breakpoint.connect_apply(|_| episode_row::set_narrow(true));
-        breakpoint.connect_unapply(|_| episode_row::set_narrow(false));
+        // The player moves into the bottom sheet, under its slim bar.
+        breakpoint.add_setter(&widgets.layouts, "layout-name", Some(&"narrow".to_value()));
+        let bar = self.bar.sender().clone();
+        breakpoint.connect_apply(move |_| {
+            episode_row::set_narrow(true);
+            bar.emit(PlayerBarInput::Sheet(true));
+        });
+        let bar = self.bar.sender().clone();
+        let sheet = self.sheet.clone();
+        breakpoint.connect_unapply(move |_| {
+            episode_row::set_narrow(false);
+            sheet.set_open(false);
+            bar.emit(PlayerBarInput::Sheet(false));
+        });
         breakpoint.add_setter(
             self.sidebar.widgets().library(),
             "mode",
@@ -152,6 +183,12 @@ impl App {
             window.maximize();
         }
     }
+}
+
+fn named_layout(name: &str, content: &impl IsA<gtk::Widget>) -> adw::Layout {
+    let layout = adw::Layout::new(content);
+    layout.set_name(Some(name));
+    layout
 }
 
 pub(super) fn save_window_state(settings: &gio::Settings, window: &adw::ApplicationWindow) {

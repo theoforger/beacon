@@ -98,3 +98,15 @@
 progressbar.horizontal.episode-progress > trough {
   min-width: 0;
 }
+
+/* The narrow layout's slim player: a thin progress line along its top
+   edge, as GNOME Podcasts' small player has. */
+progressbar.horizontal.mini-progress > trough {
+  min-height: 3px;
+  border-radius: 0;
+}
+
+progressbar.horizontal.mini-progress > trough > progress {
+  min-height: 3px;
+  border-radius: 0;
+}
