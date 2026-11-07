@@ -248,17 +248,21 @@ impl App {
         }
     }
 
-    pub(super) fn start_refresh(&self, sender: &ComponentSender<Self>) {
+    /// Refresh every feed; `at_startup` for the one when the app opens.
+    pub(super) fn start_refresh(&self, sender: &ComponentSender<Self>, at_startup: bool) {
         let Some(library) = self.library.clone() else {
             return;
         };
         self.refresh.set_enabled(false);
-        sender.oneshot_command(async move { AppCommand::Refreshed(library.refresh_all().await) });
+        sender.oneshot_command(async move {
+            AppCommand::Refreshed(library.refresh_all().await, at_startup)
+        });
     }
 
     pub(super) fn refreshed(
         &mut self,
         summary: &RefreshSummary,
+        at_startup: bool,
         widgets: &AppWidgets,
         sender: &ComponentSender<Self>,
     ) {
@@ -267,27 +271,34 @@ impl App {
         for (show, err) in &summary.failed {
             tracing::warn!("could not refresh show {show:?}: {err}");
         }
-        toast(&widgets.toasts, &refresh_message(summary));
+        if let Some(message) = refresh_message(summary, at_startup) {
+            toast(&widgets.toasts, &message);
+        }
     }
 }
 
-/// What a finished refresh says: failures first, then what was found,
-/// including that nothing was.
-fn refresh_message(summary: &RefreshSummary) -> String {
+/// What a finished refresh says: failures first, then what was found. One
+/// the listener asked for also says that nothing was found; the one at
+/// startup then says nothing, rather than at every launch.
+fn refresh_message(summary: &RefreshSummary, at_startup: bool) -> Option<String> {
     if !summary.failed.is_empty() {
         let n = summary.failed.len() as u32;
-        return ngettext(
-            "Could not refresh {n} podcast",
-            "Could not refresh {n} podcasts",
-            n,
-        )
-        .replace("{n}", &n.to_string());
+        return Some(
+            ngettext(
+                "Could not refresh {n} podcast",
+                "Could not refresh {n} podcasts",
+                n,
+            )
+            .replace("{n}", &n.to_string()),
+        );
     }
     match summary.added {
-        0 => gettext("No new episodes"),
-        n => {
-            ngettext("{n} new episode", "{n} new episodes", n as u32).replace("{n}", &n.to_string())
-        }
+        0 if at_startup => None,
+        0 => Some(gettext("No new episodes")),
+        n => Some(
+            ngettext("{n} new episode", "{n} new episodes", n as u32)
+                .replace("{n}", &n.to_string()),
+        ),
     }
 }
 
@@ -303,9 +314,38 @@ mod tests {
     }
 
     #[test]
-    fn a_refresh_always_says_what_it_found() {
-        assert_eq!(refresh_message(&summary(0)), "No new episodes");
-        assert_eq!(refresh_message(&summary(1)), "1 new episode");
-        assert_eq!(refresh_message(&summary(3)), "3 new episodes");
+    fn a_refresh_says_what_it_found() {
+        assert_eq!(
+            refresh_message(&summary(0), false).unwrap(),
+            "No new episodes"
+        );
+        assert_eq!(
+            refresh_message(&summary(1), false).unwrap(),
+            "1 new episode"
+        );
+        assert_eq!(
+            refresh_message(&summary(3), false).unwrap(),
+            "3 new episodes"
+        );
+    }
+
+    #[test]
+    fn the_refresh_at_startup_is_quiet_unless_something_happened() {
+        assert_eq!(refresh_message(&summary(0), true), None);
+        assert_eq!(
+            refresh_message(&summary(2), true).unwrap(),
+            "2 new episodes"
+        );
+        let failed = RefreshSummary {
+            added: 0,
+            failed: vec![(
+                beacon_core::model::ShowId(1),
+                LibraryError::ShowNotFound(beacon_core::model::ShowId(1)),
+            )],
+        };
+        assert_eq!(
+            refresh_message(&failed, true).unwrap(),
+            "Could not refresh 1 podcast"
+        );
     }
 }

@@ -79,7 +79,8 @@ pub enum AppMsg {
 pub enum AppCommand {
     Loaded(Box<Result<library::Loaded, StoreError>>),
     Subscribed(Url, Result<ShowId, LibraryError>),
-    Refreshed(RefreshSummary),
+    /// A refresh finished; `true` for the one at startup.
+    Refreshed(RefreshSummary, bool),
     /// An episode's own cover, fetched for the details pane and the bar.
     EpisodeCover(EpisodeId, Option<PathBuf>),
     /// The episode Next Episode found, if any.
@@ -298,7 +299,14 @@ impl Component for App {
         model.refresh.set_enabled(model.library.is_some());
         match open_error {
             Some(message) => toast(&widgets.toasts, &message),
-            None => model.reload(&sender, library::Parts::ALL),
+            None => {
+                model.reload(&sender, library::Parts::ALL);
+                // New episodes since last time, as GNOME Podcasts looks for
+                // them (`refresh-on-startup`).
+                if model.settings.boolean("refresh-on-startup") {
+                    model.start_refresh(&sender, true);
+                }
+            }
         }
 
         ComponentParts { model, widgets }
@@ -327,7 +335,7 @@ impl Component for App {
             AppMsg::Details(output) => self.details_output(output, widgets, &sender),
             AppMsg::GoBack => self.go_back(widgets),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
-            AppMsg::Refresh => self.start_refresh(&sender),
+            AppMsg::Refresh => self.start_refresh(&sender, false),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
             AppMsg::Player(event) => self.player_event(event, widgets, &sender),
@@ -349,7 +357,9 @@ impl Component for App {
             AppCommand::Subscribed(url, result) => {
                 self.subscribed(&url, result, widgets, &sender);
             }
-            AppCommand::Refreshed(summary) => self.refreshed(&summary, widgets, &sender),
+            AppCommand::Refreshed(summary, at_startup) => {
+                self.refreshed(&summary, at_startup, widgets, &sender);
+            }
             AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
             AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),

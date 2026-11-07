@@ -49,6 +49,11 @@
       <summary>Playback volume</summary>
       <description>Beacon's own audio volume, from 0 to 1.</description>
     </key>
+    <key name="refresh-on-startup" type="b">
+      <default>true</default>
+      <summary>Refresh feeds at startup</summary>
+      <description>Whether Beacon checks every podcast for new episodes when it opens, as GNOME Podcasts does.</description>
+    </key>
     <key name="playback-rate" type="d">
       <range min="0.75" max="2"/>
       <default>1.0</default>
