@@ -226,7 +226,7 @@ impl EpisodeRow {
         content.append(&select);
         content.append(cover.widget());
         content.append(&text);
-        content.append(&play);
+        content.append(&play_button::with_spinner(&play));
         content.append(&menu);
 
         let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
@@ -318,7 +318,7 @@ impl EpisodeRow {
             .get()
             .filter(|(now, _)| Some(*now) == id)
             .map(|(_, state)| state);
-        play_button::set_icon(&parts.play, state, true);
+        play_button::set_icon(&parts.play, state);
     }
 
     /// The episode the row shows.

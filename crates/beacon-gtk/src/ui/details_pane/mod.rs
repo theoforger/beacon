@@ -255,13 +255,13 @@ impl DetailsPane {
             .playing
             .filter(|(id, _)| *id == item.episode.id)
             .map(|(_, state)| state);
-        let label = match state {
-            Some(_) if play_button::is_playing(state) => gettext("_Pause"),
-            Some(_) => gettext("_Resume"),
-            None if item.episode.state.is_partly_played() => gettext("_Resume"),
-            None => gettext("_Play"),
+        let page = match state {
+            Some(_) if play_button::is_playing(state) => "pause",
+            Some(_) => "resume",
+            None if item.episode.state.is_partly_played() => "resume",
+            None => "play",
         };
-        play_button::set_label(&widgets.play, play_button::is_loading(state), &label);
+        play_button::set_label(&widgets.play, play_button::is_loading(state), page);
     }
 
     /// Show which chapter plays at `position`, if this episode is playing.

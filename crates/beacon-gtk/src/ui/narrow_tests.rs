@@ -15,6 +15,7 @@ use relm4::{Component, ComponentController, adw};
 
 use crate::ui::dialogs::description::text_height;
 use crate::ui::models::EpisodeItem;
+use crate::ui::play_button;
 use crate::ui::player_bar::PlayerBar;
 use crate::ui::selection::Selection;
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
@@ -87,6 +88,33 @@ fn the_narrow_layout_fits_the_narrowest_window() {
     ] {
         assert!(needed <= NARROWEST, "the narrow {part} needs {needed}px");
     }
+
+    // The details pane's Play keeps one width whatever it says and while
+    // it loads, and the spinner over it is the play icon's size.
+    let play = gtk::Button::new();
+    play_button::stacked_labels(
+        &play,
+        &[
+            ("play", "_Play".into()),
+            ("pause", "_Pause".into()),
+            ("resume", "_Resume".into()),
+        ],
+    );
+    let overlay = play_button::with_spinner(&play);
+    let mut widths = Vec::new();
+    for (page, loading) in [("play", false), ("resume", false), ("pause", true)] {
+        play_button::set_label(&play, loading, page);
+        widths.push(minimum_width(&overlay));
+    }
+    assert!(
+        widths.windows(2).all(|w| w[0] == w[1]),
+        "Play's widths: {widths:?}"
+    );
+    let spinner = overlay
+        .last_child()
+        .expect("the spinner lies over the button");
+    assert!(spinner.is_visible() && !play.is_sensitive());
+    assert_eq!(spinner.measure(gtk::Orientation::Horizontal, -1).1, 16);
 
     // Read More's dialog is as tall as its text at the width it gets: more
     // lines in a narrow window, never the single line it measured before.

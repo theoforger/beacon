@@ -11,6 +11,7 @@ use relm4::gtk::{self, pango, prelude::*};
 
 use super::{PlayerBar, PlayerBarOutput};
 use crate::ui::covers::Cover;
+use crate::ui::play_button;
 
 /// GNOME Podcasts' small player cover.
 const MINI_COVER: i32 = 42;
@@ -91,7 +92,7 @@ pub fn mini_bar(sender: &ComponentSender<PlayerBar>) -> MiniBar {
         .build();
     row.append(cover.widget());
     row.append(&labels);
-    row.append(&play);
+    row.append(&play_button::with_spinner(&play));
     let bar = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .build();

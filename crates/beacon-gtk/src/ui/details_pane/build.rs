@@ -13,6 +13,7 @@ use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::links;
 use crate::ui::models::{EpisodeItem, RowAction};
+use crate::ui::play_button;
 
 /// An icon-only button with its tooltip and accessible label.
 fn icon_button(icon: &str, label: &str) -> gtk::Button {
@@ -96,10 +97,18 @@ pub(super) fn widgets(
     // The actions: Play, Pause or Resume as the one accent button, then the
     // toggles, whose icons show what choosing them does.
     let play = gtk::Button::builder()
-        .use_underline(true)
         .valign(gtk::Align::Center)
         .css_classes(["pill", "suggested-action"])
         .build();
+    // One width whatever it says, or while it loads.
+    play_button::stacked_labels(
+        &play,
+        &[
+            ("play", gettext("_Play")),
+            ("pause", gettext("_Pause")),
+            ("resume", gettext("_Resume")),
+        ],
+    );
     let queue = icon_button("queue-add-symbolic", &gettext("Add to Queue"));
     let favorite = icon_button("non-starred-symbolic", &gettext("Add to Favorites"));
     // Downloads arrive in M5.
@@ -107,7 +116,8 @@ pub(super) fn widgets(
     download.set_sensitive(false);
     let played = icon_button("mark-played-symbolic", &gettext("Mark as Played"));
     let actions = gtk::Box::builder().spacing(6).margin_top(12).build();
-    for widget in [&play, &queue, &favorite, &download, &played] {
+    actions.append(&play_button::with_spinner(&play));
+    for widget in [&queue, &favorite, &download, &played] {
         actions.append(widget);
     }
 

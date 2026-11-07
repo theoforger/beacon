@@ -123,3 +123,11 @@ progressbar.horizontal.refresh-progress > trough > progress {
   min-height: 3px;
   border-radius: 0;
 }
+
+/* A play button while its episode loads: greyed out (insensitive), its
+   icon or label hidden but keeping its room, under a spinner that lies on
+   top of it in full colour (`ui/play_button.rs`). */
+button.loading > image,
+button.loading > stack {
+  opacity: 0;
+}

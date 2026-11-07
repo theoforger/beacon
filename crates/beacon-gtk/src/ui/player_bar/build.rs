@@ -16,6 +16,7 @@ use relm4::gtk::{self, gio, glib, pango};
 use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets, compact};
 use crate::ui::covers::Cover;
 use crate::ui::format;
+use crate::ui::play_button;
 
 /// Build the bar into `root`, its controls reporting to `sender`. While
 /// `setting` is set, changes to the sliders are the bar's own, not the
@@ -114,7 +115,11 @@ pub(super) fn widgets(
         .spacing(6)
         .halign(gtk::Align::Center)
         .build();
-    for button in [&favorite, &back, &play, &forward, &next] {
+    for button in [&favorite, &back] {
+        controls.append(button);
+    }
+    controls.append(&play_button::with_spinner(&play));
+    for button in [&forward, &next] {
         controls.append(button);
     }
 

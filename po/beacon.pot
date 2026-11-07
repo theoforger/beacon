@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-07 07:46-0500\n"
+"POT-Creation-Date: 2026-11-07 08:02-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,7 +135,7 @@ msgstr ""
 
 #: crates/beacon-gtk/src/ui/content/sections.rs:23
 #: crates/beacon-gtk/src/ui/content/sections.rs:26
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:44
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:45
 msgid "Episode Details"
 msgstr ""
 
@@ -171,98 +171,97 @@ msgstr ""
 msgid "Fetching feeds"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:49
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:51
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:50
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:52
 msgid "Back"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:64
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:65
 msgid "No Episode Selected"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:65
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:66
 msgid "Choose an episode to see its details here"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:81
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:82
 msgid "Open Podcast"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:103
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:231
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:107
+msgid "_Play"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:108
+msgid "_Pause"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:109
+msgid "_Resume"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:112
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:241
 #: crates/beacon-gtk/src/ui/selection_bar.rs:70
 msgid "Add to Queue"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:104
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:239
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:78
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:341
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:113
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:249
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:79
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:340
 #: crates/beacon-gtk/src/ui/selection_bar.rs:82
 msgid "Add to Favorites"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:106
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:115
 #: crates/beacon-gtk/src/ui/selection_bar.rs:172
 msgid "Download"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:108
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:246
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:117
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:256
 #: crates/beacon-gtk/src/ui/selection_bar.rs:94
 msgid "Mark as Played"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:114
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:124
 msgid "About This Episode"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:126
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:135
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:136
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:145
 msgid "Chapters"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:231
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:241
 #: crates/beacon-gtk/src/ui/selection_bar.rs:65
 msgid "Remove From Queue"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:238
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:339
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:248
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:338
 #: crates/beacon-gtk/src/ui/selection_bar.rs:77
 msgid "Remove From Favorites"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:246
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:256
 #: crates/beacon-gtk/src/ui/selection_bar.rs:89
 msgid "Mark as Unplayed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:281
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:291
 #, rust-format
 msgid "{time}, {title}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/details_pane/build.rs:294
+#: crates/beacon-gtk/src/ui/details_pane/build.rs:304
 msgid "Playing now"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/details_pane/mod.rs:228
 #, rust-format
 msgid "Open {show}"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/details_pane/mod.rs:259
-msgid "_Pause"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/details_pane/mod.rs:260
-#: crates/beacon-gtk/src/ui/details_pane/mod.rs:261
-msgid "_Resume"
-msgstr ""
-
-#: crates/beacon-gtk/src/ui/details_pane/mod.rs:262
-msgid "_Play"
 msgstr ""
 
 #. Translators: Replace "translator-credits" with your name and email, one per line.
@@ -561,106 +560,106 @@ msgstr ""
 msgid "Filters are on"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/play_button.rs:37
+#: crates/beacon-gtk/src/ui/play_button.rs:60
 msgid "Pause"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/play_button.rs:39
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:89
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:73
+#: crates/beacon-gtk/src/ui/play_button.rs:62
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:90
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:74
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:210
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:214
 msgid "Play"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/play_button.rs:68
+#: crates/beacon-gtk/src/ui/play_button.rs:104
 msgid "Loading"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:29
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:30
 msgid "Playback Controls"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:32
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:45
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:33
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:46
 msgid "Nothing Playing"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:66
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:121
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:124
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:67
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:122
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:125
 msgid "Show Episode Details"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:83
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:84
 msgid "Back 10 Seconds"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:94
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:95
 msgid "Forward 30 Seconds"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:99
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:100
 msgid "Next Episode"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:140
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:145
 msgid "Seek"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:185
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:190
 msgid "Playback Speed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:208
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:213
 msgid "_Off"
 msgstr ""
 
 #. Translators: a sleep timer length; the access key is on
 #. its first digit.
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:212
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:217
 #, rust-format
 msgid "_{n} Minute"
 msgid_plural "_{n} Minutes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:214
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:219
 msgid "_End of Episode"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:226
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:230
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:231
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:235
 msgid "Sleep Timer"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/build.rs:252
+#: crates/beacon-gtk/src/ui/player_bar/build.rs:257
 msgid "Volume"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:43
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:44
 msgid "Now Playing"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/compact.rs:101
+#: crates/beacon-gtk/src/ui/player_bar/compact.rs:102
 msgid "Show Player"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:265
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:264
 #, rust-format
 msgid "Playback Speed: {rate}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:289
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:288
 msgid "The sleep timer is on"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:326
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:325
 #, rust-format
 msgid "-{time}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/player_bar/mod.rs:330
+#: crates/beacon-gtk/src/ui/player_bar/mod.rs:329
 #, rust-format
 msgid "{elapsed} of {total}"
 msgstr ""
