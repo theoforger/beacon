@@ -13,6 +13,12 @@
         </child>
         <child>
           <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Open Main Menu</property>
+            <property name="accelerator">F10</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
             <property name="title" translatable="yes">Search</property>
             <property name="action-name">win.search</property>
           </object>
@@ -45,6 +51,29 @@
           <object class="AdwShortcutsItem">
             <property name="title" translatable="yes">Quit</property>
             <property name="action-name">app.quit</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwShortcutsSection">
+        <property name="title" translatable="yes">Selection Mode</property>
+        <child>
+          <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Select All</property>
+            <property name="accelerator">&lt;Control&gt;a</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Select None</property>
+            <property name="accelerator">&lt;Shift&gt;&lt;Control&gt;a</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Leave Selection Mode</property>
+            <property name="accelerator">Escape</property>
           </object>
         </child>
       </object>
