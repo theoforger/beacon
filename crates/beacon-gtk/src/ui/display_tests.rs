@@ -116,6 +116,7 @@ fn widgets_lay_out_as_designed() {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
     the_narrow_layout_fits_the_narrowest_window();
+    the_player_bar_lists_chapters();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
 }
@@ -237,6 +238,73 @@ fn seasons_fold_away_their_episodes() {
     let settled = std::time::Instant::now() + Duration::from_millis(300);
     run_until(|| std::time::Instant::now() > settled);
     assert_eq!(rows(), 3);
+    window.destroy();
+}
+
+/// The player bar's Chapters button is available once the playing
+/// episode's chapters arrive; its popover lists them, marks the one
+/// playing, and choosing one seeks to it.
+fn the_player_bar_lists_chapters() {
+    use beacon_core::model::Chapter;
+
+    use crate::ui::player_bar::{NowPlayingCard, PlayerBarInput, PlayerBarOutput};
+
+    let bar = PlayerBar::builder().launch(());
+    let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let record = asked.clone();
+    let bar = bar.connect_receiver(move |_, output| {
+        if let PlayerBarOutput::Seek(to) = output {
+            record.borrow_mut().push(to);
+        }
+    });
+    let window = window(bar.widget());
+    bar.emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+        id: EpisodeId(7),
+        title: "Letters home".into(),
+        show_title: "Paper Trails".into(),
+        cover: None,
+        duration: Some(Duration::from_secs(3600)),
+    }))));
+    let chapter = |minutes: u64, title: &str| Chapter {
+        start: Duration::from_secs(minutes * 60),
+        title: title.into(),
+        url: None,
+        image_url: None,
+    };
+    let chapters = vec![
+        chapter(0, "Cold open"),
+        chapter(10, "Interview"),
+        chapter(40, "Letters"),
+    ];
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    settle();
+    let (button, list) = {
+        let widgets = bar.widgets();
+        let (button, list) = widgets.chapters();
+        (button.clone(), list)
+    };
+    assert!(!button.is_sensitive(), "no chapters yet");
+
+    // Another episode's chapters are not this one's.
+    bar.emit(PlayerBarInput::Chapters(EpisodeId(8), chapters.clone()));
+    settle();
+    assert!(!button.is_sensitive());
+
+    bar.emit(PlayerBarInput::Chapters(EpisodeId(7), chapters));
+    bar.emit(PlayerBarInput::Position(Duration::from_secs(15 * 60)));
+    settle();
+    assert!(button.is_sensitive());
+    let rows: Vec<_> = (0..).map_while(|i| list.row_at_index(i)).collect();
+    assert_eq!(rows.len(), 3);
+    assert!(rows[1].has_css_class("current-chapter"));
+    assert!(!rows[0].has_css_class("current-chapter"));
+
+    rows[2].activate();
+    settle();
+    assert_eq!(*asked.borrow(), [Duration::from_secs(40 * 60)]);
     window.destroy();
 }
 

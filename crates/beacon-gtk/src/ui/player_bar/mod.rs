@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The persistent bar across the bottom of the window: what is playing (a
-//! flat button that opens its details, as in GNOME Podcasts), Favourite,
+//! flat button that opens its details, as in GNOME Podcasts), Chapters,
 //! Back 10 Seconds, a neutral round Play and Pause, Forward 30 Seconds,
 //! Next Episode, a seek bar with elapsed and remaining time, then speed,
 //! sleep timer and volume. In the narrow layout it stacks and leaves out
@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
-use beacon_core::model::EpisodeId;
+use beacon_core::model::{Chapter, EpisodeId};
 use beacon_core::playback::SleepTimer;
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
@@ -25,6 +25,7 @@ use crate::ui::format;
 use crate::ui::play_button;
 
 mod build;
+mod chapters;
 mod compact;
 
 const COVER_SIZE: i32 = 48;
@@ -37,7 +38,6 @@ pub struct NowPlayingCard {
     pub show_title: String,
     /// The show's cover, until the episode's own arrives.
     pub cover: Option<PathBuf>,
-    pub favorite: bool,
     pub duration: Option<Duration>,
 }
 
@@ -49,7 +49,8 @@ pub enum PlayerBarInput {
     State(PlaybackState),
     Position(Duration),
     Duration(Duration),
-    Favorite(bool),
+    /// An episode's chapters, shown if it is the one playing.
+    Chapters(EpisodeId, Vec<Chapter>),
     Rate(f64),
     Volume(f64),
     SleepTimer(SleepTimer),
@@ -68,7 +69,6 @@ pub enum PlayerBarOutput {
     Rate(f64),
     Volume(f64),
     SleepTimer(SleepTimer),
-    ToggleFavorite,
     OpenDetails,
 }
 
@@ -97,7 +97,7 @@ pub struct PlayerBarWidgets {
     pub(super) cover: Cover,
     pub(super) title: gtk::Label,
     pub(super) show: gtk::Label,
-    pub(super) favorite: gtk::Button,
+    chapters: chapters::ChapterMenu,
     pub(super) play: gtk::Button,
     pub(super) next: gtk::Button,
     pub(super) seek: gtk::Scale,
@@ -113,6 +113,12 @@ pub struct PlayerBarWidgets {
 }
 
 impl PlayerBarWidgets {
+    /// The Chapters button and the list in its popover, for tests.
+    #[cfg(test)]
+    pub fn chapters(&self) -> (&gtk::MenuButton, gtk::ListBox) {
+        (&self.chapters.button, self.chapters.list())
+    }
+
     /// The narrow layout's slim bar, which opens the sheet the player is in.
     pub fn mini(&self) -> &gtk::Stack {
         &self.mini.root
@@ -167,11 +173,11 @@ impl Component for PlayerBar {
 
     fn init_root() -> Self::Root {
         // Each page its own height: the stacked narrow bar is much taller
-        // than "Nothing Playing".
+        // than "Nothing Playing". Not interpolated: the stack then gave the
+        // player less height than it needs while it grew (GTK warned).
         gtk::Stack::builder()
             .transition_type(gtk::StackTransitionType::Crossfade)
             .vhomogeneous(false)
-            .interpolate_size(true)
             .build()
     }
 
@@ -231,7 +237,8 @@ impl Component for PlayerBar {
                     show.set_label(&card.show_title);
                 }
                 widgets.mini.root.set_visible_child_name("player");
-                set_favorite(&widgets.favorite, card.favorite);
+                // Until the episode's own arrive.
+                widgets.chapters.set(&[], Some(&widgets.seek));
                 widgets.root.set_visible_child_name("player");
                 set_position(self, widgets, Duration::ZERO);
             }
@@ -254,7 +261,14 @@ impl Component for PlayerBar {
             PlayerBarInput::Position(position) => set_position(self, widgets, position),
             PlayerBarInput::Duration(duration) if Some(duration) == self.duration => {}
             PlayerBarInput::Duration(duration) => self.duration = Some(duration),
-            PlayerBarInput::Favorite(favorite) => set_favorite(&widgets.favorite, favorite),
+            PlayerBarInput::Chapters(id, chapters) => {
+                if self.episode == Some(id) {
+                    widgets.chapters.set(&chapters, Some(&widgets.seek));
+                    widgets
+                        .chapters
+                        .mark(Duration::from_secs_f64(widgets.seek.value()));
+                }
+            }
             PlayerBarInput::Rate(rate) => {
                 widgets.rate.set_label(&format::rate(rate));
                 widgets.rate_action.set_state(&rate.to_variant());
@@ -307,6 +321,7 @@ fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Durat
         total.as_secs_f64().max(position.as_secs_f64()).max(1.0),
     );
     widgets.seek.set_value(position.as_secs_f64());
+    widgets.chapters.mark(position);
     if !total.is_zero() {
         widgets
             .mini
@@ -330,16 +345,4 @@ fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Durat
                 .replace("{elapsed}", &format::clock(position))
                 .replace("{total}", &format::clock(total)),
         )]);
-}
-
-fn set_favorite(button: &gtk::Button, favorite: bool) {
-    // The state shows through the icon only.
-    let (icon, label) = if favorite {
-        ("starred-symbolic", gettext("Remove From Favorites"))
-    } else {
-        ("non-starred-symbolic", gettext("Add to Favorites"))
-    };
-    button.set_icon_name(icon);
-    button.set_tooltip_text(Some(&label));
-    button.update_property(&[gtk::accessible::Property::Label(&label)]);
 }

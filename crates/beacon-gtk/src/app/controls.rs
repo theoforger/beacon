@@ -85,17 +85,6 @@ impl App {
                 };
                 self.bar.emit(PlayerBarInput::SleepTimer(timer));
             }
-            PlayerBarOutput::ToggleFavorite => {
-                let Some(now) = &mut self.now_playing else {
-                    return;
-                };
-                now.favorite = !now.favorite;
-                let (id, favorite) = (now.id, now.favorite);
-                self.bar.emit(PlayerBarInput::Favorite(favorite));
-                self.job(sender, Parts::EPISODE, false, move |store| {
-                    store.set_favorite(id, favorite)
-                });
-            }
             PlayerBarOutput::OpenDetails => {
                 let Some(now) = &self.now_playing else {
                     return;

@@ -19,6 +19,7 @@ use relm4::adw::prelude::*;
 use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
 
 use crate::player::PlaybackState;
+use crate::ui::chapter_list;
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
@@ -166,7 +167,7 @@ impl Component for DetailsPane {
                 if self.shown() == Some(id) {
                     self.chapters = chapters;
                     self.current = None;
-                    build::fill_chapters(&widgets.chapters, &self.chapters);
+                    chapter_list::fill(&widgets.chapters, &self.chapters);
                     let any = !self.chapters.is_empty();
                     widgets.chapters_heading.set_visible(any);
                     widgets.chapters.set_visible(any);
@@ -207,7 +208,7 @@ impl DetailsPane {
             self.own_cover = None;
             self.chapters.clear();
             self.current = None;
-            build::fill_chapters(&widgets.chapters, &[]);
+            chapter_list::fill(&widgets.chapters, &[]);
             widgets.chapters_heading.set_visible(false);
             widgets.chapters.set_visible(false);
         }
@@ -272,7 +273,7 @@ impl DetailsPane {
         }
         for (index, mark) in [(self.current, false), (current, true)] {
             if let Some(row) = index.and_then(|i| widgets.chapters.row_at_index(i as i32)) {
-                build::mark_chapter(&row, mark);
+                chapter_list::mark(&row, mark);
             }
         }
         self.current = current;

@@ -135,7 +135,7 @@ Read the design's files from that link. Match how it looks.
 
 **Player bar**
 
-- Favourite (left of Back 10 Seconds), Back 10 Seconds, a neutral round Play and Pause, Forward 30 Seconds, Next Episode, a seek bar with elapsed and remaining time, playback speed, sleep timer and volume. The now-playing area opens the details pane.
+- Chapters (left of Back 10 Seconds; a popover listing the playing episode's chapters, unavailable when it has none; replaced Favourite on 2026-11-08), Back 10 Seconds, a neutral round Play and Pause, Forward 30 Seconds, Next Episode, a seek bar with elapsed and remaining time and a tick where each chapter starts, playback speed, sleep timer and volume. The now-playing area opens the details pane.
 
 **Look**
 

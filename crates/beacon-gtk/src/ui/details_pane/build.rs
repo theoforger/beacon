@@ -2,7 +2,6 @@
 
 //! The details pane's widgets: built once, then set as episodes come and go.
 
-use beacon_core::model::Chapter;
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, pango};
@@ -10,7 +9,6 @@ use relm4::{ComponentSender, adw};
 
 use super::{COVER_SIZE, DetailsPane, DetailsPaneInput, DetailsPaneOutput, DetailsPaneWidgets};
 use crate::ui::covers::Cover;
-use crate::ui::format;
 use crate::ui::links;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::play_button;
@@ -255,56 +253,4 @@ pub(super) fn set_toggles(widgets: &DetailsPaneWidgets, item: &EpisodeItem) {
         ("mark-unplayed-symbolic", "mark-played-symbolic"),
         (gettext("Mark as Unplayed"), gettext("Mark as Played")),
     );
-}
-
-/// Fill the chapter list: each row its start time and title.
-pub(super) fn fill_chapters(list: &gtk::ListBox, chapters: &[Chapter]) {
-    list.remove_all();
-    for chapter in chapters {
-        let time = gtk::Label::builder()
-            .label(format::clock(chapter.start))
-            .xalign(1.0)
-            .width_chars(7)
-            .css_classes(["dim-label", "numeric"])
-            .build();
-        let title = gtk::Label::builder()
-            .label(&chapter.title)
-            .xalign(0.0)
-            .wrap(true)
-            .wrap_mode(pango::WrapMode::WordChar)
-            .hexpand(true)
-            .build();
-        let line = gtk::Box::builder()
-            .spacing(12)
-            .margin_top(12)
-            .margin_bottom(12)
-            .margin_start(12)
-            .margin_end(12)
-            .build();
-        line.append(&time);
-        line.append(&title);
-        let row = gtk::ListBoxRow::builder()
-            .child(&line)
-            .activatable(true)
-            .build();
-        row.update_property(&[gtk::accessible::Property::Label(
-            &gettext("{time}, {title}")
-                .replace("{time}", &format::clock(chapter.start))
-                .replace("{title}", &chapter.title),
-        )]);
-        list.append(&row);
-    }
-}
-
-/// Show `row` as the chapter playing, or not: grey and bold, and said.
-pub(super) fn mark_chapter(row: &gtk::ListBoxRow, current: bool) {
-    if current {
-        row.add_css_class("current-chapter");
-        row.update_property(&[gtk::accessible::Property::Description(&gettext(
-            "Playing now",
-        ))]);
-    } else {
-        row.remove_css_class("current-chapter");
-        row.reset_property(gtk::AccessibleProperty::Description);
-    }
 }

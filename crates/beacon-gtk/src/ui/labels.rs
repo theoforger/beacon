@@ -21,7 +21,7 @@ pub fn icon(location: Location) -> &'static str {
         Location::Shows => "com.theoforger.Beacon-symbolic",
         Location::New => "view-list-bullet-symbolic",
         Location::Queue => "queue-symbolic",
-        Location::Favorites => "non-starred-symbolic",
+        Location::Favorites => "starred-symbolic",
         Location::Downloaded => "folder-download-symbolic",
     }
 }

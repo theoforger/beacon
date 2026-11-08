@@ -13,7 +13,7 @@ use relm4::ComponentSender;
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gio, glib, pango};
 
-use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets, compact};
+use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets, chapters, compact};
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::play_button;
@@ -73,12 +73,8 @@ pub(super) fn widgets(
         }
     });
 
-    // The controls, Favourite first, as in the mockup.
-    let favorite = icon_button(
-        "non-starred-symbolic",
-        &gettext("Add to Favorites"),
-        &["flat", "circular"],
-    );
+    // The controls, Chapters first, where the mockup has Favourite.
+    let chapters = chapters::ChapterMenu::new(sender);
     let back = icon_button(
         "skip-back-10-symbolic",
         &gettext("Back 10 Seconds"),
@@ -106,7 +102,6 @@ pub(super) fn widgets(
             let _ = sender.output(output());
         });
     };
-    clicked(&favorite, || PlayerBarOutput::ToggleFavorite);
     clicked(&back, || PlayerBarOutput::SkipBack);
     clicked(&play, || PlayerBarOutput::PlayPause);
     clicked(&forward, || PlayerBarOutput::SkipForward);
@@ -115,9 +110,8 @@ pub(super) fn widgets(
         .spacing(6)
         .halign(gtk::Align::Center)
         .build();
-    for button in [&favorite, &back] {
-        controls.append(button);
-    }
+    controls.append(&chapters.button);
+    controls.append(&back);
     controls.append(&play_button::with_spinner(&play));
     for button in [&forward, &next] {
         controls.append(button);
@@ -320,7 +314,7 @@ pub(super) fn widgets(
         cover,
         title,
         show,
-        favorite,
+        chapters,
         play,
         next,
         seek,

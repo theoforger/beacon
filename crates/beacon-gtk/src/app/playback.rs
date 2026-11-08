@@ -30,7 +30,6 @@ use crate::ui::widgets::episode_row;
 pub struct NowPlaying {
     pub id: EpisodeId,
     pub show_id: ShowId,
-    pub favorite: bool,
     pub duration: Option<Duration>,
     pub position: Duration,
     /// The position last written to the store.
@@ -143,7 +142,6 @@ impl App {
         self.now_playing = Some(NowPlaying {
             id: episode.id,
             show_id: episode.show_id,
-            favorite: episode.state.favorite,
             duration,
             position: start,
             saved: start,
@@ -156,7 +154,6 @@ impl App {
                 title: episode.info.title.clone(),
                 show_title: item.show_title.clone(),
                 cover: item.cover.clone(),
-                favorite: episode.state.favorite,
                 duration,
             }))));
         self.bar.emit(PlayerBarInput::Position(start));
@@ -171,6 +168,7 @@ impl App {
         // The narrow layout's slim bar now opens the player.
         self.sheet.set_can_open(true);
         self.fetch_episode_cover(episode.id, sender);
+        self.load_chapters(episode.id, sender);
         // Playing takes an episode off the queue: the queue is what comes
         // next, as in a music app (the Now Playing group, M5).
         let id = episode.id;
@@ -192,6 +190,12 @@ impl App {
         self.fetch_episode_cover(id, sender);
         self.details
             .emit(DetailsPaneInput::Playback(self.playback_state()));
+        self.load_chapters(id, sender);
+    }
+
+    /// Load an episode's chapters, for the details pane and, if it is the
+    /// one playing, the player bar.
+    pub(super) fn load_chapters(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
         if let Some(library) = self.library.clone() {
             sender.oneshot_command(async move {
                 let chapters = library.chapters(id).await.unwrap_or_else(|err| {

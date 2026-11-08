@@ -185,3 +185,9 @@ gridview.episode-list > child.activatable:active > .episode-card {
     border-bottom: 1px solid color-mix(in srgb, currentColor var(--border-opacity), transparent);
   }
 }
+
+/* The player bar's chapter popover lists the chapters on the popover's own
+   background, as a menu would, rather than as a card. */
+list.chapter-list {
+  background: none;
+}

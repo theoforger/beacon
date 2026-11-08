@@ -18,7 +18,6 @@ use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::page_filters;
-use crate::ui::player_bar::PlayerBarInput;
 
 /// Where New's filter menu choices are remembered, by menu group.
 use super::library::{NEW_KEYS, Parts};
@@ -90,13 +89,6 @@ impl App {
         let Some(now) = self.library.as_ref().map(|l| l.now()) else {
             return;
         };
-        // The player bar's star follows when the playing one is selected.
-        if let (EpisodeChange::Favorite(favorite), Some(playing)) = (change, &mut self.now_playing)
-            && ids.contains(&playing.id)
-        {
-            playing.favorite = favorite;
-            self.bar.emit(PlayerBarInput::Favorite(favorite));
-        }
         self.job(sender, Parts::EPISODE, false, move |store| {
             store.change_episodes(&ids, change, now)
         });
@@ -144,13 +136,6 @@ impl App {
                 self.job(sender, Parts::EPISODE, false, move |store| {
                     store.set_favorite(id, !state.favorite)
                 });
-                // The player bar's star follows when it is the playing one.
-                if let Some(now) = &mut self.now_playing
-                    && now.id == id
-                {
-                    now.favorite = !state.favorite;
-                    self.bar.emit(PlayerBarInput::Favorite(!state.favorite));
-                }
             }
             // Never touches the queue.
             RowAction::TogglePlayed => {

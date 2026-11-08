@@ -179,7 +179,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] After review (2026-11-03): the podcast page header keeps the cover's height, with Read More opening the whole description in a dialog; arrow keys move between a description's links
 - [x] The details pane shows the episode's own cover; rows keep the show's (2026-11-03)
 - [x] On a podcast page, rows leave out the cover as well as the show name (2026-11-04)
-- [x] Player bar: Favourite, Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
+- [x] Player bar: Favourite (Chapters since 2026-11-08: a popover of the playing episode's chapters, and ticks on the seek bar where they start), Back 10 Seconds, a neutral round Play/Pause, Forward 30 Seconds, Next Episode, a seek `GtkScale` with elapsed and remaining time, speed, sleep timer and volume
 - [x] Settle the sleep timer lengths and volume behaviour (open question 2; see `docs/decisions.md`, 2026-11-03)
 - [x] The now-playing area opens the details pane, and shows the episode's own cover as the details pane does (`Library::episode_cover`)
 - [x] Lists spaced and rows sized as in GNOME Podcasts; titles one line wide, two narrow; the narrow podcast header centred (2026-11-04)

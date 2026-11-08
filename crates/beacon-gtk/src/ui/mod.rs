@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pub mod add_page;
+pub mod chapter_list;
 pub mod content;
 pub mod cover_cache;
 pub mod covers;

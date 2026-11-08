@@ -6,6 +6,7 @@ crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
 crates/beacon-gtk/src/player/mpris.rs
 crates/beacon-gtk/src/ui/add_page.rs
+crates/beacon-gtk/src/ui/chapter_list.rs
 crates/beacon-gtk/src/ui/content/mod.rs
 crates/beacon-gtk/src/ui/content/sections.rs
 crates/beacon-gtk/src/ui/details_pane/build.rs
@@ -18,6 +19,7 @@ crates/beacon-gtk/src/ui/new_view.rs
 crates/beacon-gtk/src/ui/page_filters.rs
 crates/beacon-gtk/src/ui/play_button.rs
 crates/beacon-gtk/src/ui/player_bar/build.rs
+crates/beacon-gtk/src/ui/player_bar/chapters.rs
 crates/beacon-gtk/src/ui/player_bar/compact.rs
 crates/beacon-gtk/src/ui/player_bar/mod.rs
 crates/beacon-gtk/src/ui/selection_bar.rs

@@ -85,7 +85,8 @@ pub enum AppCommand {
     EpisodeCover(EpisodeId, Option<PathBuf>),
     /// The episode Next Episode found, if any.
     PlayNext(Option<Box<EpisodeItem>>),
-    /// An episode's chapters, loaded for the details pane.
+    /// An episode's chapters, loaded for the details pane and the player
+    /// bar.
     Chapters(EpisodeId, Vec<beacon_core::model::Chapter>),
 }
 
@@ -374,6 +375,8 @@ impl Component for App {
             AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),
             AppCommand::Chapters(id, chapters) => {
+                self.bar
+                    .emit(PlayerBarInput::Chapters(id, chapters.clone()));
                 self.details.emit(DetailsPaneInput::Chapters(id, chapters));
             }
         }
