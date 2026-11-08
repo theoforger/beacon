@@ -5,129 +5,36 @@
 use gettextrs::gettext;
 use relm4::gtk::gio;
 
+use crate::ui::episode_actions;
 use crate::ui::models::EpisodeItem;
 
 /// The row menu, worded for the episode's current state.
 pub(super) fn menu_for(item: &EpisodeItem) -> gio::Menu {
-    let state = &item.episode.state;
     let details = gio::Menu::new();
     details.append(Some(&gettext("Show _Details")), Some("row.details"));
     // Starts selection mode with this episode selected, in place of the
     // HIG's check box on hover (asked by the user, 2026-11-04).
     details.append(Some(&gettext("_Select")), Some("row.select"));
 
-    let changes = gio::Menu::new();
-    changes.append(
-        Some(&if item.in_queue {
-            gettext("Remove From _Queue")
-        } else {
-            gettext("Add to _Queue")
-        }),
-        Some("row.queue"),
-    );
-    // Downloads arrive in M5; the item stays disabled until then.
-    changes.append(Some(&gettext("_Download")), Some("row.download"));
-    changes.append(
-        Some(&if state.favorite {
-            gettext("Remove From _Favorites")
-        } else {
-            gettext("Add to _Favorites")
-        }),
-        Some("row.favorite"),
-    );
-    changes.append(
-        Some(&if state.played {
-            gettext("Mark as _Unplayed")
-        } else {
-            gettext("Mark as _Played")
-        }),
-        Some("row.played"),
-    );
-    // Only where there is progress to reset (asked by the user, 2026-11-08).
-    if !state.position.is_zero() {
-        changes.append(Some(&gettext("_Reset Progress")), Some("row.reset"));
-    }
-
     let menu = gio::Menu::new();
     menu.append_section(None, &details);
-    menu.append_section(None, &changes);
+    menu.append_section(None, &episode_actions::menu(item, "row"));
     menu
 }
 
 #[cfg(test)]
 mod tests {
-    use beacon_core::model::{Episode, EpisodeId, EpisodeInfo, EpisodeState, ShowId};
-    use chrono::Utc;
     use relm4::gtk::prelude::*;
 
     use super::*;
-
-    /// The menu's items as (label, action).
-    fn items(menu: &gio::MenuModel) -> Vec<(String, String)> {
-        let mut found = Vec::new();
-        for i in 0..menu.n_items() {
-            if let Some(section) = menu.item_link(i, gio::MENU_LINK_SECTION) {
-                found.extend(items(&section));
-                continue;
-            }
-            let get = |key| {
-                menu.item_attribute_value(i, key, None)
-                    .and_then(|v| v.get::<String>())
-                    .unwrap_or_default()
-            };
-            found.push((
-                get(gio::MENU_ATTRIBUTE_LABEL),
-                get(gio::MENU_ATTRIBUTE_ACTION),
-            ));
-        }
-        found
-    }
+    use crate::ui::episode_actions::{item, items};
 
     #[test]
     fn the_row_menu_offers_select_after_details() {
-        let item = EpisodeItem {
-            episode: Episode {
-                id: EpisodeId(1),
-                show_id: ShowId(1),
-                info: EpisodeInfo::default(),
-                state: EpisodeState::default(),
-                added_at: Utc::now(),
-            },
-            show_title: String::new(),
-            cover: None,
-            in_queue: false,
-        };
-        let actions: Vec<_> = items(menu_for(&item).upcast_ref())
+        let actions: Vec<_> = items(menu_for(&item()).upcast_ref())
             .into_iter()
             .map(|(_, action)| action)
             .collect();
-        assert_eq!(&actions[..2], ["row.details", "row.select"]);
-    }
-
-    #[test]
-    fn reset_progress_is_offered_only_with_progress() {
-        let mut item = EpisodeItem {
-            episode: Episode {
-                id: EpisodeId(1),
-                show_id: ShowId(1),
-                info: EpisodeInfo::default(),
-                state: EpisodeState::default(),
-                added_at: Utc::now(),
-            },
-            show_title: String::new(),
-            cover: None,
-            in_queue: false,
-        };
-        let resets = |item: &EpisodeItem| {
-            items(menu_for(item).upcast_ref())
-                .iter()
-                .any(|(_, action)| action == "row.reset")
-        };
-        assert!(!resets(&item), "nothing to reset");
-        item.episode.state.position = std::time::Duration::from_secs(90);
-        assert!(resets(&item));
-        // Played as well: still the position alone.
-        item.episode.state.played = true;
-        assert!(resets(&item));
+        assert_eq!(&actions[..3], ["row.details", "row.select", "row.queue"]);
     }
 }

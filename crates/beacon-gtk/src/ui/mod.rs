@@ -9,6 +9,7 @@ pub mod details_pane;
 pub mod dialogs;
 #[cfg(test)]
 mod display_tests;
+pub mod episode_actions;
 pub mod episode_list;
 pub mod errors;
 pub mod format;

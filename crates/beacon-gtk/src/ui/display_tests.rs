@@ -133,6 +133,7 @@ fn widgets_lay_out_as_designed() {
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
     the_player_bar_lists_chapters();
+    the_details_pane_offers_the_row_menus_actions();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
 }
@@ -370,6 +371,61 @@ fn narrow_headers_fit_three_window_buttons() {
     window.destroy();
     settings.set_gtk_decoration_layout(layout.as_deref());
     assert!(needed <= NARROWEST, "New's narrow page needs {needed}px");
+}
+
+/// The details pane's More Options holds the episode's actions as a row's
+/// menu words them, and choosing one asks the app for it.
+fn the_details_pane_offers_the_row_menus_actions() {
+    use crate::ui::details_pane::{DetailsPane, DetailsPaneInput, DetailsPaneOutput};
+    use crate::ui::episode_actions::items;
+    use crate::ui::models::RowAction;
+
+    let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let record = asked.clone();
+    let pane = DetailsPane::builder()
+        .launch(())
+        .connect_receiver(move |_, output| {
+            if let DetailsPaneOutput::Action(item, action) = output {
+                record.borrow_mut().push((item.episode.id, action));
+            }
+        });
+    let window = window(pane.widget());
+    let more = pane.widgets().more().clone();
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    settle();
+    assert!(!more.is_visible(), "no episode, no actions");
+
+    let item = partly_played();
+    let id = item.episode.id;
+    pane.emit(DetailsPaneInput::Show(Box::new(item)));
+    settle();
+    assert!(more.is_visible());
+    let labels: Vec<_> = items(&more.menu_model().expect("a menu"))
+        .into_iter()
+        .map(|(label, _)| label.replace('_', ""))
+        .collect();
+    assert_eq!(
+        labels,
+        [
+            "Add to Queue",
+            "Download",
+            "Add to Favorites",
+            "Mark as Played",
+            "Reset Progress"
+        ]
+    );
+    more.activate_action("episode.reset", None)
+        .expect("More Options has the episode's actions");
+    settle();
+    assert_eq!(*asked.borrow(), [(id, RowAction::ResetProgress)]);
+
+    pane.emit(DetailsPaneInput::Clear);
+    settle();
+    assert!(!more.is_visible());
+    window.destroy();
 }
 
 /// Where the seek bar's chapter ticks are, as fractions of its width.

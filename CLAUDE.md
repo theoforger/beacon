@@ -129,8 +129,8 @@ Read the design's files from that link. Match how it looks.
 
 **Details pane**
 
-- Cover, show link, title, subtitle, then actions: Play, Pause or Resume (accent coloured), queue, favourite, download and mark played. The four toggles show their state through the icon only, never through a colour or background change.
-- The pane follows the mockup's order: cover (left-aligned), show, title, the long subtitle (Season 3, Episode 2 • date • length), the actions, About This Episode, then chapters.
+- Cover, show link, title, subtitle, then Play, Pause or Resume (accent coloured). The episode's other actions (queue, download, favourite, played, Reset Progress) are in More Options in the pane's header, the same as a row's menu without Show Details and Select (changed 2026-11-08 from four icon toggles beside Play, which had grown too many).
+- The pane follows the mockup's order: cover (left-aligned), show, title, the long subtitle (Season 3, Episode 2 • date • length), Play, About This Episode, then chapters.
 - Description, then chapters. The current chapter has a gray background and bold text, and choosing a chapter seeks to it.
 
 **Player bar**

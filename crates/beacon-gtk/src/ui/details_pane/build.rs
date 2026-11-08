@@ -4,26 +4,17 @@
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::gtk::{self, pango};
+use relm4::gtk::{self, gio, pango};
 use relm4::{ComponentSender, adw};
 
-use super::{COVER_SIZE, DetailsPane, DetailsPaneInput, DetailsPaneOutput, DetailsPaneWidgets};
+use super::{
+    ACTIONS, COVER_SIZE, DetailsPane, DetailsPaneInput, DetailsPaneOutput, DetailsPaneWidgets,
+};
 use crate::ui::covers::Cover;
+use crate::ui::episode_actions;
 use crate::ui::links;
-use crate::ui::models::{EpisodeItem, RowAction};
+use crate::ui::models::RowAction;
 use crate::ui::play_button;
-
-/// An icon-only button with its tooltip and accessible label.
-fn icon_button(icon: &str, label: &str) -> gtk::Button {
-    let button = gtk::Button::builder()
-        .icon_name(icon)
-        .tooltip_text(label)
-        .valign(gtk::Align::Center)
-        .css_classes(["flat", "circular"])
-        .build();
-    button.update_property(&[gtk::accessible::Property::Label(label)]);
-    button
-}
 
 fn heading(label: &str) -> gtk::Label {
     gtk::Label::builder()
@@ -55,6 +46,22 @@ pub(super) fn widgets(
         }
     });
     header.pack_start(&back);
+    // The episode's other actions, as the row menu has them, in the header
+    // as the HIG places a content item's secondary menu, and as GNOME
+    // Podcasts' episode details do (`episode_description.ui`).
+    let more = gtk::MenuButton::builder()
+        .icon_name("view-more-symbolic")
+        .tooltip_text(gettext("More Options"))
+        .visible(false)
+        .build();
+    more.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
+    let actions = gio::SimpleActionGroup::new();
+    episode_actions::add_to(&actions, {
+        let sender = sender.clone();
+        move |action| sender.input(DetailsPaneInput::Pressed(action))
+    });
+    more.insert_action_group(ACTIONS, Some(&actions));
+    header.pack_end(&more);
     root.add_top_bar(&header);
 
     let stack = gtk::Stack::new();
@@ -92,8 +99,8 @@ pub(super) fn widgets(
         .css_classes(["dim-label"])
         .build();
 
-    // The actions: Play, Pause or Resume as the one accent button, then the
-    // toggles, whose icons show what choosing them does.
+    // Play, Pause or Resume, the one accent button; the other actions are
+    // in the header's More Options.
     let play = gtk::Button::builder()
         .valign(gtk::Align::Center)
         .css_classes(["pill", "suggested-action"])
@@ -107,17 +114,9 @@ pub(super) fn widgets(
             ("resume", gettext("_Resume")),
         ],
     );
-    let queue = icon_button("queue-add-symbolic", &gettext("Add to Queue"));
-    let favorite = icon_button("non-starred-symbolic", &gettext("Add to Favorites"));
-    // Downloads arrive in M5.
-    let download = icon_button("download-symbolic", &gettext("Download"));
-    download.set_sensitive(false);
-    let played = icon_button("mark-played-symbolic", &gettext("Mark as Played"));
-    let actions = gtk::Box::builder().spacing(6).margin_top(12).build();
-    actions.append(&play_button::with_spinner(&play));
-    for widget in [&queue, &favorite, &download, &played] {
-        actions.append(widget);
-    }
+    let play_holder = play_button::with_spinner(&play);
+    play_holder.set_halign(gtk::Align::Start);
+    play_holder.set_margin_top(12);
 
     let about = heading(&gettext("About This Episode"));
     let description = gtk::Label::builder()
@@ -155,7 +154,7 @@ pub(super) fn widgets(
         show.upcast_ref::<gtk::Widget>(),
         title.upcast_ref(),
         subtitle.upcast_ref(),
-        actions.upcast_ref(),
+        play_holder.upcast_ref(),
         about.upcast_ref(),
         description.upcast_ref(),
         chapters_heading.upcast_ref(),
@@ -184,9 +183,7 @@ pub(super) fn widgets(
         title,
         subtitle,
         play,
-        queue,
-        favorite,
-        played,
+        more,
         about,
         description,
         chapters_heading,
@@ -196,17 +193,12 @@ pub(super) fn widgets(
     widgets
 }
 
-/// Wire the buttons, the show link and the chapter rows to the pane.
+/// Wire Play, the show link and the chapter rows to the pane.
 fn connect(widgets: &DetailsPaneWidgets, sender: &ComponentSender<DetailsPane>) {
-    for (button, action) in [
-        (&widgets.play, RowAction::Play),
-        (&widgets.queue, RowAction::ToggleQueue),
-        (&widgets.favorite, RowAction::ToggleFavorite),
-        (&widgets.played, RowAction::TogglePlayed),
-    ] {
-        let sender = sender.clone();
-        button.connect_clicked(move |_| sender.input(DetailsPaneInput::Pressed(action)));
-    }
+    let input = sender.clone();
+    widgets
+        .play
+        .connect_clicked(move |_| input.input(DetailsPaneInput::Pressed(RowAction::Play)));
     let input = sender.clone();
     widgets
         .show
@@ -217,40 +209,4 @@ fn connect(widgets: &DetailsPaneWidgets, sender: &ComponentSender<DetailsPane>) 
             input.input(DetailsPaneInput::ChapterChosen(index));
         }
     });
-}
-
-/// Set the toggles' icons and labels for `item`.
-pub(super) fn set_toggles(widgets: &DetailsPaneWidgets, item: &EpisodeItem) {
-    let state = &item.episode.state;
-    let set = |button: &gtk::Button, on: bool, icons: (&str, &str), labels: (String, String)| {
-        let (icon, label) = if on {
-            (icons.0, labels.0)
-        } else {
-            (icons.1, labels.1)
-        };
-        button.set_icon_name(icon);
-        button.set_tooltip_text(Some(&label));
-        button.update_property(&[gtk::accessible::Property::Label(&label)]);
-    };
-    set(
-        &widgets.queue,
-        item.in_queue,
-        ("queue-added-symbolic", "queue-add-symbolic"),
-        (gettext("Remove From Queue"), gettext("Add to Queue")),
-    );
-    set(
-        &widgets.favorite,
-        state.favorite,
-        ("starred-symbolic", "non-starred-symbolic"),
-        (
-            gettext("Remove From Favorites"),
-            gettext("Add to Favorites"),
-        ),
-    );
-    set(
-        &widgets.played,
-        state.played,
-        ("mark-unplayed-symbolic", "mark-played-symbolic"),
-        (gettext("Mark as Unplayed"), gettext("Mark as Played")),
-    );
 }

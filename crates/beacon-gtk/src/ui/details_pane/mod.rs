@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The expandable right pane, laid out as in the mockup: cover, a link to the
-//! show, title, the long subtitle, then the actions (Play, Pause or Resume in
-//! the accent colour; queue, favourite, download and played as icons that
-//! show their state), About This Episode and the chapters. The current
+//! show, title, the long subtitle, then Play, Pause or Resume in the accent
+//! colour, About This Episode and the chapters. The episode's other actions
+//! (queue, download, favourite, played, Reset Progress) are in More Options
+//! in the pane's header, as in a row's menu (changed 2026-11-08 from four
+//! icon toggles beside Play). The current
 //! chapter is grey and bold; choosing one plays from it.
 //!
 //! Widgets are set when what they show changes, not on every message: the
@@ -21,6 +23,7 @@ use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
 use crate::player::PlaybackState;
 use crate::ui::chapter_list;
 use crate::ui::covers::Cover;
+use crate::ui::episode_actions;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::play_button;
@@ -29,6 +32,8 @@ mod build;
 
 /// As in the mockup at 1440px wide.
 const COVER_SIZE: i32 = 176;
+/// The action group More Options' items are in.
+const ACTIONS: &str = "episode";
 
 #[derive(Debug)]
 pub enum DetailsPaneInput {
@@ -41,7 +46,7 @@ pub enum DetailsPaneInput {
     /// The episode in the player, whether it plays, and where it is.
     Playback(Option<(EpisodeId, PlaybackState, Duration)>),
     Clear,
-    /// From the pane's own widgets: an action button, the show link, a
+    /// From the pane's own widgets: Play or More Options, the show link, a
     /// chapter.
     Pressed(RowAction),
     ShowClicked,
@@ -52,7 +57,7 @@ pub enum DetailsPaneInput {
 pub enum DetailsPaneOutput {
     /// The pane's own Back, shown in the narrow layout.
     Close,
-    /// Play or pause, or one of the toggles, as a row's menu does.
+    /// Play or pause, or one of More Options' actions, as a row's menu does.
     Action(Box<EpisodeItem>, RowAction),
     /// The show link.
     OpenShow(ShowId),
@@ -80,9 +85,7 @@ pub struct DetailsPaneWidgets {
     title: gtk::Label,
     subtitle: gtk::Label,
     play: gtk::Button,
-    queue: gtk::Button,
-    favorite: gtk::Button,
-    played: gtk::Button,
+    more: gtk::MenuButton,
     about: gtk::Label,
     description: gtk::Label,
     chapters_heading: gtk::Label,
@@ -93,6 +96,12 @@ impl DetailsPaneWidgets {
     /// Shown only in the narrow layout, where the pane covers the window.
     pub fn back_button(&self) -> &gtk::Button {
         &self.back
+    }
+
+    /// More Options, for tests.
+    #[cfg(test)]
+    pub fn more(&self) -> &gtk::MenuButton {
+        &self.more
     }
 
     /// Where focus goes when a row opens the pane: its first action.
@@ -190,6 +199,7 @@ impl Component for DetailsPane {
                 self.own_cover = None;
                 self.chapters.clear();
                 self.current = None;
+                widgets.more.set_visible(false);
                 widgets.stack.set_visible_child_name("empty");
             }
         }
@@ -241,7 +251,10 @@ impl DetailsPane {
                 .description
                 .set_markup(description.as_deref().unwrap_or_default());
         }
-        build::set_toggles(widgets, &item);
+        widgets
+            .more
+            .set_menu_model(Some(&episode_actions::menu(&item, ACTIONS)));
+        widgets.more.set_visible(true);
         self.episode = Some(item);
         self.label_play(widgets);
         widgets.stack.set_visible_child_name("episode");

@@ -12,6 +12,7 @@ crates/beacon-gtk/src/ui/content/sections.rs
 crates/beacon-gtk/src/ui/details_pane/build.rs
 crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
+crates/beacon-gtk/src/ui/episode_actions.rs
 crates/beacon-gtk/src/ui/errors.rs
 crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs

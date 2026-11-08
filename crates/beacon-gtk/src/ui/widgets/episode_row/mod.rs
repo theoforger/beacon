@@ -20,6 +20,7 @@ use relm4::gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::player::PlaybackState;
 use crate::ui::covers::Cover;
+use crate::ui::episode_actions;
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::play_button;
@@ -236,27 +237,27 @@ impl EpisodeRow {
                 button.set_menu_model(Some(&menu_for(item)));
             }
         });
-        let actions = gio::SimpleActionGroup::new();
-        for (name, action) in [
-            ("play", RowAction::Play),
-            ("details", RowAction::ShowDetails),
-            ("queue", RowAction::ToggleQueue),
-            ("favorite", RowAction::ToggleFavorite),
-            ("played", RowAction::TogglePlayed),
-            ("reset", RowAction::ResetProgress),
-        ] {
-            let entry = gio::SimpleAction::new(name, None);
-            let episode = episode.clone();
-            let on_action = setup.on_action.clone();
-            entry.connect_activate(move |_, _| {
+        let run = {
+            let (episode, on_action) = (episode.clone(), setup.on_action.clone());
+            move |action| {
                 // Clone first: the action may rebind this row.
                 let item = episode.borrow().clone();
                 if let Some(item) = item {
                     on_action(&item, action);
                 }
-            });
+            }
+        };
+        let actions = gio::SimpleActionGroup::new();
+        for (name, action) in [
+            ("play", RowAction::Play),
+            ("details", RowAction::ShowDetails),
+        ] {
+            let entry = gio::SimpleAction::new(name, None);
+            let run = run.clone();
+            entry.connect_activate(move |_, _| run(action));
             actions.add_action(&entry);
         }
+        episode_actions::add_to(&actions, run);
         // The menu's Select: select this episode, starting selection mode.
         let select_action = gio::SimpleAction::new("select", None);
         let (shown, selection) = (episode.clone(), setup.selection.clone());
