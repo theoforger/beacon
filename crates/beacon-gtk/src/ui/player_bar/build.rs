@@ -58,11 +58,16 @@ pub(super) fn widgets(
         .build();
     labels.append(&title);
     labels.append(&show);
-    let now = gtk::Box::builder().spacing(12).build();
+    let now = gtk::Box::builder()
+        .spacing(12)
+        .valign(gtk::Align::Center)
+        .build();
     now.append(cover.widget());
     now.append(&labels);
+    // As tall as the bar, its cover and titles centred in it.
     let now_button = gtk::Button::builder()
         .child(&now)
+        .vexpand(true)
         .css_classes(["flat", "now-playing"])
         .tooltip_text(gettext("Show Episode Details"))
         .build();
