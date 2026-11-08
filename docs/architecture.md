@@ -27,7 +27,7 @@ beacon/
     beacon-core/            no GTK
       src/model/            domain types: Show, Episode, Season, QueueItem
       src/store/            SQLite, migrations/, queries
-      src/services/         feeds, itunes, downloads, cleanup, opml
+      src/services/         feeds, itunes, downloads, cleanup, opml, sync
     beacon-gtk/             the app
       src/main.rs, app.rs   window, sections, breakpoints
       src/ui/               sidebar, content pages, details pane, player bar
@@ -39,7 +39,7 @@ beacon/
 
 ## Components and services
 
-`App` owns the window and switches sections; deeper pages live in the content pane's `AdwNavigationView`. `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components. Services run as relm4 workers or commands: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService` and `OpmlService`. Views never talk to the network or database directly; they send messages and render state. Use `FactoryVecDeque` only for short lists such as the queue and chapters.
+`App` owns the window and switches sections; deeper pages live in the content pane's `AdwNavigationView`. `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components. Services run as relm4 workers or commands: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService`, `OpmlService` and `SyncService` (nextcloud-gpodder, M6; `docs/specs/sync.md`). Views never talk to the network or database directly; they send messages and render state. Use `FactoryVecDeque` only for short lists such as the queue and chapters.
 
 ## Widget map
 

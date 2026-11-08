@@ -2,7 +2,7 @@
 
 //! The Add page, pushed over the current section. One rounded search field
 //! that also takes a feed address: pasting one shows an RSS Feed row with
-//! Add Feed. Searching podcast directories by name arrives in M6.
+//! Add Feed. Searching podcast directories by name arrives in M7.
 
 use gettextrs::gettext;
 use relm4::adw::prelude::*;

@@ -1,6 +1,6 @@
 # Add page and iTunes
 
-Milestone M6. Add is a page that slides in over the current section, opened from the + in the sidebar header or the Add Podcast tile. The mockup's Add view is reference only. Build the real one around what the iTunes Search API returns, and drop mockup features it cannot support.
+Milestone M7. Add is a page that slides in over the current section, opened from the + in the sidebar header or the Add Podcast tile. The mockup's Add view is reference only. Build the real one around what the iTunes Search API returns, and drop mockup features it cannot support.
 
 ## What Apple documents
 
@@ -15,7 +15,7 @@ From the Search API page, as read during the design:
 
 Genre browsing, top charts, and the `feedUrl` field that podcast results carry. Many apps rely on `feedUrl`, so confirm it in a live response before building on it. Subscribing then stays plain RSS.
 
-**Checked 2026-10-28:** `https://itunes.apple.com/search?term=hey+riddle+riddle&media=podcast&entity=podcast&country=US` returned `feedUrl` (`https://rss.art19.com/hey-riddle-riddle`), as did the same search for Hello From The Magic Tavern. Still to check before M6: the terms and the rate limit.
+**Checked 2026-10-28:** `https://itunes.apple.com/search?term=hey+riddle+riddle&media=podcast&entity=podcast&country=US` returned `feedUrl` (`https://rss.art19.com/hey-riddle-riddle`), as did the same search for Hello From The Magic Tavern. Still to check before M7: the terms and the rate limit.
 
 ## Design consequences
 

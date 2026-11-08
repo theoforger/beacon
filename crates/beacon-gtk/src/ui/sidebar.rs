@@ -148,7 +148,7 @@ impl SidebarWidgets {
 
 fn primary_menu() -> gio::Menu {
     // Actions that do not exist yet leave their items disabled until the
-    // feature lands: refresh in M3, import and export in M7, Preferences in M5.
+    // feature lands: refresh in M3, import and export in M8, Preferences in M5.
     let files = gio::Menu::new();
     files.append(Some(&gettext("_Refresh Feeds")), Some("win.refresh"));
     files.append(Some(&gettext("_Import Subscriptions…")), Some("win.import"));

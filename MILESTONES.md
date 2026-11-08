@@ -128,7 +128,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [x] Shows: a grid of covers with badges for new episodes (see decisions), and a final Add Podcast tile that opens Add
 - [x] New: episodes grouped by recency (Today, Yesterday, weekday, Last Week, Earlier in the Month), sorted and filtered from the same filter menu as podcast pages, remembered in GSettings (changed 2026-11-01 from an All / Unplayed toggle group)
-- [x] Podcast page: a hero (cover, category, title, author, description), Unsubscribe (neutral, confirmed), and a More Options menu (Mark All as Played, Download All Episodes disabled until M5, Copy Feed Address). The accent Subscribe arrives with show previews in M6
+- [x] Podcast page: a hero (cover, category, title, author, description), Unsubscribe (neutral, confirmed), and a More Options menu (Mark All as Played, Download All Episodes disabled until M5, Copy Feed Address). The accent Subscribe arrives with show previews in M7
 - [x] Podcast page: a filter button with one menu (sort; all, played, unplayed; all, downloaded, not downloaded), remembered per show, and collapsible seasons when the feed has season tags (changed after review, 2026-10-29); an accent dot on the filter button, here and in New, while a filter or Oldest First is on, as in GNOME Podcasts (2026-11-02), and a Reset Sort and Filters item, available while the dot shows (2026-11-02)
 - [x] Shows grid tiles as in GNOME Podcasts: covers fill their column and stay square, fixed gaps between tiles, the badge fixed to the cover's corner (after review, 2026-11-02)
 - [x] Episode lists are `boxed-list` `GtkListBox`es, one per group, as in GNOME Podcasts, filled lazily (after review)
@@ -234,7 +234,38 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
-## M6 Search and Add
+## M6 Sync
+
+**Done when:** a show subscribed and an episode paused on another nextcloud-gpodder client show up in Beacon, and the other way round.
+
+**Spec:** `docs/specs/sync.md`
+
+### Deliverables
+
+- [ ] Migration `004_sync.sql`: the sync account, pending show and episode changes, and triggers that record every local change while sync is on, without echoing changes applied from the server
+- [ ] `SyncBackend` trait with shared gpodder types; `NextcloudBackend` for nextcloud-gpodder's subscriptions and episode actions
+- [ ] Login: Nextcloud Login Flow v2 through the browser (OpenURI portal), or a password turned into an app password; Log Out revokes the app password
+- [ ] App password kept in the keyring through `oo7` (Secret portal); no new sandbox permission
+- [ ] `SyncService`: pull subscriptions, then episode actions, then push pending changes; the first sync merges both sides with nothing removed; `since` comes from the server's timestamps
+- [ ] Merge rules: a newer local change wins, a finished play marks the episode played, a partial play never un-plays one; an unmatched episode refreshes its show once, then is dropped
+- [ ] Sync runs after refreshing feeds, after subscribing and unsubscribing, after pausing (debounced), on Sync Now and once on close
+- [ ] Preferences: a Sync page with GNOME Podcasts' rows (server, Browser / Password, username and password, Log In; then account, Sync switch, Last Synced, Sync Now, Log Out)
+- [ ] Every `SyncError` variant has its own message, shown as a toast
+
+### Tests
+
+- [ ] Unit: gpodder JSON, the login flows and logout, HTTP status mapping, triggers and the echo guard, merge rules, the first-sync snapshot
+- [ ] Integration (a mock nextcloud-gpodder): a fresh library picks up a show and a position; a local play and an unsubscribe are pushed and leave nothing pending
+
+### Exit gate
+
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
+- [ ] Accessibility and translation checks pass
+- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [ ] CI and docs: CI green; docs up to date
+- [ ] Human review of the running app
+
+## M7 Search and Add
 
 **Done when:** you can find a show and subscribe.
 
@@ -265,7 +296,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
-## M7 OPML
+## M8 OPML
 
 **Done when:** a file from another app imports, and an export re-imports with no loss.
 
@@ -295,7 +326,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
-## M8 Polish
+## M9 Polish
 
 **Done when:** the app passes the review checklist in the Flathub guidelines.
 
@@ -310,7 +341,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Tests
 
-- [ ] All scenario tests from M1 to M7 green in CI
+- [ ] All scenario tests from M1 to M8 green in CI
 
 ### Exit gate
 

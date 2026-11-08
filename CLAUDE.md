@@ -3,7 +3,7 @@
 A podcast app for GNOME. Rust, relm4 0.11, libadwaita 1.9, GNOME 50 runtime, packaged as a Flatpak. App ID `com.theoforger.Beacon`. Licence GPL-3.0-or-later.
 
 - `MILESTONES.md`: milestone checklist; tick items as they land.
-- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add page and iTunes, auto-delete).
+- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add page and iTunes, auto-delete, sync).
 - `docs/decisions.md`: every crate and custom widget, with the reason, plus planned crates. `docs/hig-checklist.md`: the HIG gate. `docs/design/`: the mockup.
 
 ## Commands
@@ -81,7 +81,7 @@ This section is the contract for Claude Code. It records everything agreed in th
 - **Build environment:** build in a Flatpak against the GNOME 50 runtime, so the build does not depend on the host.
 - **Target:** GNOME 50 for now.
 - **Directory search:** iTunes Search API.
-- **Sync:** none for now.
+- **Sync:** nextcloud-gpodder (subscriptions, play positions, played state), behind a backend trait so gpodder.net-style servers can follow; see `docs/specs/sync.md` (decided 2026-11-08, replacing "none for now").
 - **Downloads:** manual only, never automatic. An auto-delete feature removes old downloaded episodes, configurable in Settings.
 - **Translation and accessibility:** both from day one.
 - **Window sizes:** small desktop windows only, down to 360px wide. No Phosh-specific work.

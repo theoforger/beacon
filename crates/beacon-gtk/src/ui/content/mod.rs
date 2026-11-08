@@ -151,7 +151,7 @@ impl Component for Content {
                         #[wrap(Some)]
                         set_child = &adw::Clamp {
                             set_maximum_size: 400,
-                            // Results arrive with M6.
+                            // Results arrive with M7.
                             #[name = "search_entry"]
                             gtk::SearchEntry {
                                 set_hexpand: true,
