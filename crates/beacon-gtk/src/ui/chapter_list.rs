@@ -2,7 +2,8 @@
 
 //! An episode's chapters as list rows, the same in the details pane and the
 //! player bar's chapter popover: each row the chapter's start time and
-//! title, the one playing grey and bold.
+//! title, the one playing on a grey background with its time in the
+//! accent colour.
 
 use beacon_core::model::Chapter;
 use gettextrs::gettext;
@@ -18,7 +19,7 @@ pub fn fill(list: &gtk::ListBox, chapters: &[Chapter]) {
             .label(format::clock(chapter.start))
             .xalign(1.0)
             .width_chars(7)
-            .css_classes(["dim-label", "numeric"])
+            .css_classes(["dim-label", "numeric", "chapter-time"])
             .build();
         let title = gtk::Label::builder()
             .label(&chapter.title)
@@ -49,7 +50,8 @@ pub fn fill(list: &gtk::ListBox, chapters: &[Chapter]) {
     }
 }
 
-/// Show `row` as the chapter playing, or not: grey and bold, and said.
+/// Show `row` as the chapter playing, or not: grey with its time in the
+/// accent colour, and said.
 pub fn mark(row: &gtk::ListBoxRow, current: bool) {
     if current {
         row.add_css_class("current-chapter");

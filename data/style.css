@@ -82,14 +82,15 @@
   margin-left: -6px;
 }
 
-/* The chapter playing: a grey background and bold text, as the
- * requirements ask. */
+/* The chapter playing: a grey background and its time in the accent
+ * colour, undimmed (changed 2026-11-08 from bold text). */
 .current-chapter {
   background-color: color-mix(in srgb, currentColor 8%, transparent);
 }
 
-.current-chapter label {
-  font-weight: bold;
+.current-chapter .chapter-time {
+  color: var(--accent-color);
+  opacity: 1;
 }
 
 /* A row's progress bar. Adwaita gives a horizontal progress bar's trough a

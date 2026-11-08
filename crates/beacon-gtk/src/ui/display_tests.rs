@@ -396,13 +396,13 @@ fn the_details_pane_offers_the_row_menus_actions() {
         run_until(|| std::time::Instant::now() > until);
     };
     settle();
-    assert!(!more.is_visible(), "no episode, no actions");
+    assert!(!more.is_mapped(), "no episode, no actions");
 
     let item = partly_played();
     let id = item.episode.id;
     pane.emit(DetailsPaneInput::Show(Box::new(item)));
     settle();
-    assert!(more.is_visible());
+    assert!(more.is_mapped());
     let labels: Vec<_> = items(&more.menu_model().expect("a menu"))
         .into_iter()
         .map(|(label, _)| label.replace('_', ""))
@@ -424,7 +424,7 @@ fn the_details_pane_offers_the_row_menus_actions() {
 
     pane.emit(DetailsPaneInput::Clear);
     settle();
-    assert!(!more.is_visible());
+    assert!(!more.is_mapped());
     window.destroy();
 }
 

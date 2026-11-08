@@ -189,10 +189,12 @@ impl EpisodeRow {
         title_line.append(&title);
         title_line.append(&check);
 
+        // Body size, a step up from GNOME Podcasts' caption (asked by the
+        // user 2026-11-08), told from the title by weight and dimming.
         let subtitle = gtk::Label::builder()
             .xalign(0.0)
             .ellipsize(pango::EllipsizeMode::End)
-            .css_classes(["dim-label", "caption"])
+            .css_classes(["dim-label", "body"])
             .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
         // GNOME Podcasts' spacing between title and subtitle.

@@ -2,7 +2,8 @@
 
 //! The player bar's Chapters button (asked by the user, 2026-11-08, in
 //! place of Favourite): a popover listing the playing episode's chapters,
-//! the one playing grey and bold, choosing one seeks to it; and a tick on
+//! the one playing grey with its time in the accent colour, choosing one
+//! seeks to it; and a tick on
 //! the seek bar where each chapter starts.
 //!
 //! A popover, as the HIG gives "a list of content items that can be

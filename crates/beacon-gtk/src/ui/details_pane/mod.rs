@@ -2,11 +2,12 @@
 
 //! The expandable right pane, laid out as in the mockup: cover, a link to the
 //! show, title, the long subtitle, then Play, Pause or Resume in the accent
-//! colour, About This Episode and the chapters. The episode's other actions
-//! (queue, download, favourite, played, Reset Progress) are in More Options
-//! in the pane's header, as in a row's menu (changed 2026-11-08 from four
-//! icon toggles beside Play). The current
-//! chapter is grey and bold; choosing one plays from it.
+//! colour with More Options beside it, About This Episode and the chapters.
+//! More Options holds the episode's other actions (queue, download,
+//! favourite, played, Reset Progress), as a row's menu does (changed
+//! 2026-11-08 from four icon toggles beside Play). The current
+//! chapter is grey with its time in the accent colour; choosing one plays
+//! from it.
 //!
 //! Widgets are set when what they show changes, not on every message: the
 //! pane hears where playback is four times a second.
@@ -199,7 +200,6 @@ impl Component for DetailsPane {
                 self.own_cover = None;
                 self.chapters.clear();
                 self.current = None;
-                widgets.more.set_visible(false);
                 widgets.stack.set_visible_child_name("empty");
             }
         }
@@ -254,7 +254,6 @@ impl DetailsPane {
         widgets
             .more
             .set_menu_model(Some(&episode_actions::menu(&item, ACTIONS)));
-        widgets.more.set_visible(true);
         self.episode = Some(item);
         self.label_play(widgets);
         widgets.stack.set_visible_child_name("episode");

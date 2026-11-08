@@ -46,22 +46,6 @@ pub(super) fn widgets(
         }
     });
     header.pack_start(&back);
-    // The episode's other actions, as the row menu has them, in the header
-    // as the HIG places a content item's secondary menu, and as GNOME
-    // Podcasts' episode details do (`episode_description.ui`).
-    let more = gtk::MenuButton::builder()
-        .icon_name("view-more-symbolic")
-        .tooltip_text(gettext("More Options"))
-        .visible(false)
-        .build();
-    more.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
-    let actions = gio::SimpleActionGroup::new();
-    episode_actions::add_to(&actions, {
-        let sender = sender.clone();
-        move |action| sender.input(DetailsPaneInput::Pressed(action))
-    });
-    more.insert_action_group(ACTIONS, Some(&actions));
-    header.pack_end(&more);
     root.add_top_bar(&header);
 
     let stack = gtk::Stack::new();
@@ -99,8 +83,9 @@ pub(super) fn widgets(
         .css_classes(["dim-label"])
         .build();
 
-    // Play, Pause or Resume, the one accent button; the other actions are
-    // in the header's More Options.
+    // Play, Pause or Resume, the one accent button, then More Options with
+    // the episode's other actions, beside it as a row's menu is beside its
+    // Play (asked by the user 2026-11-08, rather than in the header).
     let play = gtk::Button::builder()
         .valign(gtk::Align::Center)
         .css_classes(["pill", "suggested-action"])
@@ -114,9 +99,22 @@ pub(super) fn widgets(
             ("resume", gettext("_Resume")),
         ],
     );
-    let play_holder = play_button::with_spinner(&play);
-    play_holder.set_halign(gtk::Align::Start);
-    play_holder.set_margin_top(12);
+    let more = gtk::MenuButton::builder()
+        .icon_name("view-more-symbolic")
+        .tooltip_text(gettext("More Options"))
+        .valign(gtk::Align::Center)
+        .css_classes(["flat", "circular"])
+        .build();
+    more.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
+    let episode_actions_group = gio::SimpleActionGroup::new();
+    episode_actions::add_to(&episode_actions_group, {
+        let sender = sender.clone();
+        move |action| sender.input(DetailsPaneInput::Pressed(action))
+    });
+    more.insert_action_group(ACTIONS, Some(&episode_actions_group));
+    let actions = gtk::Box::builder().spacing(6).margin_top(12).build();
+    actions.append(&play_button::with_spinner(&play));
+    actions.append(&more);
 
     let about = heading(&gettext("About This Episode"));
     let description = gtk::Label::builder()
@@ -154,7 +152,7 @@ pub(super) fn widgets(
         show.upcast_ref::<gtk::Widget>(),
         title.upcast_ref(),
         subtitle.upcast_ref(),
-        play_holder.upcast_ref(),
+        actions.upcast_ref(),
         about.upcast_ref(),
         description.upcast_ref(),
         chapters_heading.upcast_ref(),
