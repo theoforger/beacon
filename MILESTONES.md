@@ -190,6 +190,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Reset Progress in the row menu (asked by the user 2026-11-08): clears a saved position and nothing else; the playing episode jumps to its start
 - [x] A star on favourite rows, after the title and the played check (asked by the user 2026-11-08)
 - [x] Narrow rows: no Play button and a 48px cover, so titles have room (asked by the user 2026-11-08)
+- [x] Row titles up to two lines in any window; subtitles without the show, which the cover shows (asked by the user 2026-11-08)
 - [x] MPRIS: compare candidate crates (last release, downloads, open issues), choose one, record it in decisions, and wire up media keys
 - [x] Flatpak: add `--socket=pulseaudio` (done) and the MPRIS D-Bus name (`--own-name=org.mpris.MediaPlayer2.com.theoforger.Beacon`, with media keys). The name turned out to be granted by default; the linter rejects asking for it, so it is not in the manifest
 
