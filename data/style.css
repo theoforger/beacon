@@ -132,20 +132,22 @@ button.loading > stack {
   opacity: 0;
 }
 
-/* Episode lists are list views (`ui/episode_list.rs`), which libadwaita
-   does not draw as boxed lists; each group's rows are drawn as one card
-   instead, from the boxed list's own rules: the card colours and outline,
+/* Episode lists are one-column grid views (`ui/episode_list.rs`), which
+   libadwaita does not draw as boxed lists; each group's rows are drawn as
+   one card instead, from the boxed list's own rules: the card colours and outline,
    a separator between rows, rounded first and last rows, and the same
    hover and press shading. Only the last row casts the card's shadow,
    downwards, so it does not fall across the rows above. */
-listview.episode-list {
+gridview.episode-list {
   background: none;
 }
 
-listview.episode-list > row,
-listview.episode-list > row.activatable:hover,
-listview.episode-list > row.activatable:active {
+/* Square, so the focus ring meets the card's straight sides. */
+gridview.episode-list > child,
+gridview.episode-list > child.activatable:hover,
+gridview.episode-list > child.activatable:active {
   padding: 0;
+  border-radius: 0;
   background: none;
 }
 
@@ -170,11 +172,11 @@ listview.episode-list > row.activatable:active {
   box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 3px 3px -1px RGB(0 0 6 / 7%);
 }
 
-listview.episode-list > row.activatable:hover > .episode-card {
+gridview.episode-list > child.activatable:hover > .episode-card {
   background-image: image(color-mix(in srgb, currentColor 3%, transparent));
 }
 
-listview.episode-list > row.activatable:active > .episode-card {
+gridview.episode-list > child.activatable:active > .episode-card {
   background-image: image(color-mix(in srgb, currentColor 8%, transparent));
 }
 

@@ -33,21 +33,13 @@ pub fn is_playing(state: Option<PlaybackState>) -> bool {
 /// `button` with room for the loading spinner over it: put this where the
 /// button would go.
 pub fn with_spinner(button: &gtk::Button) -> gtk::Overlay {
-    let spinner = adw::Spinner::builder()
-        .width_request(ICON_SIZE)
-        .height_request(ICON_SIZE)
-        .halign(gtk::Align::Center)
-        .valign(gtk::Align::Center)
-        .can_target(false)
-        .visible(false)
-        .build();
-    let overlay = gtk::Overlay::builder()
+    // The spinner itself is added the first time its episode loads: most
+    // buttons, one in every episode row, never need it.
+    gtk::Overlay::builder()
         .child(button)
         .valign(button.valign())
         .halign(button.halign())
-        .build();
-    overlay.add_overlay(&spinner);
-    overlay
+        .build()
 }
 
 /// Set an icon-only play button for its episode's `state`: loading, Pause
@@ -107,13 +99,22 @@ fn show_loading(button: &gtk::Button, loading: bool) -> bool {
     } else {
         button.remove_css_class("loading");
     }
-    if let Some(spinner) = button
-        .parent()
-        .and_downcast::<gtk::Overlay>()
-        .and_then(|overlay| overlay.last_child())
-        .and_downcast::<adw::Spinner>()
-    {
-        spinner.set_visible(loading);
+    let Some(overlay) = button.parent().and_downcast::<gtk::Overlay>() else {
+        return loading;
+    };
+    match overlay.last_child().and_downcast::<adw::Spinner>() {
+        Some(spinner) => spinner.set_visible(loading),
+        None if loading => {
+            let spinner = adw::Spinner::builder()
+                .width_request(ICON_SIZE)
+                .height_request(ICON_SIZE)
+                .halign(gtk::Align::Center)
+                .valign(gtk::Align::Center)
+                .can_target(false)
+                .build();
+            overlay.add_overlay(&spinner);
+        }
+        None => {}
     }
     loading
 }

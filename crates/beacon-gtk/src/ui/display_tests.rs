@@ -133,7 +133,10 @@ fn long_lists_make_rows_only_for_the_screen() {
     let made = || count::<EpisodeRow>(list.widget().upcast_ref());
     run_until(|| made() > 0);
     let rows = made();
-    assert!(rows > 0 && rows < 400, "{rows} rows made for 2000 episodes");
+    assert!(
+        rows > 0 && rows < crate::ui::episode_list::KEPT_ROWS,
+        "{rows} rows made for 2000 episodes"
+    );
 
     // The header is one widget, handed from row to row as the list scrolls
     // away from it and back.
@@ -144,6 +147,28 @@ fn long_lists_make_rows_only_for_the_screen() {
         run_until(|| std::time::Instant::now() > settled);
     }
     assert!(header.is_mapped(), "the header shows again at the top");
+    // Each row is as tall as what it holds: the header a line, an episode
+    // its 64px and margins.
+    let mut first_row = None;
+    let mut stack = vec![list.widget().clone().upcast::<gtk::Widget>()];
+    while let Some(widget) = stack.pop() {
+        if widget.is::<EpisodeRow>() && widget.is_mapped() {
+            first_row = Some(widget);
+            break;
+        }
+        let mut child = widget.last_child();
+        while let Some(next) = child {
+            child = next.prev_sibling();
+            stack.push(next);
+        }
+    }
+    let row = first_row.expect("an episode row shows");
+    assert!(
+        header.height() < 40 && row.height() >= 76,
+        "header {}px, row {}px",
+        header.height(),
+        row.height()
+    );
     window.destroy();
 }
 

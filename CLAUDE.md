@@ -119,7 +119,7 @@ Read the design's files from that link. Match how it looks.
 
 **Episode rows**
 
-- Episode lists are one `GtkListView` per page, as the HIG asks of large or dynamic lists, so only the rows on screen exist and long feeds scroll smoothly (changed 2026-11-08 from GNOME Podcasts' `boxed-list` `GtkListBox`es, which laid out every row they held). Each recency group or season is drawn as a card under its heading, as a boxed list looks.
+- Episode lists are one recycling list per page (a one-column `GtkGridView` read as a list), as the HIG asks of large or dynamic lists, so only the rows near the screen exist and long feeds scroll smoothly (changed 2026-11-08 from GNOME Podcasts' `boxed-list` `GtkListBox`es, which laid out every row they held). Each recency group or season is drawn as a card under its heading, as a boxed list looks.
 - Cover, title (one line in wide windows, two in the narrow layout; every row the same height, changed 2026-11-04), and a subtitle of show, season and episode, date and length. The subtitle does not show time left. On a podcast page, rows leave out the cover and the show name, which are the page's own (changed 2026-11-04).
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.

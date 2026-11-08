@@ -86,34 +86,24 @@ impl App {
             });
     }
 
-    /// The two layouts around the main view and the player, as GNOME
-    /// Podcasts has them (`window.ui`): in wide windows the player bar under
-    /// everything; in narrow ones a slim bar that opens a bottom sheet with
-    /// the whole player. The narrow breakpoint switches between them.
-    pub(super) fn add_layouts(&self, widgets: &AppWidgets) {
-        let wide = adw::ToolbarView::builder()
-            .bottom_bar_style(adw::ToolbarStyle::RaisedBorder)
-            .content(&adw::LayoutSlot::new("main"))
-            .build();
-        wide.add_bottom_bar(&adw::LayoutSlot::new("player"));
-        widgets.layouts.add_layout(named_layout("wide", &wide));
-
-        let main = adw::LayoutSlot::new("main");
+    /// The main view and the player, as GNOME Podcasts has them
+    /// (`window.ui`): in wide windows the player bar under everything; in
+    /// narrow ones a slim bar that opens a bottom sheet with the whole
+    /// player. The bottom sheet is always there, with the main view inside
+    /// it, and the narrow breakpoint moves only the player bar: moving the
+    /// main view (as an `AdwMultiLayoutView` did) restyled every widget in
+    /// it, a second's freeze with long episode lists open.
+    pub(super) fn build_frame(&self, widgets: &AppWidgets) {
+        self.frame.set_content(Some(&widgets.details_split));
+        self.frame.add_bottom_bar(self.bar.widget());
         // The content ends above the slim bar, not under it.
         self.sheet
-            .bind_property("bottom-bar-height", &main, "margin-bottom")
+            .bind_property("bottom-bar-height", &self.frame, "margin-bottom")
             .sync_create()
             .build();
-        self.sheet.set_content(Some(&main));
-        self.sheet.set_sheet(Some(&adw::LayoutSlot::new("player")));
-        self.sheet
-            .set_bottom_bar(Some(&adw::LayoutSlot::new("mini")));
-        widgets
-            .layouts
-            .add_layout(named_layout("narrow", &self.sheet));
-        widgets.layouts.set_child("main", &widgets.details_split);
-        widgets.layouts.set_child("player", self.bar.widget());
-        widgets.layouts.set_child("mini", self.bar.widgets().mini());
+        self.sheet.set_content(Some(&self.frame));
+        self.sheet.set_bottom_bar(Some(self.bar.widgets().mini()));
+        widgets.toasts.set_child(Some(&self.sheet));
     }
 
     /// Narrow windows: the sidebar becomes a page with the content pushed on
@@ -153,17 +143,31 @@ impl App {
             Some(&true.to_value()),
         );
         // The player moves into the bottom sheet, under its slim bar.
-        breakpoint.add_setter(&widgets.layouts, "layout-name", Some(&"narrow".to_value()));
-        let bar = self.bar.sender().clone();
+        breakpoint.add_setter(&self.sheet, "can-open", Some(&true.to_value()));
+        breakpoint.add_setter(&self.sheet, "reveal-bottom-bar", Some(&true.to_value()));
+        let (bar, player, frame, sheet) = (
+            self.bar.sender().clone(),
+            self.bar.widget().clone(),
+            self.frame.clone(),
+            self.sheet.clone(),
+        );
         breakpoint.connect_apply(move |_| {
             episode_row::set_narrow(true);
+            frame.remove(&player);
+            sheet.set_sheet(Some(&player));
             bar.emit(PlayerBarInput::Sheet(true));
         });
-        let bar = self.bar.sender().clone();
-        let sheet = self.sheet.clone();
+        let (bar, player, frame, sheet) = (
+            self.bar.sender().clone(),
+            self.bar.widget().clone(),
+            self.frame.clone(),
+            self.sheet.clone(),
+        );
         breakpoint.connect_unapply(move |_| {
             episode_row::set_narrow(false);
             sheet.set_open(false);
+            sheet.set_sheet(None::<&gtk::Widget>);
+            frame.add_bottom_bar(&player);
             bar.emit(PlayerBarInput::Sheet(false));
         });
         breakpoint.add_setter(
@@ -183,12 +187,6 @@ impl App {
             window.maximize();
         }
     }
-}
-
-fn named_layout(name: &str, content: &impl IsA<gtk::Widget>) -> adw::Layout {
-    let layout = adw::Layout::new(content);
-    layout.set_name(Some(name));
-    layout
 }
 
 pub(super) fn save_window_state(settings: &gio::Settings, window: &adw::ApplicationWindow) {

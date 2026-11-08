@@ -111,7 +111,10 @@ pub struct App {
     player_error: Option<PlaybackError>,
     /// Media keys and the desktop's media controls (MPRIS).
     media: media::Media,
-    /// The narrow layout's bottom sheet, holding the player.
+    /// The player bar under the main view, in wide windows.
+    frame: adw::ToolbarView,
+    /// Around everything: in narrow windows it holds the player, opened
+    /// from the slim bar.
     sheet: adw::BottomSheet,
     now_playing: Option<playback::NowPlaying>,
     last_position: playback::LastPosition,
@@ -139,17 +142,13 @@ impl Component for App {
             set_width_request: 360,
             set_height_request: 294,
 
+            // Holds the bottom sheet around everything (`build_frame`).
             #[name = "toasts"]
-            adw::ToastOverlay {
-                // The player bar under everything in wide windows; a slim bar
-                // opening a bottom sheet in narrow ones (`layouts`).
-                #[name = "layouts"]
-                adw::MultiLayoutView {},
-            },
+            adw::ToastOverlay {},
         },
 
-        // The main view: sidebar, content and details, set into each of
-        // `layouts`' layouts.
+        // The main view: sidebar, content and details, set into the
+        // window's frame (`build_frame`).
         #[name = "details_split"]
         adw::OverlaySplitView {
             set_sidebar_position: gtk::PackType::End,
@@ -246,7 +245,13 @@ impl Component for App {
             player: None,
             player_error: None,
             media: media::Media::default(),
-            sheet: adw::BottomSheet::builder().can_open(false).build(),
+            frame: adw::ToolbarView::builder()
+                .bottom_bar_style(adw::ToolbarStyle::RaisedBorder)
+                .build(),
+            sheet: adw::BottomSheet::builder()
+                .can_open(false)
+                .reveal_bottom_bar(false)
+                .build(),
             now_playing: None,
             last_position: Rc::default(),
             sidebar,
@@ -267,7 +272,7 @@ impl Component for App {
             .sync_create()
             .build();
 
-        model.add_layouts(&widgets);
+        model.build_frame(&widgets);
         root.add_breakpoint(model.narrow_breakpoint(&widgets));
         model.manage_focus(&widgets);
         model.content.widgets().capture_typing(&root);

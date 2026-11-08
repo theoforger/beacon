@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! A page's episodes as one `GtkListView`, which the HIG asks of long lists
-//! ("For large or dynamic lists, see list views"): only the rows on screen
-//! exist, recycled as the list scrolls, so a feed of thousands of episodes
-//! costs what a screenful does. Decided 2026-11-08, departing from GNOME
-//! Podcasts' `GtkListBox`es, which laid out every row they held.
+//! A page's episodes in a recycling list, as the HIG asks of long lists
+//! ("For large or dynamic lists, see list views"): only the rows near the
+//! screen exist, bound again as the list scrolls, so a feed of thousands of
+//! episodes costs what a screenful does. Decided 2026-11-08, departing from
+//! GNOME Podcasts' `GtkListBox`es, which laid out every row they held.
+//!
+//! The list is a one-column `GtkGridView` named as a list for screen
+//! readers, not a `GtkListView`: a list view keeps about 200 rows whatever
+//! the window's height, a grid view about 30 per column, and every row kept
+//! is restyled whenever the narrow layout's split views move the page,
+//! which froze the window for most of a second (250ms a list against 40).
 //!
 //! The list holds the page's whole content, in order: its header (a podcast
 //! page's hero), the group and season headings, the episodes and the room
-//! between them, since only a list view that scrolls itself recycles its rows.
+//! between them, since only a view that scrolls itself recycles its rows.
 //! Each group's episodes are drawn as a card, as a boxed list (`style.css`).
 //! Setting new entries changes only what changed, so the list keeps its
 //! place and the rows that did not change are left alone.
@@ -139,6 +145,11 @@ pub struct EpisodeList {
     store: gio::ListStore,
 }
 
+/// How many rows a list keeps around the screen, at most (see the module
+/// documentation).
+#[cfg(test)]
+pub const KEPT_ROWS: usize = 60;
+
 impl std::fmt::Debug for EpisodeList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EpisodeList")
@@ -158,9 +169,13 @@ impl EpisodeList {
     ) -> Self {
         let store = gio::ListStore::new::<EntryObject>();
         let factory = factory(setup, header, folding);
-        let view = gtk::ListView::builder()
+        let view = gtk::GridView::builder()
             .model(&gtk::NoSelection::new(Some(store.clone())))
             .factory(&factory)
+            .min_columns(1)
+            .max_columns(1)
+            // Read as the list it is, not a grid of one column.
+            .accessible_role(gtk::AccessibleRole::List)
             // Rows open on one click, as the boxed lists' did.
             .single_click_activate(true)
             // Tab visits the focused row's buttons, then leaves the list;
@@ -188,7 +203,8 @@ impl EpisodeList {
                 (setup.on_action)(item, RowAction::ShowDetails);
             }
         });
-        // As wide as the pages' content always was, centred beyond it.
+        // As wide as the pages' content always was, centred beyond it; only
+        // a view that scrolls itself recycles its rows.
         let clamp = adw::ClampScrollable::builder()
             .maximum_size(900)
             .child(&view)
@@ -413,7 +429,7 @@ mod tests {
     }
 
     /// Syncs `store` to `new`, returning how many entries were replaced or
-    /// added: what the list view binds again.
+    /// added: what the view binds again.
     fn rebound(store: &gio::ListStore, new: Vec<Entry>) -> u32 {
         let added = Rc::new(Cell::new(0));
         let count = added.clone();

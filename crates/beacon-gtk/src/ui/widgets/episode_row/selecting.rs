@@ -3,33 +3,48 @@
 //! How a row takes part in selection mode.
 
 use beacon_core::model::EpisodeId;
+use gettextrs::gettext;
 use relm4::gtk::subclass::prelude::*;
 use relm4::gtk::{self, gdk, glib, prelude::*};
 
 use super::EpisodeRow;
 
 impl EpisodeRow {
+    /// The check box, at the start of the row; made the first time
+    /// selection mode needs it. libadwaita's round selection check, as in
+    /// GNOME's own selection modes; the row's name tells a screen reader
+    /// which episode it is.
+    fn select_check(&self) -> Option<&gtk::CheckButton> {
+        let parts = self.imp().parts.get()?;
+        Some(parts.select.get_or_init(|| {
+            let check = gtk::CheckButton::builder()
+                .valign(gtk::Align::Center)
+                .tooltip_text(gettext("Select"))
+                .css_classes(["selection-mode"])
+                .build();
+            check.update_property(&[gtk::accessible::Property::Label(&gettext("Select"))]);
+            let row = self.downgrade();
+            check.connect_toggled(move |check| {
+                let Some(row) = row.upgrade() else {
+                    return;
+                };
+                let (Some(parts), Some(id)) = (row.imp().parts.get(), row.episode_id()) else {
+                    return;
+                };
+                if parts.selection.contains(id) != check.is_active() {
+                    parts.selection.set(id, check.is_active());
+                }
+            });
+            parts.content.prepend(&check);
+            check
+        }))
+    }
+
     /// Selecting by the check box, a secondary click or a long press. The
     /// check box shows only in selection mode, not on hover as the HIG has
     /// it; the row menu's Select starts selecting instead (asked by the
     /// user, 2026-11-04).
     pub(super) fn connect_selection(&self) {
-        let Some(parts) = self.imp().parts.get() else {
-            return;
-        };
-        let row = self.downgrade();
-        parts.select.connect_toggled(move |check| {
-            let Some(row) = row.upgrade() else {
-                return;
-            };
-            let (Some(parts), Some(id)) = (row.imp().parts.get(), row.episode_id()) else {
-                return;
-            };
-            if parts.selection.contains(id) != check.is_active() {
-                parts.selection.set(id, check.is_active());
-            }
-        });
-
         let toggle = |row: &glib::WeakRef<EpisodeRow>| {
             let row = row.upgrade()?;
             let id = row.episode_id()?;
@@ -69,8 +84,15 @@ impl EpisodeRow {
         };
         let active = parts.selection.is_active();
         let selected = parts.selection.contains(id);
-        parts.select.set_active(selected);
-        parts.select.set_visible(active || selected);
+        if active || selected {
+            if let Some(check) = self.select_check() {
+                check.set_active(selected);
+                check.set_visible(true);
+            }
+        } else if let Some(check) = parts.select.get() {
+            check.set_active(false);
+            check.set_visible(false);
+        }
         parts.play.set_visible(!active);
         parts.menu.set_visible(!active);
     }

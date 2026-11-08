@@ -110,15 +110,24 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
+/// A list view keeps about 200 rows, every widget of which is restyled
+/// whenever the list moves to another part of the window (the narrow
+/// layout's split views do that), so parts most rows never show are made
+/// only when one does: the check box, the progress bar and the cover.
 pub struct Parts {
-    select: gtk::CheckButton,
+    content: gtk::Box,
+    /// The selection check box, made when selection mode first needs it.
+    select: OnceCell<gtk::CheckButton>,
     selection: Selection,
-    cover: Cover,
+    /// Only where the row shows its show.
+    cover: Option<Cover>,
     dot: gtk::Box,
     title: gtk::Label,
     check: gtk::Image,
     subtitle: gtk::Label,
-    progress: gtk::ProgressBar,
+    text: gtk::Box,
+    /// Made when the row first shows a partly played episode.
+    progress: OnceCell<gtk::ProgressBar>,
     menu: gtk::MenuButton,
     play: gtk::Button,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
@@ -146,16 +155,9 @@ impl EpisodeRow {
             .margin_end(12)
             .build();
         root.set_child(Some(&content));
-        let cover = Cover::new(COVER_SIZE);
-        // libadwaita's round selection check, as in GNOME's own selection
-        // modes; the row's name tells a screen reader which episode it is.
-        let select = gtk::CheckButton::builder()
-            .valign(gtk::Align::Center)
-            .visible(false)
-            .tooltip_text(gettext("Select"))
-            .css_classes(["selection-mode"])
-            .build();
-        select.update_property(&[gtk::accessible::Property::Label(&gettext("Select"))]);
+        // GNOME Podcasts shows the cover on every row; Beacon leaves it out
+        // on a podcast page, where it is the page's own (asked by the user).
+        let cover = show_identity.then(|| Cover::new(COVER_SIZE));
 
         // The dot, title, check and subtitle are left out of the
         // accessibility tree: the row's name says what they show (see
@@ -192,11 +194,6 @@ impl EpisodeRow {
             .css_classes(["dim-label", "caption"])
             .accessible_role(gtk::AccessibleRole::Presentation)
             .build();
-        // Narrower than Adwaita lets a progress bar be (see `style.css`).
-        // Added, not set: setting the classes would drop `horizontal`, which
-        // Adwaita draws the bar by.
-        let progress = gtk::ProgressBar::new();
-        progress.add_css_class("episode-progress");
         // GNOME Podcasts' spacing between title and subtitle.
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -206,7 +203,6 @@ impl EpisodeRow {
             .build();
         text.append(&title_line);
         text.append(&subtitle);
-        text.append(&progress);
 
         let play = gtk::Button::builder()
             .icon_name("media-playback-start-symbolic")
@@ -224,11 +220,9 @@ impl EpisodeRow {
             .build();
         menu.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
 
-        // GNOME Podcasts shows the cover on every row; Beacon leaves it out
-        // on a podcast page, where it is the page's own (asked by the user).
-        cover.widget().set_visible(show_identity);
-        content.append(&select);
-        content.append(cover.widget());
+        if let Some(cover) = &cover {
+            content.append(cover.widget());
+        }
         content.append(&text);
         content.append(&play_button::with_spinner(&play));
         content.append(&menu);
@@ -275,14 +269,16 @@ impl EpisodeRow {
         root.insert_action_group("row", Some(&actions));
 
         let parts = Parts {
-            select,
+            content,
+            select: OnceCell::new(),
             selection: setup.selection.clone(),
             cover,
             dot,
             title,
             check,
             subtitle,
-            progress,
+            text,
+            progress: OnceCell::new(),
             menu,
             play,
             episode,
@@ -309,7 +305,11 @@ impl EpisodeRow {
         let Some(parts) = self.imp().parts.get() else {
             return;
         };
-        let two = NARROW.get() && !parts.progress.is_visible();
+        let two = NARROW.get()
+            && !parts
+                .progress
+                .get()
+                .is_some_and(gtk::ProgressBar::is_visible);
         parts.title.set_lines(if two { 2 } else { 1 });
     }
 
@@ -356,8 +356,8 @@ impl EpisodeRow {
         parts.episode.replace(Some(item.clone()));
         self.show_play_state();
         self.show_selection();
-        if parts.show_identity {
-            parts.cover.set(item.cover.as_deref());
+        if let Some(cover) = &parts.cover {
+            cover.set(item.cover.as_deref());
         }
         parts.dot.set_visible(state.is_new());
         parts.title.set_label(&episode.info.title);
@@ -390,13 +390,25 @@ impl EpisodeRow {
         // Translators: separates the parts of an episode row when a screen
         // reader reads it; a pause, not a symbol.
         parts.name.replace(name.join(&gettext(", ")));
-        parts.progress.set_visible(state.is_partly_played());
-        self.fit_title();
-        if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
-            parts
-                .progress
-                .set_fraction((state.position.as_secs_f64() / total.as_secs_f64()).min(1.0));
+        if state.is_partly_played() {
+            let progress = parts.progress.get_or_init(|| {
+                // Narrower than Adwaita lets a progress bar be (see
+                // `style.css`). Added, not set: setting the classes would
+                // drop `horizontal`, which Adwaita draws the bar by.
+                let progress = gtk::ProgressBar::new();
+                progress.add_css_class("episode-progress");
+                parts.text.append(&progress);
+                progress
+            });
+            progress.set_visible(true);
+            if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
+                progress
+                    .set_fraction((state.position.as_secs_f64() / total.as_secs_f64()).min(1.0));
+            }
+        } else if let Some(progress) = parts.progress.get() {
+            progress.set_visible(false);
         }
+        self.fit_title();
         // Built when opened (below), so drop one worded for the old state.
         if parts.menu.menu_model().is_some() {
             parts.menu.set_menu_model(None::<&gio::MenuModel>);
