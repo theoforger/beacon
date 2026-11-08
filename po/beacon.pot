@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 15:59-0500\n"
+"POT-Creation-Date: 2026-11-08 16:07-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -213,8 +213,8 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/details_pane/build.rs:108
 #: crates/beacon-gtk/src/ui/show_page.rs:303
 #: crates/beacon-gtk/src/ui/show_page.rs:306
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:220
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:224
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:228
 msgid "More Options"
 msgstr ""
 
@@ -339,7 +339,7 @@ msgstr ""
 #. Translators: separates the parts of an episode row when a screen
 #. reader reads it; a pause, not a symbol.
 #: crates/beacon-gtk/src/ui/format.rs:56
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:396
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:425
 msgid ", "
 msgstr ""
 
@@ -460,7 +460,7 @@ msgid "Shows"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/labels.rs:12
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:388
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:414
 msgid "New"
 msgstr ""
 
@@ -583,8 +583,8 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/play_button.rs:54
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:91
 #: crates/beacon-gtk/src/ui/player_bar/compact.rs:74
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:213
 #: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:217
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:221
 msgid "Play"
 msgstr ""
 
@@ -843,8 +843,12 @@ msgstr ""
 msgid "_Select"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:391
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:417
 msgid "Played"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:420
+msgid "Favorite"
 msgstr ""
 
 #: data/com.theoforger.Beacon.desktop.in:5

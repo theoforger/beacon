@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! An episode in a list: cover, a title of at most two lines with the blue
-//! dot before it and the played check after it, the subtitle, a progress bar
-//! when partly played, a flat play button and the row menu. Two controls,
+//! dot before it and the played check and favourite star after it, the
+//! subtitle, a progress bar when partly played, a flat play button and the
+//! row menu. Two controls,
 //! as the HIG checklist allows; activating the row opens the details. The
 //! child of a `GtkListView` row (`ui/episode_list.rs`), bound again to
 //! another episode as the list scrolls; drawn as part of its group's card.
@@ -114,7 +115,8 @@ glib::wrapper! {
 /// A list view keeps about 200 rows, every widget of which is restyled
 /// whenever the list moves to another part of the window (the narrow
 /// layout's split views do that), so parts most rows never show are made
-/// only when one does: the check box, the progress bar and the cover.
+/// only when one does: the check box, the favourite star, the progress bar
+/// and the cover.
 pub struct Parts {
     content: gtk::Box,
     /// The selection check box, made when selection mode first needs it.
@@ -125,6 +127,8 @@ pub struct Parts {
     dot: gtk::Box,
     title: gtk::Label,
     check: gtk::Image,
+    /// After the played check, made when the row first shows a favourite.
+    star: OnceCell<gtk::Image>,
     subtitle: gtk::Label,
     text: gtk::Box,
     /// Made when the row first shows a partly played episode.
@@ -280,6 +284,7 @@ impl EpisodeRow {
             dot,
             title,
             check,
+            star: OnceCell::new(),
             subtitle,
             text,
             progress: OnceCell::new(),
@@ -366,6 +371,27 @@ impl EpisodeRow {
         parts.dot.set_visible(state.is_new());
         parts.title.set_label(&episode.info.title);
         parts.check.set_visible(state.played);
+        // A favourite's star, symbolic and dimmed like the played check
+        // (asked by the user 2026-11-08): the Favorites section's icon.
+        if state.favorite {
+            parts
+                .star
+                .get_or_init(|| {
+                    let star = gtk::Image::builder()
+                        .icon_name("starred-symbolic")
+                        .css_classes(["dim-label"])
+                        .valign(gtk::Align::Center)
+                        .accessible_role(gtk::AccessibleRole::Presentation)
+                        .build();
+                    if let Some(line) = parts.check.parent().and_downcast::<gtk::Box>() {
+                        line.insert_child_after(&star, Some(&parts.check));
+                    }
+                    star
+                })
+                .set_visible(true);
+        } else if let Some(star) = parts.star.get() {
+            star.set_visible(false);
+        }
         // Played titles are dimmed as well as checked, as in GNOME Podcasts
         // (`EpisodeWidget::set_played`).
         if state.played {
@@ -389,6 +415,9 @@ impl EpisodeRow {
         }
         if state.played {
             name.push(gettext("Played"));
+        }
+        if state.favorite {
+            name.push(gettext("Favorite"));
         }
         name.push(format::spoken(&subtitle));
         // Translators: separates the parts of an episode row when a screen

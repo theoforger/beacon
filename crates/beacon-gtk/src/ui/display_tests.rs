@@ -134,6 +134,7 @@ fn widgets_lay_out_as_designed() {
     narrow_headers_fit_three_window_buttons();
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
+    favorite_rows_show_a_star();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
 }
@@ -425,6 +426,56 @@ fn the_details_pane_offers_the_row_menus_actions() {
     pane.emit(DetailsPaneInput::Clear);
     settle();
     assert!(!more.is_mapped());
+    window.destroy();
+}
+
+/// A favourite's row shows a star after its title and says "Favorite";
+/// rebound to another episode, the star goes.
+fn favorite_rows_show_a_star() {
+    let row = EpisodeRow::new(&setup());
+    let window = window(&row);
+    let stars = |row: &EpisodeRow| {
+        let mut found = 0;
+        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if widget.downcast_ref::<gtk::Image>().is_some_and(|i| {
+                i.is_visible() && i.icon_name().as_deref() == Some("starred-symbolic")
+            }) && widget.is_drawable()
+            {
+                found += 1;
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        found
+    };
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    let mut item = partly_played();
+    row.bind(&item);
+    settle();
+    assert_eq!(stars(&row), 0);
+    assert!(!row.accessible_name().contains("Favorite"));
+
+    item.episode.state.favorite = true;
+    row.bind(&item);
+    settle();
+    assert_eq!(stars(&row), 1);
+    assert!(
+        row.accessible_name().contains("Favorite"),
+        "{}",
+        row.accessible_name()
+    );
+
+    item.episode.state.favorite = false;
+    row.bind(&item);
+    settle();
+    assert_eq!(stars(&row), 0);
     window.destroy();
 }
 
