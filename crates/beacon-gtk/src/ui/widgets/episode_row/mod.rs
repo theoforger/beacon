@@ -377,8 +377,12 @@ impl EpisodeRow {
             parts
                 .star
                 .get_or_init(|| {
+                    // 12px: the star fills its square where the check's
+                    // glyph is about 12px inside 16, so at 16 it looked
+                    // the heavier of the two.
                     let star = gtk::Image::builder()
                         .icon_name("starred-symbolic")
+                        .pixel_size(12)
                         .css_classes(["dim-label"])
                         .valign(gtk::Align::Center)
                         .accessible_role(gtk::AccessibleRole::Presentation)
