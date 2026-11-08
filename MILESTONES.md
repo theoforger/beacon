@@ -217,8 +217,9 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Queue view: Now Playing; Next in Queue with count and total time; Next from the source list
-- [ ] Auto-continue: the manual queue first, then the rest of the source list
+- [x] Queue view: Now Playing; Next in Queue with count and total time; Next from the source list (`ui/queue_view.rs`, `ui/queue_data.rs`, `beacon_core::queue`)
+- [x] Auto-continue: the manual queue first, then the rest of the source list; not after a sleep timer set to End of Episode
+- [ ] Once the playing episode finishes buffering, load the next one in the background (asked by the user 2026-11-08)
 - [ ] Drag handles, plus Move Up and Move Down in the row menu; the playing episode shows no In Queue marker
 - [ ] Favorites and Downloaded views with empty status pages
 - [ ] `DownloadService`: manual downloads only, with resume; Download / Delete Download
@@ -232,7 +233,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m5.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date

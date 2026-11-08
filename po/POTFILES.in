@@ -23,6 +23,7 @@ crates/beacon-gtk/src/ui/player_bar/build.rs
 crates/beacon-gtk/src/ui/player_bar/chapters.rs
 crates/beacon-gtk/src/ui/player_bar/compact.rs
 crates/beacon-gtk/src/ui/player_bar/mod.rs
+crates/beacon-gtk/src/ui/queue_view.rs
 crates/beacon-gtk/src/ui/selection_bar.rs
 crates/beacon-gtk/src/ui/show_hero.rs
 crates/beacon-gtk/src/ui/show_page.rs

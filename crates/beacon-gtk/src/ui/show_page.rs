@@ -107,6 +107,7 @@ impl Component for ShowPage {
             }),
             show_identity: false,
             selection: Selection::default(),
+            selectable: true,
         };
         let hero = ShowHero::new();
         let folding = Folding {

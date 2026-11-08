@@ -23,10 +23,13 @@ use crate::ui::labels;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
 use crate::ui::page_filters;
+use crate::ui::queue_data::QueueData;
+use crate::ui::queue_view::{QueueView, QueueViewInput, QueueViewOutput};
 use crate::ui::selection::Selection;
 use crate::ui::selection_bar;
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
+use beacon_core::queue::Source;
 
 mod sections;
 use sections::{bring_forward, empty_state, new_details_toggle, section_id};
@@ -57,11 +60,14 @@ pub enum ContentInput {
     ChooseNew(page_filters::Choice),
     /// Whether feeds are refreshing.
     Refreshing(bool),
+    SetQueue(Box<QueueData>),
 }
 
 #[derive(Debug)]
 pub enum ContentOutput {
-    Action(Box<EpisodeItem>, RowAction),
+    /// A row's action, with the list it is in: what plays after it, unless
+    /// it is the Queue's own (`None`), which leaves that as it was.
+    Action(Box<EpisodeItem>, RowAction, Option<Source>),
     OpenShow(ShowId),
     /// A choice in New's filter menu.
     NewPrefsChanged(ShowPrefs),
@@ -81,6 +87,7 @@ pub struct Content {
     shows: Controller<ShowsGrid>,
     new: Controller<NewView>,
     show_page: Controller<ShowPage>,
+    queue: Controller<QueueView>,
     add_page: Controller<AddPage>,
     /// New's sort and filters, as last set by the window.
     new_prefs: ShowPrefs,
@@ -200,7 +207,9 @@ impl Component for Content {
         let new = NewView::builder()
             .launch(new_selection.clone())
             .forward(&output, |message| match message {
-                NewViewOutput::Action(id, action) => ContentOutput::Action(id, action),
+                NewViewOutput::Action(item, action) => {
+                    ContentOutput::Action(item, action, Some(Source::New))
+                }
             });
         // The podcast page packs its details toggle itself, at the far end
         // of its header like the root page's, before its filter button.
@@ -208,7 +217,10 @@ impl Component for Content {
         let show_page = ShowPage::builder().launch(show_toggle.clone()).forward(
             &output,
             |message| match message {
-                ShowPageOutput::Action(id, action) => ContentOutput::Action(id, action),
+                ShowPageOutput::Action(item, action) => {
+                    let source = Source::Show(item.episode.show_id);
+                    ContentOutput::Action(item, action, Some(source))
+                }
                 ShowPageOutput::PrefsChanged(id, prefs) => {
                     ContentOutput::ShowPrefsChanged(id, prefs)
                 }
@@ -218,6 +230,11 @@ impl Component for Content {
                 ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
             },
         );
+        let queue = QueueView::builder()
+            .launch(())
+            .forward(&output, |message| match message {
+                QueueViewOutput::Action(item, action) => ContentOutput::Action(item, action, None),
+            });
         let add_page = AddPage::builder()
             .launch(())
             .forward(&output, |message| match message {
@@ -229,6 +246,7 @@ impl Component for Content {
             shows,
             new,
             show_page,
+            queue,
             add_page,
             new_prefs: ShowPrefs::default(),
             new_filter: page_filters::FilterButton::new({
@@ -286,6 +304,7 @@ impl Component for Content {
             let page: gtk::Widget = match location {
                 Location::Shows => model.shows.widget().clone().upcast(),
                 Location::New => model.new.widget().clone().upcast(),
+                Location::Queue => model.queue.widget().clone().upcast(),
                 other => empty_state(other).upcast(),
             };
             widgets.stack.add_named(&page, Some(section_id(location)));
@@ -352,6 +371,7 @@ impl Component for Content {
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
             ContentInput::Refreshing(running) => self.refresh_bar.set_running(running),
+            ContentInput::SetQueue(data) => self.queue.emit(QueueViewInput::Set(data)),
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {

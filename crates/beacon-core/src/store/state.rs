@@ -123,6 +123,21 @@ impl Store {
         Ok(())
     }
 
+    /// Move a queued episode to `index` in the queue (Move Up, Move Down,
+    /// a drag). Not queued: no change.
+    pub fn move_queued(&self, id: EpisodeId, index: usize) -> Result<(), StoreError> {
+        let order = crate::queue::moved(&self.queue()?, id, index);
+        let tx = self.conn.unchecked_transaction()?;
+        for (position, id) in order.iter().enumerate() {
+            tx.execute(
+                "UPDATE queue SET position = ?2 WHERE episode_id = ?1",
+                params![id.0, i64::try_from(position).unwrap_or(i64::MAX) + 1],
+            )?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
     pub fn dequeue(&self, id: EpisodeId) -> Result<(), StoreError> {
         self.conn
             .execute("DELETE FROM queue WHERE episode_id = ?1", [id.0])?;

@@ -137,6 +137,36 @@ async fn marking_played_never_touches_the_queue() {
 }
 
 #[tokio::test]
+async fn the_queue_reorders_and_carries_on_into_the_list() {
+    let server = MockServer::start_async().await;
+    let (library, show) =
+        subscribed(&server, "seasons.xml", Store::open_in_memory().unwrap()).await;
+    library.with_store(|store| {
+        let ids: Vec<_> = store.episodes(show).unwrap().iter().map(|e| e.id).collect();
+        for id in &ids {
+            store.enqueue(*id).unwrap();
+        }
+        // Move Down on the first, Move Up on the last, then a drag to the top.
+        store.move_queued(ids[0], 1).unwrap();
+        assert_eq!(store.queue().unwrap(), [ids[1], ids[0], ids[2]]);
+        store.move_queued(ids[2], 1).unwrap();
+        assert_eq!(store.queue().unwrap(), [ids[1], ids[2], ids[0]]);
+        store.move_queued(ids[0], 0).unwrap();
+        assert_eq!(store.queue().unwrap(), [ids[0], ids[1], ids[2]]);
+
+        // Playing the first takes it off; what follows is the rest of the
+        // queue, then the list it came from, minus what is queued.
+        store.dequeue(ids[0]).unwrap();
+        let next = beacon_core::queue::up_next(&store.queue().unwrap(), &ids, Some(ids[0]));
+        assert_eq!(next.queued, [ids[1], ids[2]]);
+        assert!(next.from_source.is_empty());
+        // Marking played leaves the queue alone.
+        store.set_played(ids[1], true, now()).unwrap();
+        assert_eq!(store.queue().unwrap(), [ids[1], ids[2]]);
+    });
+}
+
+#[tokio::test]
 async fn resetting_progress_leaves_the_rest_alone() {
     let server = MockServer::start_async().await;
     let (library, show) = subscribed(&server, "plain.xml", Store::open_in_memory().unwrap()).await;

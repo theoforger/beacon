@@ -8,6 +8,7 @@ pub mod browse;
 pub mod error;
 pub mod model;
 pub mod playback;
+pub mod queue;
 pub mod services;
 pub mod store;
 pub mod text;

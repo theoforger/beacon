@@ -170,10 +170,12 @@ impl App {
         self.fetch_episode_cover(episode.id, sender);
         self.load_chapters(episode.id, sender);
         // Playing takes an episode off the queue: the queue is what comes
-        // next, as in a music app (the Now Playing group, M5).
+        // next, as in a music app. It also clears the blue dot, as viewing
+        // its details does (the mockup's `playEp`).
         let id = episode.id;
         self.job(sender, Parts::EPISODE, false, move |store| {
-            store.dequeue(id)
+            store.dequeue(id)?;
+            store.mark_seen(id)
         });
     }
 
@@ -273,8 +275,9 @@ impl App {
                 self.media.set_state(PlaybackState::Stopped);
                 self.media.set_track(None);
                 self.details.emit(DetailsPaneInput::Playback(None));
-                // "End of Episode" has done its work; nothing plays next yet
-                // (auto-continue arrives with the queue, M5).
+                // "End of Episode" stops here; otherwise the queue, then the
+                // rest of the list, carries on (as the mockup's `advance`).
+                let carry_on = !self.sleeps_at_end();
                 self.end_sleep_timer();
                 let Some(when) = self.library.as_ref().map(|l| l.now()) else {
                     return;
@@ -282,6 +285,9 @@ impl App {
                 self.job(sender, Parts::EPISODE, false, move |store| {
                     store.finish(now.id, when)
                 });
+                if carry_on {
+                    self.play_next(Some(now.id), sender);
+                }
             }
             PlayerEvent::Error(err) => {
                 tracing::warn!("{err}");

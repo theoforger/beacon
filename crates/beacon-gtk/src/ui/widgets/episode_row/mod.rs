@@ -35,12 +35,14 @@ use menu::menu_for;
 pub type OnRowAction = Rc<dyn Fn(&EpisodeItem, RowAction)>;
 
 /// What a page's rows share: where their actions go, whether they show
-/// their show (not on the show's own page), and the page's selection.
+/// their show (not on the show's own page), and the page's selection, if
+/// it has selection mode (the Queue view does not).
 #[derive(Clone)]
 pub struct RowSetup {
     pub on_action: OnRowAction,
     pub show_identity: bool,
     pub selection: Selection,
+    pub selectable: bool,
 }
 
 thread_local! {
@@ -155,6 +157,7 @@ impl EpisodeRow {
     /// repeat on every row.
     pub fn new(setup: &RowSetup) -> Self {
         let show_identity = setup.show_identity;
+        let selectable = setup.selectable;
         let root: Self = glib::Object::new();
         root.add_css_class("episode-card");
         let content = gtk::Box::builder()
@@ -254,7 +257,7 @@ impl EpisodeRow {
         let shown = episode.clone();
         menu.set_create_popup_func(move |button| {
             if let Some(item) = shown.borrow().as_ref() {
-                button.set_menu_model(Some(&menu_for(item)));
+                button.set_menu_model(Some(&menu_for(item, selectable)));
             }
         });
         let run = {
@@ -310,7 +313,9 @@ impl EpisodeRow {
             show_identity,
         };
         let _ = root.imp().parts.set(parts);
-        root.connect_selection();
+        if selectable {
+            root.connect_selection();
+        }
         setup.selection.watch(&root);
         ROWS.with_borrow_mut(|rows| {
             // Rows go with their list's page; drop the gone ones whenever

@@ -9,6 +9,7 @@
 use beacon_core::StoreError;
 use beacon_core::browse::RecencyGroup;
 use beacon_core::model::{EpisodeId, LibraryCounts, ShowId, ShowPrefs};
+use beacon_core::queue::Source;
 use beacon_core::store::Store;
 use chrono::{DateTime, Utc};
 use gettextrs::gettext;
@@ -21,6 +22,8 @@ use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{self, EpisodeItem, ShowCard, ShowPageData};
 use crate::ui::page_filters;
+use crate::ui::player_bar::PlayerBarInput;
+use crate::ui::queue_data::{self, Lists, QueueData};
 use crate::ui::sidebar::{Counts, SidebarInput};
 
 /// Where New's filter menu choices are remembered, by menu group.
@@ -38,6 +41,8 @@ pub struct Parts {
     pub page: bool,
     pub details: bool,
     pub counts: bool,
+    /// The Queue view, and whether Next has anything to play.
+    pub queue: bool,
 }
 
 impl Parts {
@@ -47,6 +52,7 @@ impl Parts {
         page: true,
         details: true,
         counts: true,
+        queue: true,
     };
     pub(super) const NONE: Parts = Parts {
         shows: false,
@@ -54,6 +60,7 @@ impl Parts {
         page: false,
         details: false,
         counts: false,
+        queue: false,
     };
     /// Everything an episode's state shows up in.
     pub(super) const EPISODE: Parts = Parts::ALL;
@@ -63,10 +70,13 @@ impl Parts {
         new: true,
         page: true,
         details: true,
+        queue: true,
         ..Parts::NONE
     };
+    /// New's filters decide what follows an episode started from it.
     pub(super) const NEW: Parts = Parts {
         new: true,
+        queue: true,
         ..Parts::NONE
     };
     pub(super) const PAGE: Parts = Parts {
@@ -82,6 +92,8 @@ struct Context {
     new_prefs: ShowPrefs,
     page: Option<ShowId>,
     details: Option<EpisodeId>,
+    playing: Option<EpisodeId>,
+    source: Option<Source>,
 }
 
 /// Generation numbers: the latest request for each part.
@@ -93,6 +105,7 @@ pub struct Requests {
     page: u64,
     details: u64,
     counts: u64,
+    queue: u64,
 }
 
 #[derive(Debug, Default)]
@@ -103,6 +116,7 @@ pub struct Loaded {
     page: Option<Option<ShowPageData>>,
     details: Option<Option<EpisodeItem>>,
     counts: Option<LibraryCounts>,
+    queue: Option<QueueData>,
     /// Push the loaded podcast page rather than only refresh it.
     open_page: bool,
 }
@@ -131,6 +145,18 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
     if parts.counts {
         loaded.counts = Some(store.counts()?);
     }
+    if parts.queue {
+        let lists = Lists {
+            now: context.now,
+            new_prefs: context.new_prefs,
+        };
+        loaded.queue = Some(queue_data::queue_data(
+            store,
+            context.playing,
+            context.source,
+            lists,
+        )?);
+    }
     Ok(loaded)
 }
 
@@ -141,6 +167,16 @@ impl App {
             new_prefs: self.new_prefs(),
             page: self.last_show,
             details: self.details_episode.map(|(episode, _)| episode),
+            playing: self.now_playing.as_ref().map(|now| now.id),
+            source: self.source,
+        })
+    }
+
+    /// Where a list's order comes from when it is read again.
+    pub(super) fn lists(&self) -> Option<Lists> {
+        Some(Lists {
+            now: self.library.as_ref()?.now(),
+            new_prefs: self.new_prefs(),
         })
     }
 
@@ -173,6 +209,7 @@ impl App {
             (parts.page, &mut requests.page),
             (parts.details, &mut requests.details),
             (parts.counts, &mut requests.counts),
+            (parts.queue, &mut requests.queue),
         ] {
             if wanted {
                 *slot = generation;
@@ -247,7 +284,10 @@ impl App {
                 new: counts.new_episodes,
                 queue: counts.queue,
             }));
-            self.set_queue_length(counts.queue);
+        }
+        if let Some(queue) = loaded.queue.filter(|_| current(self.requests.queue)) {
+            self.bar.emit(PlayerBarInput::HasNext(queue.has_next));
+            self.content.emit(ContentInput::SetQueue(Box::new(queue)));
         }
     }
 }

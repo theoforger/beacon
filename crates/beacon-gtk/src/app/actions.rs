@@ -6,6 +6,7 @@
 
 use beacon_core::LibraryError;
 use beacon_core::model::{EpisodeChange, EpisodeId, ShowId};
+use beacon_core::queue::Source;
 use beacon_core::services::library::RefreshSummary;
 use gettextrs::{gettext, ngettext};
 use relm4::adw::prelude::*;
@@ -31,7 +32,9 @@ impl App {
         root: &adw::ApplicationWindow,
     ) {
         match output {
-            ContentOutput::Action(item, action) => self.row_action(*item, action, widgets, sender),
+            ContentOutput::Action(item, action, source) => {
+                self.row_action(*item, action, source, widgets, sender);
+            }
             ContentOutput::OpenShow(id) => self.open_show(id, sender),
             ContentOutput::GoBack => self.go_back(widgets),
             ContentOutput::Change(ids, change) => self.change_episodes(ids, change, sender),
@@ -94,10 +97,13 @@ impl App {
         });
     }
 
+    /// `source` is the list the row is in; `None` (the Queue's own rows)
+    /// keeps what plays after the playing episode as it was.
     pub(super) fn row_action(
         &mut self,
         item: EpisodeItem,
         action: RowAction,
+        source: Option<Source>,
         widgets: &AppWidgets,
         sender: &ComponentSender<Self>,
     ) {
@@ -107,8 +113,14 @@ impl App {
         let id = item.episode.id;
         let state = item.episode.state.clone();
         match action {
-            RowAction::Play => self.play_episode(&item, widgets, sender),
+            RowAction::Play => {
+                self.take_source(id, source);
+                self.play_episode(&item, widgets, sender);
+            }
             RowAction::ShowDetails => {
+                if source.is_some() || self.details_episode.map(|(e, _)| e) != Some(id) {
+                    self.details_source = source;
+                }
                 // Show what the row already knows at once; viewing clears
                 // the blue dot for good, which the reload then shows.
                 self.details_episode = Some((id, item.episode.show_id));
@@ -153,6 +165,15 @@ impl App {
                     store.set_position(id, std::time::Duration::ZERO)
                 });
             }
+        }
+    }
+
+    /// An episode about to start from a list: what follows it comes from
+    /// that list. Pausing or resuming the playing one changes nothing.
+    pub(super) fn take_source(&mut self, id: EpisodeId, source: Option<Source>) {
+        let playing = self.now_playing.as_ref().map(|now| now.id);
+        if playing != Some(id) && source.is_some() {
+            self.source = source;
         }
     }
 

@@ -66,20 +66,29 @@ pub struct ShowPageData {
     pub all_played: bool,
 }
 
-struct Context {
+/// What turning episodes into items needs: their shows and the queue.
+pub(crate) struct Context {
     shows: HashMap<ShowId, Show>,
     queue: Vec<EpisodeId>,
 }
 
 impl Context {
-    fn load(store: &Store) -> Result<Self, StoreError> {
+    pub(crate) fn load(store: &Store) -> Result<Self, StoreError> {
         Ok(Self {
             shows: store.shows()?.into_iter().map(|s| (s.id, s)).collect(),
             queue: store.queue()?,
         })
     }
 
-    fn item(&self, episode: Episode) -> EpisodeItem {
+    pub(crate) fn queue(&self) -> &[EpisodeId] {
+        &self.queue
+    }
+
+    pub(crate) fn show_title(&self, id: ShowId) -> Option<&str> {
+        self.shows.get(&id).map(|s| s.info.title.as_str())
+    }
+
+    pub(crate) fn item(&self, episode: Episode) -> EpisodeItem {
         let show = self.shows.get(&episode.show_id);
         EpisodeItem {
             show_title: show.map(|s| s.info.title.clone()).unwrap_or_default(),

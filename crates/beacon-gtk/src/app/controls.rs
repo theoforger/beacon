@@ -6,6 +6,7 @@
 
 use std::time::{Duration, Instant};
 
+use beacon_core::model::EpisodeId;
 use beacon_core::playback::{self, SleepTimer};
 use relm4::gtk::{gio::prelude::*, glib};
 use relm4::{ComponentController, ComponentSender};
@@ -14,8 +15,8 @@ use super::library::Parts;
 use super::{App, AppCommand, AppMsg, AppWidgets};
 use crate::player::PlaybackState;
 use crate::ui::details_pane::{DetailsPaneInput, DetailsPaneOutput};
-use crate::ui::models;
 use crate::ui::player_bar::{PlayerBarInput, PlayerBarOutput};
+use crate::ui::queue_data;
 
 /// How often the fade lowers the volume.
 const FADE_STEP: Duration = Duration::from_millis(100);
@@ -58,7 +59,10 @@ impl App {
                 }
             }
             PlayerBarOutput::Seek(to) => self.seek(to),
-            PlayerBarOutput::Next => self.play_next(sender),
+            PlayerBarOutput::Next => {
+                let current = self.now_playing.as_ref().map(|now| now.id);
+                self.play_next(current, sender);
+            }
             PlayerBarOutput::Rate(rate) => {
                 let rate = playback::nearest_rate(rate);
                 if let Some(player) = &player {
@@ -119,28 +123,18 @@ impl App {
         self.media.seeked(to);
     }
 
-    /// Next Episode: the first episode in the queue. Until auto-continue
-    /// (M5), that is all that comes next.
-    fn play_next(&self, sender: &ComponentSender<Self>) {
-        let Some(library) = self.library.clone() else {
+    /// Next Episode, and auto-continue when an episode ends: the queue's
+    /// first, else the next in the list `current` was started from.
+    pub(super) fn play_next(&self, current: Option<EpisodeId>, sender: &ComponentSender<Self>) {
+        let (Some(library), Some(lists)) = (self.library.clone(), self.lists()) else {
             return;
         };
-        let current = self.now_playing.as_ref().map(|now| now.id);
+        let source = self.source;
         sender.spawn_oneshot_command(move || {
-            let next = library.with_store(|store| {
-                let queue = store.queue()?;
-                match queue.into_iter().find(|id| Some(*id) != current) {
-                    Some(id) => models::episode_item(store, id),
-                    None => Ok(None),
-                }
-            });
+            let next =
+                library.with_store(|store| queue_data::next_item(store, current, source, lists));
             AppCommand::PlayNext(next.ok().flatten().map(Box::new))
         });
-    }
-
-    /// Whether Next Episode has anything to play.
-    pub(super) fn set_queue_length(&self, length: u32) {
-        self.bar.emit(PlayerBarInput::HasNext(length > 0));
     }
 
     /// Fade out and pause once a timed sleep timer runs out.
@@ -174,6 +168,11 @@ impl App {
     }
 
     /// The sleep timer has done its work, or the episode ended.
+    /// Whether the sleep timer stops playback when this episode ends.
+    pub(super) fn sleeps_at_end(&self) -> bool {
+        self.sleep.timer == SleepTimer::EndOfEpisode
+    }
+
     pub(super) fn end_sleep_timer(&mut self) {
         if self.sleep.timer == SleepTimer::Off {
             return;
@@ -192,7 +191,8 @@ impl App {
         match output {
             DetailsPaneOutput::Close => widgets.details_split.set_show_sidebar(false),
             DetailsPaneOutput::Action(item, action) => {
-                self.row_action(*item, action, widgets, sender);
+                let source = self.details_source;
+                self.row_action(*item, action, source, widgets, sender);
             }
             DetailsPaneOutput::OpenShow(show) => {
                 // The full-page details of the narrow layout would hide it.
@@ -203,6 +203,7 @@ impl App {
                 self.open_show(show, sender);
             }
             DetailsPaneOutput::PlayFrom(item, start) => {
+                self.take_source(item.episode.id, self.details_source);
                 self.play_episode_from(&item, Some(start), widgets, sender);
             }
         }

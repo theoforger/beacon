@@ -60,6 +60,7 @@ fn setup() -> RowSetup {
         on_action: Rc::new(|_, _| {}),
         show_identity: true,
         selection: Selection::default(),
+        selectable: true,
     }
 }
 

@@ -20,6 +20,8 @@ pub mod new_view;
 pub mod page_filters;
 pub mod play_button;
 pub mod player_bar;
+pub mod queue_data;
+pub mod queue_view;
 pub mod selection;
 pub mod selection_bar;
 pub mod show_hero;

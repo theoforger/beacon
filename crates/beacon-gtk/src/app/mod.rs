@@ -19,6 +19,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use beacon_core::model::{EpisodeId, ShowId};
+use beacon_core::queue::Source;
 use beacon_core::services::library::{Library, RefreshSummary};
 use beacon_core::{LibraryError, PlaybackError, StoreError};
 use gettextrs::gettext;
@@ -101,6 +102,11 @@ pub struct App {
     last_show: Option<ShowId>,
     /// The episode in the details pane, and its show.
     details_episode: Option<(EpisodeId, ShowId)>,
+    /// The list the playing episode was started from, whose rest plays
+    /// after the queue (`beacon_core::queue`), and the list the details
+    /// pane's episode was opened from, for its Play.
+    source: Option<Source>,
+    details_source: Option<Source>,
     /// The latest background request for each part of the views.
     requests: library::Requests,
     has_shows: bool,
@@ -244,6 +250,8 @@ impl Component for App {
             library: library.ok().map(Arc::new),
             last_show: None,
             details_episode: None,
+            source: None,
+            details_source: None,
             requests: library::Requests::default(),
             has_shows: false,
             titles: HashMap::new(),

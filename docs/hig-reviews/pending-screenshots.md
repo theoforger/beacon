@@ -8,6 +8,7 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | `ui/queue_view.rs` | Seen: 1440×900 light with an episode playing, one queued and the rest of its podcast page. Still to check: dark and high contrast; 360×640; the empty status page; a queue with no episode playing; long show names in Next from | 1440×900 dark, high contrast; 360×640 light and dark | Play an episode, add others to the queue from their menus, open Queue |
 
 ## Manual accessibility checks
 
@@ -36,3 +37,4 @@ Checks that need a person at a real GNOME session: Orca, keyboard walk-throughs,
 | 2026-11-08 | `ui/widgets/episode_row/mod.rs` (star) | A favourite's row is read with "Favorite" after its title (and "Played"), the star itself not read; unfavouriting from the row menu drops it | Orca |
 | 2026-11-08 | `ui/format.rs`, `ui/widgets/episode_row/mod.rs` (subtitles, titles) | In New a row is read with its show after its title and states, though the subtitle no longer shows it; on a podcast page without it | Orca |
 | 2026-11-08 | `app/mod.rs`, `main.rs` (F9) | F9 opens and closes the details pane with focus anywhere (a row, the search field, the player bar), the toggle pressed while open; in the narrow layout it opens the details page and closes it again | Keyboard |
+| 2026-11-08 | `ui/queue_view.rs` | The Queue list is read as "Queue"; its headings read as headings, with the count and time; rows read as elsewhere, without Select in their menu; the empty status page is read | Orca, keyboard |
