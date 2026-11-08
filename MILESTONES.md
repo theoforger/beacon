@@ -337,7 +337,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Deliverables
 
 - [ ] Full accessibility and translation audit (Orca, keyboard, large text at 360px, media keys): every row of the Manual accessibility checks table in `docs/hig-reviews/pending-screenshots.md`, checked, fixed where needed and cleared
-- [ ] Shortcuts: Ctrl+F, F9 (sidebar), F10 (main menu), all listed in `shortcuts-dialog.ui`
+- [ ] Shortcuts: Ctrl+F, F9 (details pane, since 2026-11-08), F10 (main menu), all listed in `shortcuts-dialog.ui`
 - [ ] Final app icon and symbolic icon (replacing the placeholders)
 - [ ] Metainfo: screenshots, branding colours, release notes, real URLs
 - [ ] Review sandbox permissions; portals only for file access

@@ -52,6 +52,7 @@ relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 relm4::new_stateless_action!(SearchAction, WindowActionGroup, "search");
 relm4::new_stateless_action!(BackAction, WindowActionGroup, "back");
 relm4::new_stateless_action!(RefreshAction, WindowActionGroup, "refresh");
+relm4::new_stateless_action!(DetailsAction, WindowActionGroup, "details");
 
 #[derive(Debug)]
 pub enum AppMsg {
@@ -60,6 +61,8 @@ pub enum AppMsg {
     /// What the details pane asks for.
     Details(DetailsPaneOutput),
     ToggleSearch,
+    /// F9: open or close the details pane, as its header toggle does.
+    ToggleDetails,
     /// Alt+Left or the Back key, wherever the focus is.
     GoBack,
     Refresh,
@@ -221,6 +224,10 @@ impl Component for App {
         });
         let refresh_action = refresh.gio_action().clone();
         actions.add_action(refresh);
+        let s = sender.clone();
+        actions.add_action(RelmAction::<DetailsAction>::new_stateless(move |_| {
+            s.input(AppMsg::ToggleDetails);
+        }));
         actions.register_for_widget(&root);
 
         let library = Library::open(
@@ -346,6 +353,12 @@ impl Component for App {
             AppMsg::Details(output) => self.details_output(output, widgets, &sender),
             AppMsg::GoBack => self.go_back(widgets),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
+            // The HIG's Utility Panes: "If utility pane visibility can be
+            // toggled, assign the F9 key as a shortcut." The header toggle
+            // follows, bound to the pane.
+            AppMsg::ToggleDetails => widgets
+                .details_split
+                .set_show_sidebar(!widgets.details_split.shows_sidebar()),
             AppMsg::Refresh => self.start_refresh(&sender, false),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
