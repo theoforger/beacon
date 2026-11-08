@@ -263,7 +263,8 @@ fn the_player_bar_lists_chapters() {
         title: "Letters home".into(),
         show_title: "Paper Trails".into(),
         cover: None,
-        duration: Some(Duration::from_secs(3600)),
+        // As in a feed without lengths: the player finds it once playing.
+        duration: None,
     }))));
     let chapter = |minutes: u64, title: &str| Chapter {
         start: Duration::from_secs(minutes * 60),
@@ -281,10 +282,10 @@ fn the_player_bar_lists_chapters() {
         run_until(|| std::time::Instant::now() > until);
     };
     settle();
-    let (button, list) = {
+    let (button, list, seek) = {
         let widgets = bar.widgets();
-        let (button, list) = widgets.chapters();
-        (button.clone(), list)
+        let (button, list, seek) = widgets.chapters();
+        (button.clone(), list, seek.clone())
     };
     assert!(!button.is_sensitive(), "no chapters yet");
 
@@ -293,10 +294,22 @@ fn the_player_bar_lists_chapters() {
     settle();
     assert!(!button.is_sensitive());
 
+    // The stored chapters come before the player knows the length.
     bar.emit(PlayerBarInput::Chapters(EpisodeId(7), chapters));
+    settle();
+    bar.emit(PlayerBarInput::Duration(Duration::from_secs(3600)));
     bar.emit(PlayerBarInput::Position(Duration::from_secs(15 * 60)));
     settle();
     assert!(button.is_sensitive());
+    // A tick at 10 and at 40 minutes of the hour, not both at the end.
+    let ticks = ticks(&seek);
+    assert_eq!(ticks.len(), 2, "{ticks:?}");
+    for (tick, minutes) in ticks.iter().zip([10.0, 40.0]) {
+        assert!(
+            (tick - minutes / 60.0).abs() < 0.05,
+            "the tick for {minutes} minutes is at {tick} of the bar: {ticks:?}"
+        );
+    }
     let rows: Vec<_> = (0..).map_while(|i| list.row_at_index(i)).collect();
     assert_eq!(rows.len(), 3);
     assert!(rows[1].has_css_class("current-chapter"));
@@ -306,6 +319,30 @@ fn the_player_bar_lists_chapters() {
     settle();
     assert_eq!(*asked.borrow(), [Duration::from_secs(40 * 60)]);
     window.destroy();
+}
+
+/// Where the seek bar's chapter ticks are, as fractions of its width.
+fn ticks(seek: &gtk::Scale) -> Vec<f64> {
+    fn marks(widget: &gtk::Widget, found: &mut Vec<gtk::Widget>) {
+        let mut child = widget.first_child();
+        while let Some(c) = child {
+            if c.css_name() == "mark" {
+                found.push(c.clone());
+            }
+            marks(&c, found);
+            child = c.next_sibling();
+        }
+    }
+    let mut found = Vec::new();
+    marks(seek.upcast_ref(), &mut found);
+    let width = f64::from(seek.width());
+    let mut ticks: Vec<f64> = found
+        .iter()
+        .filter_map(|mark| mark.compute_bounds(seek))
+        .map(|b| f64::from(b.x() + b.width() / 2.0) / width)
+        .collect();
+    ticks.sort_by(f64::total_cmp);
+    ticks
 }
 
 /// The narrowest window, 360px wide: the parts that span it must fit.

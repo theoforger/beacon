@@ -184,6 +184,16 @@ gridview.episode-list > child.activatable:active > .episode-card {
   .episode-card:not(.last) {
     border-bottom: 1px solid color-mix(in srgb, currentColor var(--border-opacity), transparent);
   }
+
+  /* The ring in the border colour, as a high-contrast boxed list's. */
+  .episode-card {
+    box-shadow: 0 0 0 1px color-mix(in srgb, currentColor var(--border-opacity), transparent);
+  }
+
+  .episode-card.last {
+    box-shadow: 0 0 0 1px color-mix(in srgb, currentColor var(--border-opacity), transparent),
+      0 3px 3px -1px RGB(0 0 6 / 7%);
+  }
 }
 
 /* The player bar's chapter popover lists the chapters on the popover's own

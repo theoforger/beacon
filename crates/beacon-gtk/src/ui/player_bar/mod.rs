@@ -113,10 +113,11 @@ pub struct PlayerBarWidgets {
 }
 
 impl PlayerBarWidgets {
-    /// The Chapters button and the list in its popover, for tests.
+    /// The Chapters button, the list in its popover and the seek bar its
+    /// ticks are on, for tests.
     #[cfg(test)]
-    pub fn chapters(&self) -> (&gtk::MenuButton, gtk::ListBox) {
-        (&self.chapters.button, self.chapters.list())
+    pub fn chapters(&self) -> (&gtk::MenuButton, gtk::ListBox, &gtk::Scale) {
+        (&self.chapters.button, self.chapters.list(), &self.seek)
     }
 
     /// The narrow layout's slim bar, which opens the sheet the player is in.
@@ -316,10 +317,11 @@ impl Component for PlayerBar {
 
 fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Duration) {
     let total = bar.duration.unwrap_or_default();
-    widgets.seek.set_range(
-        0.0,
-        total.as_secs_f64().max(position.as_secs_f64()).max(1.0),
-    );
+    let end = total.as_secs_f64().max(position.as_secs_f64()).max(1.0);
+    if widgets.seek.adjustment().upper() != end {
+        widgets.seek.set_range(0.0, end);
+        widgets.chapters.tick(&widgets.seek);
+    }
     widgets.seek.set_value(position.as_secs_f64());
     widgets.chapters.mark(position);
     if !total.is_zero() {

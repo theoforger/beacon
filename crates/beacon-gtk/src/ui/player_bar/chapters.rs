@@ -26,9 +26,11 @@ use relm4::gtk::{self, prelude::*};
 use super::{PlayerBar, PlayerBarOutput};
 use crate::ui::chapter_list;
 
-/// The popover's list is at most this tall, scrolling beyond it: about a
-/// third of the narrowest window's height.
+/// The popover's list is at most this tall, scrolling beyond it, and at
+/// most a third of the window's height, but never shorter than
+/// `LIST_HEIGHT_LEAST` (about two rows of two-line titles).
 const LIST_HEIGHT: i32 = 320;
+const LIST_HEIGHT_LEAST: i32 = 160;
 const LIST_WIDTH: i32 = 300;
 
 pub(super) struct ChapterMenu {
@@ -49,7 +51,7 @@ impl ChapterMenu {
             .hscrollbar_policy(gtk::PolicyType::Never)
             .propagate_natural_height(true)
             .max_content_height(LIST_HEIGHT)
-            .min_content_width(LIST_WIDTH)
+            .width_request(LIST_WIDTH)
             .child(&list)
             .build();
         let popover = gtk::Popover::builder().child(&scrolled).build();
@@ -75,7 +77,13 @@ impl ChapterMenu {
         });
         // Open on the chapter playing, so it is in view and has focus.
         let opened = list.clone();
-        popover.connect_show(move |_| {
+        let sized = scrolled.clone();
+        popover.connect_show(move |popover| {
+            if let Some(window) = popover.root() {
+                sized.set_max_content_height(
+                    (window.height() / 3).clamp(LIST_HEIGHT_LEAST, LIST_HEIGHT),
+                );
+            }
             let current = (0..)
                 .map_while(|i| opened.row_at_index(i))
                 .find(|row| row.has_css_class("current-chapter"));
@@ -108,11 +116,18 @@ impl ChapterMenu {
             gettext("No Chapters")
         }));
         if let Some(seek) = seek {
-            seek.clear_marks();
-            // Not at the very start: the bar's own end marks it.
-            for chapter in chapters.iter().filter(|c| !c.start.is_zero()) {
-                seek.add_mark(chapter.start.as_secs_f64(), gtk::PositionType::Bottom, None);
-            }
+            self.tick(seek);
+        }
+    }
+
+    /// Tick where each chapter starts on `seek`. Called again whenever its
+    /// range changes: a scale keeps a mark where it fell when added, so one
+    /// added before the episode's length is known stays at the end.
+    pub(super) fn tick(&self, seek: &gtk::Scale) {
+        seek.clear_marks();
+        // Not at the very start: the bar's own end marks it.
+        for chapter in self.chapters.borrow().iter().filter(|c| !c.start.is_zero()) {
+            seek.add_mark(chapter.start.as_secs_f64(), gtk::PositionType::Bottom, None);
         }
     }
 
