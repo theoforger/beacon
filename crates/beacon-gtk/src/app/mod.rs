@@ -107,6 +107,9 @@ pub struct App {
     /// pane's episode was opened from, for its Play.
     source: Option<Source>,
     details_source: Option<Source>,
+    /// What plays after the playing episode, as last loaded; preloaded
+    /// once the playing one has buffered.
+    up_next: Option<beacon_core::model::Episode>,
     /// The latest background request for each part of the views.
     requests: library::Requests,
     has_shows: bool,
@@ -252,6 +255,7 @@ impl Component for App {
             details_episode: None,
             source: None,
             details_source: None,
+            up_next: None,
             requests: library::Requests::default(),
             has_shows: false,
             titles: HashMap::new(),

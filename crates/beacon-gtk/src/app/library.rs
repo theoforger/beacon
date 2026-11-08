@@ -286,7 +286,9 @@ impl App {
             }));
         }
         if let Some(queue) = loaded.queue.filter(|_| current(self.requests.queue)) {
-            self.bar.emit(PlayerBarInput::HasNext(queue.has_next));
+            self.bar.emit(PlayerBarInput::HasNext(queue.next.is_some()));
+            self.up_next = queue.next.as_ref().map(|item| item.episode.clone());
+            self.preload_next();
             self.content.emit(ContentInput::SetQueue(Box::new(queue)));
         }
     }

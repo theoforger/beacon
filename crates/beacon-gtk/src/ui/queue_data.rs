@@ -25,8 +25,9 @@ pub struct QueueData {
     pub from_source: Vec<EpisodeItem>,
     /// The source list's name, for "Next from …".
     pub source_name: Option<String>,
-    /// Whether anything plays after the playing episode (Next Episode).
-    pub has_next: bool,
+    /// What plays after the playing episode (Next Episode, auto-continue),
+    /// which the player preloads.
+    pub next: Option<EpisodeItem>,
 }
 
 /// Where a list's order comes from when it is read again.
@@ -112,12 +113,16 @@ pub fn queue_data(
         None => None,
     };
     let shown = &next.from_source[..next.from_source.len().min(FROM_SOURCE_SHOWN)];
+    let following = match next.first() {
+        Some(id) => store.episode(id)?.map(|e| context.item(e)),
+        None => None,
+    };
     Ok(QueueData {
         now_playing,
         queued: items(&next.queued)?,
         from_source: items(shown)?,
         source_name: source.map(|source| source_name(&context, source)),
-        has_next: next.first().is_some(),
+        next: following,
     })
 }
 
@@ -198,12 +203,12 @@ mod tests {
             Some("Day 2".into())
         );
         assert_eq!(data.source_name.as_deref(), Some("The Long Signal"));
-        assert!(data.has_next);
+        assert_eq!(title(data.next), Some("Day 1".into()));
 
         // The last on the page, nothing queued: nothing next.
         store.dequeue(page[2]).unwrap();
         let last = queue_data(&store, Some(page[2]), source, lists).unwrap();
-        assert!(!last.has_next);
+        assert!(last.next.is_none());
         assert_eq!(
             next_item(&store, Some(page[2]), source, lists).unwrap(),
             None

@@ -6,6 +6,8 @@
 
 pub mod mpris;
 
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -41,14 +43,37 @@ pub enum PlayerEvent {
 
 type OnEvent = Arc<dyn Fn(PlayerEvent) + Send + Sync>;
 
-/// One episode at a time, through `GstPlay`.
+/// One of the player's two `GstPlay`s: the one playing, or the other,
+/// holding the next episode opened and paused so its start is buffered.
 #[derive(Debug)]
-pub struct Player {
+struct Slot {
     play: gst_play::Play,
     _signals: gst_play::PlaySignalAdapter,
+    /// What it has open.
+    uri: RefCell<Option<String>>,
+}
+
+/// One episode at a time, through `GstPlay`, with the next one preloaded in
+/// a second `GstPlay` once asked (asked by the user 2026-11-08): when it is
+/// played, the two swap and it starts at once. Only the playing one's
+/// events are reported.
+pub struct Player {
+    slots: [Slot; 2],
+    /// Which slot plays.
+    active: Arc<AtomicUsize>,
     /// Where to seek once the stream is ready: seeking before it has
     /// prerolled is not reliable.
     start: Arc<Mutex<Option<gst::ClockTime>>>,
+    on_event: OnEvent,
+}
+
+impl std::fmt::Debug for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Player")
+            .field("slots", &self.slots)
+            .field("active", &self.active)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Seek to the start `load` asked for, once.
@@ -69,114 +94,207 @@ impl Player {
         Ok(Self::build(context, Arc::new(on_event)))
     }
 
-    /// A player that plays to `sink` instead of the audio output (tests).
+    /// A player that plays to sinks from `sink` instead of the audio output
+    /// (tests).
     #[cfg(test)]
     fn with_audio_sink(
         context: &glib::MainContext,
-        sink: &gst::Element,
+        sink: impl Fn() -> gst::Element,
         on_event: impl Fn(PlayerEvent) + Send + Sync + 'static,
     ) -> Self {
         let player = Self::build(context, Arc::new(on_event));
-        player.play.pipeline().set_property("audio-sink", sink);
+        for slot in &player.slots {
+            slot.play.pipeline().set_property("audio-sink", sink());
+        }
         player
     }
 
     fn build(context: &glib::MainContext, on_event: OnEvent) -> Self {
-        let play = gst_play::Play::new(None::<gst_play::PlayVideoRenderer>);
-        let mut config = play.config();
-        config.set_position_update_interval(POSITION_INTERVAL_MS);
-        // Exact seeks: a chapter, or a skip, lands on its second rather
-        // than the nearest keyframe, seconds away in an Ogg or MP3 stream.
-        config.set_seek_accurate(true);
-        // Rarely fails, and only for a bad config; the default interval
-        // then applies.
-        if let Err(err) = play.set_config(config) {
-            tracing::warn!("could not configure the player: {err}");
-        }
-        let signals = gst_play::PlaySignalAdapter::with_main_context(&play, context);
+        let active = Arc::new(AtomicUsize::new(0));
         let start: Arc<Mutex<Option<gst::ClockTime>>> = Arc::default();
-
-        let emit = on_event.clone();
-        let seek = (play.clone(), start.clone());
-        signals.connect_state_changed(move |_, state| {
-            let state = match state {
-                gst_play::PlayState::Buffering => PlaybackState::Buffering,
-                gst_play::PlayState::Paused => PlaybackState::Paused,
-                gst_play::PlayState::Playing => PlaybackState::Playing,
-                _ => PlaybackState::Stopped,
-            };
-            // An HTTP stream plays before it is known to be seekable; the
-            // seek then waits for the media info that says it is.
-            if matches!(state, PlaybackState::Paused | PlaybackState::Playing)
-                && seek.0.media_info().is_some_and(|info| info.is_seekable())
-            {
-                seek_pending(&seek.0, &seek.1);
-            }
-            emit(PlayerEvent::State(state));
-        });
-        let seek = (play.clone(), start.clone());
-        signals.connect_media_info_updated(move |_, info| {
-            if info.is_seekable() {
-                seek_pending(&seek.0, &seek.1);
-            }
-        });
-        let emit = on_event.clone();
-        signals.connect_position_updated(move |_, position| {
-            if let Some(position) = position {
-                emit(PlayerEvent::Position(position.into()));
-            }
-        });
-        let emit = on_event.clone();
-        signals.connect_duration_changed(move |_, duration| {
-            if let Some(duration) = duration.filter(|d| !d.is_zero()) {
-                emit(PlayerEvent::Duration(duration.into()));
-            }
-        });
-        let emit = on_event.clone();
-        signals.connect_end_of_stream(move |_| emit(PlayerEvent::Finished));
-        let emit = on_event;
-        signals.connect_error(move |_, err, _| {
-            emit(PlayerEvent::Error(PlaybackError::Stream(err.to_string())));
-        });
-
+        let slots = [0, 1].map(|index| slot(context, index, &active, &start, &on_event));
         Self {
-            play,
-            _signals: signals,
+            slots,
+            active,
             start,
+            on_event,
         }
     }
 
-    /// Open `uri` and start playing it from `start`.
+    fn playing(&self) -> &Slot {
+        &self.slots[self.active.load(Ordering::SeqCst) % 2]
+    }
+
+    fn standby(&self) -> &Slot {
+        &self.slots[(self.active.load(Ordering::SeqCst) + 1) % 2]
+    }
+
+    /// Open `uri` and start playing it from `start`; at once if it was
+    /// preloaded.
     pub fn load(&self, uri: &str, start: Duration) {
-        self.play.stop();
         if let Ok(mut pending) = self.start.lock() {
             *pending = (!start.is_zero()).then(|| clock_time(start));
         }
-        self.play.set_uri(Some(uri));
-        // Podcasts are listened to; a video enclosure plays its sound only.
-        self.play.set_video_track_enabled(false);
-        self.play.play();
+        let preloaded = self.standby().uri.borrow().as_deref() == Some(uri);
+        let old = self.playing();
+        old.play.stop();
+        old.uri.replace(None);
+        if preloaded {
+            self.active.fetch_add(1, Ordering::SeqCst);
+            let slot = self.playing();
+            if slot
+                .play
+                .media_info()
+                .is_some_and(|info| info.is_seekable())
+            {
+                seek_pending(&slot.play, &self.start);
+            }
+            slot.play.play();
+            // Reported while it waited, so not passed on then.
+            if let Some(duration) = slot.play.duration().filter(|d| !d.is_zero()) {
+                (self.on_event)(PlayerEvent::Duration(duration.into()));
+            }
+            return;
+        }
+        let slot = self.playing();
+        open(&slot.play, uri);
+        slot.uri.replace(Some(uri.to_owned()));
+        slot.play.play();
+    }
+
+    /// Open `uri` paused in the background, so it starts at once when
+    /// played; `None` lets go of what was preloaded.
+    pub fn preload(&self, uri: Option<&str>) {
+        let slot = self.standby();
+        if slot.uri.borrow().as_deref() == uri {
+            return;
+        }
+        slot.play.stop();
+        slot.uri.replace(uri.map(str::to_owned));
+        let Some(uri) = uri else {
+            return;
+        };
+        let playing = &self.playing().play;
+        slot.play.set_volume(playing.volume());
+        slot.play.set_rate(playing.rate());
+        open(&slot.play, uri);
+        slot.play.pause();
     }
 
     pub fn play(&self) {
-        self.play.play();
+        self.playing().play.play();
     }
 
     pub fn pause(&self) {
-        self.play.pause();
+        self.playing().play.pause();
     }
 
     pub fn seek(&self, position: Duration) {
-        self.play.seek(clock_time(position));
+        self.playing().play.seek(clock_time(position));
     }
 
     pub fn set_rate(&self, rate: f64) {
-        self.play.set_rate(rate);
+        for slot in &self.slots {
+            slot.play.set_rate(rate);
+        }
     }
 
     /// Beacon's own stream volume, from 0 to 1.
     pub fn set_volume(&self, volume: f64) {
-        self.play.set_volume(volume.clamp(0.0, 1.0));
+        for slot in &self.slots {
+            slot.play.set_volume(volume.clamp(0.0, 1.0));
+        }
+    }
+}
+
+/// Open `uri` without playing it yet.
+fn open(play: &gst_play::Play, uri: &str) {
+    play.set_uri(Some(uri));
+    // Podcasts are listened to; a video enclosure plays its sound only.
+    play.set_video_track_enabled(false);
+}
+
+/// Slot `index`, reporting its events only while it is the active one.
+fn slot(
+    context: &glib::MainContext,
+    index: usize,
+    active: &Arc<AtomicUsize>,
+    start: &Arc<Mutex<Option<gst::ClockTime>>>,
+    on_event: &OnEvent,
+) -> Slot {
+    let play = gst_play::Play::new(None::<gst_play::PlayVideoRenderer>);
+    let mut config = play.config();
+    config.set_position_update_interval(POSITION_INTERVAL_MS);
+    // Exact seeks: a chapter, or a skip, lands on its second rather
+    // than the nearest keyframe, seconds away in an Ogg or MP3 stream.
+    config.set_seek_accurate(true);
+    // Rarely fails, and only for a bad config; the default interval
+    // then applies.
+    if let Err(err) = play.set_config(config) {
+        tracing::warn!("could not configure the player: {err}");
+    }
+    let signals = gst_play::PlaySignalAdapter::with_main_context(&play, context);
+    let is_active = {
+        let active = active.clone();
+        move || active.load(Ordering::SeqCst) % 2 == index
+    };
+
+    let (emit, current) = (on_event.clone(), is_active.clone());
+    let seek = (play.clone(), start.clone());
+    signals.connect_state_changed(move |_, state| {
+        if !current() {
+            return;
+        }
+        let state = match state {
+            gst_play::PlayState::Buffering => PlaybackState::Buffering,
+            gst_play::PlayState::Paused => PlaybackState::Paused,
+            gst_play::PlayState::Playing => PlaybackState::Playing,
+            _ => PlaybackState::Stopped,
+        };
+        // An HTTP stream plays before it is known to be seekable; the
+        // seek then waits for the media info that says it is.
+        if matches!(state, PlaybackState::Paused | PlaybackState::Playing)
+            && seek.0.media_info().is_some_and(|info| info.is_seekable())
+        {
+            seek_pending(&seek.0, &seek.1);
+        }
+        emit(PlayerEvent::State(state));
+    });
+    let (seek, current) = ((play.clone(), start.clone()), is_active.clone());
+    signals.connect_media_info_updated(move |_, info| {
+        if current() && info.is_seekable() {
+            seek_pending(&seek.0, &seek.1);
+        }
+    });
+    let (emit, current) = (on_event.clone(), is_active.clone());
+    signals.connect_position_updated(move |_, position| {
+        if let Some(position) = position.filter(|_| current()) {
+            emit(PlayerEvent::Position(position.into()));
+        }
+    });
+    let (emit, current) = (on_event.clone(), is_active.clone());
+    signals.connect_duration_changed(move |_, duration| {
+        if let Some(duration) = duration.filter(|d| !d.is_zero() && current()) {
+            emit(PlayerEvent::Duration(duration.into()));
+        }
+    });
+    let (emit, current) = (on_event.clone(), is_active.clone());
+    signals.connect_end_of_stream(move |_| {
+        if current() {
+            emit(PlayerEvent::Finished);
+        }
+    });
+    let (emit, current) = (on_event.clone(), is_active);
+    signals.connect_error(move |_, err, _| {
+        // A preload that fails is only not preloaded.
+        if current() {
+            emit(PlayerEvent::Error(PlaybackError::Stream(err.to_string())));
+        }
+    });
+    Slot {
+        play,
+        _signals: signals,
+        uri: RefCell::default(),
     }
 }
 
@@ -184,12 +302,17 @@ impl Player {
 #[cfg(test)]
 impl Player {
     fn stop(&self) {
-        self.play.stop();
+        self.playing().play.stop();
     }
 
     /// The position now, if the stream has one.
     fn position(&self) -> Option<Duration> {
-        self.play.position().map(Duration::from)
+        self.playing().play.position().map(Duration::from)
+    }
+
+    /// Which slot plays.
+    fn active_slot(&self) -> usize {
+        self.active.load(Ordering::SeqCst) % 2
     }
 }
 

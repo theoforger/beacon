@@ -35,6 +35,9 @@ pub struct NowPlaying {
     /// The position last written to the store.
     pub saved: Duration,
     pub state: PlaybackState,
+    /// Whether it has finished buffering once: the next one is preloaded
+    /// only then, so the two do not compete for the connection.
+    pub buffered: bool,
 }
 
 /// Where playback last got to, shared with the window's close handler so it
@@ -80,6 +83,29 @@ fn source(episode: &Episode) -> Option<String> {
 }
 
 impl App {
+    /// Open the episode that plays next in the background, once the playing
+    /// one has finished buffering, so it starts at once (asked by the user
+    /// 2026-11-08). Not on a metered connection, where it would spend data
+    /// on an episode that may never be played.
+    pub(super) fn preload_next(&self) {
+        let Some(player) = &self.player else {
+            return;
+        };
+        let buffered = self.now_playing.as_ref().is_some_and(|now| now.buffered);
+        let metered = gio::NetworkMonitor::default().is_network_metered();
+        let uri = self
+            .up_next
+            .as_ref()
+            .filter(|next| buffered && !metered && Some(next.id) != self.playing_id())
+            .and_then(source);
+        tracing::debug!(buffered, metered, uri = ?uri, "preload");
+        player.preload(uri.as_deref());
+    }
+
+    fn playing_id(&self) -> Option<EpisodeId> {
+        self.now_playing.as_ref().map(|now| now.id)
+    }
+
     /// The row's Play button: start this episode where it was left, or
     /// pause or resume it if it is the one playing.
     pub(super) fn play_episode(
@@ -146,6 +172,7 @@ impl App {
             position: start,
             saved: start,
             state: PlaybackState::Buffering,
+            buffered: false,
         });
         self.last_position.set(Some((episode.id, start)));
         self.bar
@@ -255,6 +282,8 @@ impl App {
                     return;
                 };
                 now.state = state;
+                let first_buffered = state == PlaybackState::Playing && !now.buffered;
+                now.buffered |= first_buffered;
                 episode_row::show_playing(Some((now.id, state)));
                 self.bar.emit(PlayerBarInput::State(state));
                 self.media.set_state(state);
@@ -263,6 +292,9 @@ impl App {
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(sender, Parts::PROGRESS);
+                }
+                if first_buffered {
+                    self.preload_next();
                 }
             }
             PlayerEvent::Finished => {

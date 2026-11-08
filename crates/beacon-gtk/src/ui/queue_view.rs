@@ -171,7 +171,7 @@ mod tests {
             queued: vec![episode(2, 45), episode(3, 80)],
             from_source: vec![episode(4, 10)],
             source_name: Some("New".into()),
-            has_next: true,
+            next: None,
         };
         assert_eq!(
             headings(&entries(&data)),

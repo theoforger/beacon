@@ -58,7 +58,7 @@ fn run_until(
 fn player(context: &glib::MainContext) -> (Player, mpsc::Receiver<PlayerEvent>) {
     gst::init().unwrap();
     let (send, events) = mpsc::channel();
-    let player = Player::with_audio_sink(context, &silent_sink(), move |event| {
+    let player = Player::with_audio_sink(context, silent_sink, move |event| {
         let _ = send.send(event);
     });
     (player, events)
@@ -131,4 +131,53 @@ fn playback_resumes_where_it_was_paused_after_closing() {
         "resumed at {resumed:?}, expected about {start:?}"
     );
     second.stop();
+}
+
+/// A preloaded episode starts in the slot that buffered it, from the
+/// position asked, and reports its length then, which the waiting slot
+/// kept to itself.
+#[test]
+fn a_preloaded_episode_starts_where_it_was_preloaded() {
+    let context = glib::MainContext::new();
+    let _guard = context.acquire().unwrap();
+    let uri = fixture_uri();
+    let (player, events) = player(&context);
+    player.load(&uri, Duration::ZERO);
+    run_until(&context, &events, |e| matches!(e, PlayerEvent::Position(_)));
+    assert_eq!(player.active_slot(), 0);
+
+    // The next one, the same file here, opens paused in the other slot.
+    let next = format!("{uri}?next");
+    player.preload(Some(&next));
+    let settle = Instant::now() + Duration::from_millis(500);
+    while Instant::now() < settle {
+        while context.iteration(false) {}
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    // Its events stay quiet: still the first slot's position.
+    while let Ok(event) = events.try_recv() {
+        assert!(
+            !matches!(event, PlayerEvent::State(PlaybackState::Paused)),
+            "the preloaded slot reported its pause"
+        );
+    }
+
+    let start = Duration::from_secs(5);
+    player.load(&next, start);
+    assert_eq!(player.active_slot(), 1, "the preloaded slot plays");
+    run_until(&context, &events, |e| matches!(e, PlayerEvent::Duration(_)));
+    let resumed = match run_until(
+        &context,
+        &events,
+        |e| matches!(e, PlayerEvent::Position(p) if *p >= start),
+    ) {
+        PlayerEvent::Position(p) => p,
+        _ => unreachable!(),
+    };
+    assert!(resumed < start + Duration::from_secs(1), "at {resumed:?}");
+
+    // Not preloaded: the playing slot opens it.
+    player.load(&uri, Duration::ZERO);
+    assert_eq!(player.active_slot(), 1);
+    player.stop();
 }
