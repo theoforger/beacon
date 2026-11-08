@@ -135,6 +135,7 @@ fn widgets_lay_out_as_designed() {
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
+    selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
     narrow_rows_leave_out_play_and_shrink_the_cover();
     long_lists_make_rows_only_for_the_screen();
@@ -535,6 +536,35 @@ fn rows_word_their_titles_and_subtitles() {
     });
     page_row.bind(&item);
     assert!(!page_row.accessible_name().contains("A show with"));
+}
+
+/// Ctrl+A applies where a page offers selection and in selection mode,
+/// where the header holding Select is hidden; the other shortcuts only in
+/// selection mode.
+fn selection_shortcuts_work_in_selection_mode() {
+    use crate::ui::selection_bar::{select_button, takes_shortcut};
+
+    let selection = Selection::default();
+    let select = select_button(&selection);
+    let header = adw::HeaderBar::new();
+    header.pack_end(&select);
+    let window = window(&header);
+    assert!(takes_shortcut(&select, &selection, 0));
+    assert!(!takes_shortcut(&select, &selection, 1));
+    assert!(!takes_shortcut(&select, &selection, 2));
+
+    selection.set_active(true);
+    header.set_visible(false);
+    for action in 0..3 {
+        assert!(takes_shortcut(&select, &selection, action), "{action}");
+    }
+
+    // A page that offers no selection.
+    selection.set_active(false);
+    header.set_visible(true);
+    select.set_visible(false);
+    assert!(!takes_shortcut(&select, &selection, 0));
+    window.destroy();
 }
 
 /// A favourite's row shows a star after its title and says "Favorite";

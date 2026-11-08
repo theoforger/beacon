@@ -246,7 +246,7 @@ pub fn attach(
     // list box takes Ctrl+A for itself, but text fields keep theirs.
     let shortcuts = gtk::ShortcutController::new();
     shortcuts.set_propagation_phase(gtk::PropagationPhase::Capture);
-    for (trigger, action) in [("<Control>a", 0), ("<Shift><Control>a", 1), ("Escape", 2)] {
+    for (trigger, action) in [("<Control>a", 0u8), ("<Shift><Control>a", 1), ("Escape", 2)] {
         let s = selection.clone();
         let select = select.clone();
         let callback = gtk::CallbackAction::new(move |widget, _| {
@@ -254,7 +254,7 @@ pub fn attach(
                 .root()
                 .and_then(|root| root.focus())
                 .is_some_and(|focus| focus.is::<gtk::Text>());
-            if typing || !select.is_visible() || (action != 0 && !s.is_active()) {
+            if typing || !takes_shortcut(&select, &s, action) {
                 return glib::Propagation::Proceed;
             }
             match action {
@@ -270,6 +270,20 @@ pub fn attach(
         ));
     }
     toolbar.add_controller(shortcuts);
+}
+
+/// Whether the page's selection shortcut `action` (0 Ctrl+A, 1 Shift+Ctrl+A,
+/// 2 Escape) applies: Ctrl+A where the page offers selection (its Select
+/// button is set to show, though hidden with its header in selection mode)
+/// or selection mode is on; the others only in selection mode.
+pub(crate) fn takes_shortcut(select: &gtk::Button, selection: &Selection, action: u8) -> bool {
+    // `get_visible`, not `is_visible`, which also asks the parents: in
+    // selection mode the header Select is in is hidden, and Ctrl+A did
+    // nothing there.
+    match action {
+        0 => select.get_visible() || selection.is_active(),
+        _ => selection.is_active(),
+    }
 }
 
 /// Fold the actions into the menu while the page is narrower than
