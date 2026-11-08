@@ -131,3 +131,55 @@ button.loading > image,
 button.loading > stack {
   opacity: 0;
 }
+
+/* Episode lists are list views (`ui/episode_list.rs`), which libadwaita
+   does not draw as boxed lists; each group's rows are drawn as one card
+   instead, from the boxed list's own rules: the card colours and outline,
+   a separator between rows, rounded first and last rows, and the same
+   hover and press shading. Only the last row casts the card's shadow,
+   downwards, so it does not fall across the rows above. */
+listview.episode-list {
+  background: none;
+}
+
+listview.episode-list > row,
+listview.episode-list > row.activatable:hover,
+listview.episode-list > row.activatable:active {
+  padding: 0;
+  background: none;
+}
+
+.episode-card {
+  background-color: var(--card-bg-color);
+  color: var(--card-fg-color);
+  box-shadow: 0 0 0 1px RGB(0 0 6 / 3%);
+}
+
+.episode-card:not(.last) {
+  border-bottom: 1px solid var(--card-shade-color);
+}
+
+.episode-card.first {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.episode-card.last {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 3px 3px -1px RGB(0 0 6 / 7%);
+}
+
+listview.episode-list > row.activatable:hover > .episode-card {
+  background-image: image(color-mix(in srgb, currentColor 3%, transparent));
+}
+
+listview.episode-list > row.activatable:active > .episode-card {
+  background-image: image(color-mix(in srgb, currentColor 8%, transparent));
+}
+
+@media (prefers-contrast: more) {
+  .episode-card:not(.last) {
+    border-bottom: 1px solid color-mix(in srgb, currentColor var(--border-opacity), transparent);
+  }
+}

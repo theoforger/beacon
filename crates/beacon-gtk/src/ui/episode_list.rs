@@ -1,231 +1,460 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Episode lists as `boxed-list` `GtkListBox`es, as in GNOME Podcasts, and
-//! the ways of keeping long lists from slowing the UI: rows are added a page
-//! at a time as the list is scrolled, each page a little at a time at idle
-//! priority (GNOME Podcasts' `lazy_load`), and a list whose episodes are
-//! unchanged is updated in place, only changed rows bound again.
+//! A page's episodes as one `GtkListView`, which the HIG asks of long lists
+//! ("For large or dynamic lists, see list views"): only the rows on screen
+//! exist, recycled as the list scrolls, so a feed of thousands of episodes
+//! costs what a screenful does. Decided 2026-11-08, departing from GNOME
+//! Podcasts' `GtkListBox`es, which laid out every row they held.
+//!
+//! The list holds the page's whole content, in order: its header (a podcast
+//! page's hero), the group and season headings, the episodes and the room
+//! between them, since only a list view that scrolls itself recycles its rows.
+//! Each group's episodes are drawn as a card, as a boxed list (`style.css`).
+//! Setting new entries changes only what changed, so the list keeps its
+//! place and the rows that did not change are left alone.
 
-use std::cell::{Cell, RefCell};
-use std::collections::VecDeque;
+use std::cell::{OnceCell, RefCell};
+use std::collections::HashSet;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
 
-use beacon_core::model::EpisodeId;
-use relm4::gtk::{self, glib, prelude::*};
+use beacon_core::model::{EpisodeId, ShowId};
+use relm4::adw;
+use relm4::gtk::subclass::prelude::*;
+use relm4::gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
 
-/// Time spent adding rows before the main loop gets a turn, well inside a
-/// 60 Hz frame so scrolling and clicks stay smooth while a long feed fills.
-const BUDGET: Duration = Duration::from_millis(8);
+/// A season of a show, by number; `None` for its episodes without one.
+pub type FoldKey = (ShowId, Option<u32>);
 
-/// A boxed list whose rows open their episode's details when activated,
-/// or in selection mode select it ("Clicking anywhere on a content item
-/// should toggle its selection state"), named `label` for screen readers
-/// (the group or season it holds): its heading is a label, which focus
-/// never reaches, so the list says it.
-pub fn new_list(setup: &RowSetup, label: &str) -> gtk::ListBox {
-    let list = gtk::ListBox::builder()
-        .selection_mode(gtk::SelectionMode::None)
-        // Tab visits the focused row's buttons, then leaves the list; the
-        // arrow keys move between rows. With the default, Tab walked every
-        // row of a long feed (GNOME Podcasts sets the same on its grid).
-        .tab_behavior(gtk::ListTabBehavior::Item)
-        .css_classes(["boxed-list"])
-        .build();
-    list.update_property(&[gtk::accessible::Property::Label(label)]);
-    let setup = setup.clone();
-    list.connect_row_activated(move |_, row| {
-        let Some(item) = row.downcast_ref::<EpisodeRow>().and_then(EpisodeRow::item) else {
-            return;
-        };
-        if setup.selection.is_active() {
-            setup.selection.toggle(item.episode.id);
-        } else {
-            (setup.on_action)(&item, RowAction::ShowDetails);
-        }
-    });
-    list
+/// One item of a page's list.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Entry {
+    /// The page's header, scrolled with the list.
+    Header,
+    /// A group's or season's title, `top` pixels below what is above it.
+    /// A season's (`fold` set) folds its episodes away.
+    Heading {
+        title: String,
+        fold: Option<FoldKey>,
+        top: i32,
+    },
+    /// An episode; `first` and `last` round its group's card.
+    Episode {
+        item: Box<EpisodeItem>,
+        first: bool,
+        last: bool,
+    },
+    /// A line of text in place of the episodes.
+    Message(String),
+    /// Room between entries, or after the last.
+    Space(i32),
 }
 
-/// The episode rows of `lists`, in order.
-fn rows(lists: &[gtk::ListBox]) -> Vec<EpisodeRow> {
-    let mut rows = Vec::new();
-    for list in lists {
-        let mut child = list.first_child();
-        while let Some(widget) = child {
-            child = widget.next_sibling();
-            if let Ok(row) = widget.downcast::<EpisodeRow>() {
-                rows.push(row);
-            }
-        }
-    }
-    rows
+/// What an entry is, whatever its state: entries with the same key are the
+/// same item of the list, perhaps changed.
+#[derive(PartialEq)]
+enum Key<'a> {
+    Header,
+    Heading(&'a str),
+    Episode(EpisodeId),
+    Message,
+    Space,
 }
 
-/// If `lists` and the rows still to come already hold exactly these
-/// episodes in this order, bring them up to date and return true: rows whose
-/// episode changed are bound again, the others left alone, and the rows
-/// still to come take the new items. Otherwise change nothing.
-pub fn update_in_place(lists: &[gtk::ListBox], items: &[&EpisodeItem], fill: &LazyFill) -> bool {
-    let rows = rows(lists);
-    if rows.len() + fill.pending() != items.len()
-        || !rows
-            .iter()
-            .zip(items)
-            .all(|(row, item)| row.item().map(|i| i.episode.id) == Some(item.episode.id))
-    {
-        return false;
-    }
-    for (row, item) in rows.iter().zip(items) {
-        if row.item().as_ref() != Some(*item) {
-            row.bind(item);
+impl Entry {
+    fn key(&self) -> Key<'_> {
+        match self {
+            Entry::Header => Key::Header,
+            Entry::Heading { title, .. } => Key::Heading(title),
+            Entry::Episode { item, .. } => Key::Episode(item.episode.id),
+            Entry::Message(_) => Key::Message,
+            Entry::Space(_) => Key::Space,
         }
     }
-    fill.replace_pending(items[rows.len()..].iter().map(|item| (*item).clone()));
-    true
+
+    /// The episodes of `items` as one card's entries.
+    pub fn card<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<Entry> {
+        let items: Vec<_> = items.into_iter().collect();
+        let count = items.len();
+        items
+            .into_iter()
+            .enumerate()
+            .map(|(i, item)| Entry::Episode {
+                item: Box::new(item.clone()),
+                first: i == 0,
+                last: i + 1 == count,
+            })
+            .collect()
+    }
 }
 
-/// Rows added at a time: about two screens. A `GtkListBox` lays out every
-/// row it holds, so a long feed gets its rows a page at a time, as the list
-/// is scrolled towards its end.
-const PAGE: usize = 40;
+mod imp {
+    use super::*;
 
-#[derive(Default)]
-struct Fill {
-    /// Bumped by each new fill, ending the one before.
-    generation: Cell<u64>,
-    /// Rows still to add, with the list each goes in.
-    pending: RefCell<VecDeque<(gtk::ListBox, EpisodeItem)>>,
-    /// Rows that may be added before the list is scrolled further.
-    allowance: Cell<usize>,
-    running: Cell<bool>,
-    setup: RefCell<Option<RowSetup>>,
+    #[derive(Default)]
+    pub struct EntryObject {
+        pub entry: OnceCell<Entry>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for EntryObject {
+        const NAME: &'static str = "BeaconListEntry";
+        type Type = super::EntryObject;
+    }
+
+    impl ObjectImpl for EntryObject {}
 }
 
-/// Fills lists with rows a page at a time, each page a little at a time so
-/// the main loop keeps its frames. Starting a new fill ends the one before.
-#[derive(Default, Clone)]
-pub struct LazyFill {
-    inner: Rc<Fill>,
+glib::wrapper! {
+    /// An entry, as the list's model holds it.
+    pub struct EntryObject(ObjectSubclass<imp::EntryObject>);
 }
 
-impl std::fmt::Debug for LazyFill {
+impl EntryObject {
+    fn new(entry: Entry) -> Self {
+        let object: Self = glib::Object::new();
+        let _ = object.imp().entry.set(entry);
+        object
+    }
+
+    fn entry(&self) -> &Entry {
+        self.imp()
+            .entry
+            .get()
+            .expect("every entry object is made with its entry")
+    }
+}
+
+/// Folded seasons, and what to do when one is folded or unfolded.
+#[derive(Clone)]
+pub struct Folding {
+    pub folded: Rc<RefCell<HashSet<FoldKey>>>,
+    pub changed: Rc<dyn Fn()>,
+}
+
+pub struct EpisodeList {
+    scrolled: gtk::ScrolledWindow,
+    store: gio::ListStore,
+}
+
+impl std::fmt::Debug for EpisodeList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LazyFill")
-            .field("pending", &self.pending())
+        f.debug_struct("EpisodeList")
+            .field("entries", &self.store.n_items())
             .finish_non_exhaustive()
     }
 }
 
-impl LazyFill {
-    /// Add a row for each item to its list, the first page now.
-    pub fn start(&self, work: Vec<(gtk::ListBox, EpisodeItem)>, setup: RowSetup) {
-        let fill = &self.inner;
-        fill.generation.set(fill.generation.get() + 1);
-        fill.pending.replace(work.into());
-        fill.setup.replace(Some(setup));
-        fill.allowance.set(PAGE);
-        fill.running.set(false);
-        self.run();
-    }
-
-    /// Add the next page of rows, if there are any.
-    pub fn more(&self) {
-        if self.pending() == 0 {
-            return;
-        }
-        self.inner
-            .allowance
-            .set(self.inner.allowance.get().max(PAGE));
-        self.run();
-    }
-
-    /// Rows not added yet.
-    pub fn pending(&self) -> usize {
-        self.inner.pending.borrow().len()
-    }
-
-    /// Give the rows not added yet new items, keeping the lists they go in.
-    fn replace_pending(&self, items: impl Iterator<Item = EpisodeItem>) {
-        for ((_, item), new) in self.inner.pending.borrow_mut().iter_mut().zip(items) {
-            *item = new;
-        }
-    }
-
-    /// Stop any fill in progress.
-    pub fn cancel(&self) {
-        let fill = &self.inner;
-        fill.generation.set(fill.generation.get() + 1);
-        fill.pending.borrow_mut().clear();
-        fill.running.set(false);
-    }
-
-    /// Add more rows whenever `scrolled` comes within a screen of its end,
-    /// or its content does not fill it yet.
-    pub fn follow(&self, scrolled: &gtk::ScrolledWindow) {
-        let adjustment = scrolled.vadjustment();
-        let check = {
-            let fill = self.clone();
-            move |adjustment: &gtk::Adjustment| {
-                let end = adjustment.upper() - adjustment.page_size();
-                if adjustment.value() >= end - adjustment.page_size() {
-                    fill.more();
-                }
-            }
-        };
-        adjustment.connect_value_changed(check.clone());
-        adjustment.connect_changed(check);
-    }
-
-    fn run(&self) {
-        let fill = self.inner.clone();
-        if fill.running.replace(true) {
-            return;
-        }
-        let generation = fill.generation.get();
-        glib::spawn_future_local(async move {
-            let started = Instant::now();
-            loop {
-                if fill.generation.get() != generation {
-                    return;
-                }
-                let turn = Instant::now();
-                // At least one row a turn, however slow the machine.
-                while fill.allowance.get() > 0 {
-                    let Some((list, item)) = fill.pending.borrow_mut().pop_front() else {
-                        break;
-                    };
-                    let Some(setup) = fill.setup.borrow().clone() else {
-                        break;
-                    };
-                    let row = EpisodeRow::new(&setup);
-                    row.bind(&item);
-                    list.append(&row);
-                    fill.allowance.set(fill.allowance.get() - 1);
-                    if turn.elapsed() >= BUDGET {
-                        break;
-                    }
-                }
-                if fill.allowance.get() == 0 || fill.pending.borrow().is_empty() {
-                    fill.running.set(false);
-                    tracing::debug!(
-                        "added a page of episode rows in {:?}, {} to come",
-                        started.elapsed(),
-                        fill.pending.borrow().len()
-                    );
-                    return;
-                }
-                glib::timeout_future_with_priority(glib::Priority::DEFAULT_IDLE, Duration::ZERO)
-                    .await;
+impl EpisodeList {
+    /// A list named `label` for screen readers, whose rows act through
+    /// `setup`, headed by `header` and folding seasons through `folding`.
+    pub fn new(
+        setup: &RowSetup,
+        label: &str,
+        header: Option<gtk::Widget>,
+        folding: Option<Folding>,
+    ) -> Self {
+        let store = gio::ListStore::new::<EntryObject>();
+        let factory = factory(setup, header, folding);
+        let view = gtk::ListView::builder()
+            .model(&gtk::NoSelection::new(Some(store.clone())))
+            .factory(&factory)
+            // Rows open on one click, as the boxed lists' did.
+            .single_click_activate(true)
+            // Tab visits the focused row's buttons, then leaves the list;
+            // the arrow keys move between rows.
+            .tab_behavior(gtk::ListTabBehavior::Item)
+            .margin_start(12)
+            .margin_end(12)
+            .css_classes(["episode-list"])
+            .build();
+        view.update_property(&[gtk::accessible::Property::Label(label)]);
+        let setup = setup.clone();
+        view.connect_activate(move |view, position| {
+            let Some(entry) = view.model().and_then(|m| m.item(position)) else {
+                return;
+            };
+            let Some(entry) = entry.downcast_ref::<EntryObject>() else {
+                return;
+            };
+            let Entry::Episode { item, .. } = entry.entry() else {
+                return;
+            };
+            if setup.selection.is_active() {
+                setup.selection.toggle(item.episode.id);
+            } else {
+                (setup.on_action)(item, RowAction::ShowDetails);
             }
         });
+        // As wide as the pages' content always was, centred beyond it.
+        let clamp = adw::ClampScrollable::builder()
+            .maximum_size(900)
+            .child(&view)
+            .build();
+        let scrolled = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .vexpand(true)
+            .child(&clamp)
+            .build();
+        Self { scrolled, store }
+    }
+
+    pub fn widget(&self) -> &gtk::ScrolledWindow {
+        &self.scrolled
+    }
+
+    /// Show `entries`, changing only what changed (see `sync`).
+    pub fn set(&self, entries: Vec<Entry>) {
+        sync(&self.store, entries);
     }
 }
 
-/// The ids of a list of items, for comparing structure.
-pub fn ids<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<EpisodeId> {
-    items.into_iter().map(|i| i.episode.id).collect()
+/// Make `store` hold `entries`. The entries it starts and ends with
+/// already stay where they are, replaced only if they changed; the ones
+/// between are swapped for the new ones. So a change to one episode
+/// replaces one row, and the list keeps its place.
+fn sync(store: &gio::ListStore, entries: Vec<Entry>) {
+    let old: Vec<EntryObject> = (0..store.n_items())
+        .filter_map(|i| store.item(i).and_downcast())
+        .collect();
+    let (n, m) = (old.len(), entries.len());
+    let mut start = 0;
+    while start < n.min(m) && old[start].entry().key() == entries[start].key() {
+        start += 1;
+    }
+    let mut end = 0;
+    while end < n.min(m) - start && old[n - 1 - end].entry().key() == entries[m - 1 - end].key() {
+        end += 1;
+    }
+    let mut head = entries;
+    let tail = head.split_off(m - end);
+    let middle = head.split_off(start);
+    // From the end, so the old positions still hold.
+    let kept = (0..start).zip(head).chain((n - end..n).zip(tail));
+    for (i, entry) in kept.rev() {
+        if *old[i].entry() != entry {
+            store.splice(position(i), 1, &[EntryObject::new(entry)]);
+        }
+    }
+    if n - start - end > 0 || !middle.is_empty() {
+        let middle: Vec<EntryObject> = middle.into_iter().map(EntryObject::new).collect();
+        store.splice(position(start), position(n - start - end), &middle);
+    }
+}
+
+fn position(i: usize) -> u32 {
+    u32::try_from(i).unwrap_or(u32::MAX)
+}
+
+/// Rows for the list's entries: episode rows are kept and bound again as
+/// the list scrolls; the few others are made when shown.
+fn factory(
+    setup: &RowSetup,
+    header: Option<gtk::Widget>,
+    folding: Option<Folding>,
+) -> gtk::SignalListItemFactory {
+    let factory = gtk::SignalListItemFactory::new();
+    let setup = setup.clone();
+    let shown = header.clone();
+    factory.connect_bind(move |_, object| {
+        let Some(item) = object.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        let Some(entry) = item.item().and_downcast::<EntryObject>() else {
+            return;
+        };
+        // Only episodes are rows to focus and open; the others are text,
+        // or hold their own controls.
+        let is_episode = matches!(entry.entry(), Entry::Episode { .. });
+        item.set_activatable(is_episode);
+        item.set_focusable(is_episode);
+        item.set_selectable(false);
+        match entry.entry() {
+            Entry::Episode {
+                item: episode,
+                first,
+                last,
+            } => {
+                let row = item
+                    .child()
+                    .and_downcast::<EpisodeRow>()
+                    .unwrap_or_else(|| {
+                        let row = EpisodeRow::new(&setup);
+                        item.set_child(Some(&row));
+                        row
+                    });
+                row.bind(episode);
+                row.set_edges(*first, *last);
+                // The list item is what has focus, so it carries the name.
+                item.set_accessible_label(&row.accessible_name());
+            }
+            Entry::Header => {
+                if let Some(header) = &shown {
+                    item.set_child(Some(header));
+                }
+            }
+            Entry::Heading { title, fold, top } => {
+                let heading = match (fold, &folding) {
+                    (Some(key), Some(folding)) => season(title, *key, folding),
+                    _ => heading(title),
+                };
+                heading.set_margin_top(*top);
+                heading.set_margin_bottom(6);
+                item.set_child(Some(&heading));
+            }
+            Entry::Message(text) => {
+                let label = gtk::Label::builder()
+                    .label(text)
+                    .wrap(true)
+                    .margin_top(24)
+                    .css_classes(["dim-label"])
+                    .build();
+                item.set_child(Some(&label));
+            }
+            Entry::Space(height) => {
+                item.set_child(Some(&gtk::Box::builder().height_request(*height).build()));
+            }
+        }
+    });
+    // The header is one widget: let it go when its entry scrolls away, so
+    // it is free to be shown again in another row.
+    factory.connect_unbind(move |_, object| {
+        if let Some(item) = object.downcast_ref::<gtk::ListItem>()
+            && header.is_some()
+            && item.child() == header
+        {
+            item.set_child(None::<&gtk::Widget>);
+        }
+    });
+    factory
+}
+
+fn heading_label(title: &str) -> gtk::Label {
+    gtk::Label::builder()
+        .label(title)
+        .xalign(0.0)
+        .ellipsize(pango::EllipsizeMode::End)
+        .css_classes(["heading"])
+        .accessible_role(gtk::AccessibleRole::Heading)
+        .build()
+}
+
+fn heading(title: &str) -> gtk::Widget {
+    heading_label(title).upcast()
+}
+
+/// A season's title as a `GtkExpander`, which folds its episodes away.
+fn season(title: &str, key: FoldKey, folding: &Folding) -> gtk::Widget {
+    let expander = gtk::Expander::builder()
+        .label_widget(&heading_label(title))
+        .expanded(!folding.folded.borrow().contains(&key))
+        .build();
+    let folding = folding.clone();
+    expander.connect_expanded_notify(move |expander| {
+        {
+            let mut folded = folding.folded.borrow_mut();
+            if expander.is_expanded() {
+                folded.remove(&key);
+            } else {
+                folded.insert(key);
+            }
+        }
+        (folding.changed)();
+    });
+    expander.upcast()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use beacon_core::model::{Episode, EpisodeInfo, EpisodeState};
+    use chrono::DateTime;
+
+    use super::*;
+
+    fn episode(id: i64, played: bool) -> Entry {
+        Entry::Episode {
+            item: Box::new(EpisodeItem {
+                episode: Episode {
+                    id: EpisodeId(id),
+                    show_id: ShowId(1),
+                    info: EpisodeInfo::default(),
+                    state: EpisodeState {
+                        played,
+                        ..Default::default()
+                    },
+                    added_at: DateTime::UNIX_EPOCH,
+                },
+                show_title: String::new(),
+                cover: None,
+                in_queue: false,
+            }),
+            first: false,
+            last: false,
+        }
+    }
+
+    fn heading(title: &str) -> Entry {
+        Entry::Heading {
+            title: title.into(),
+            fold: None,
+            top: 24,
+        }
+    }
+
+    fn entries(store: &gio::ListStore) -> Vec<Entry> {
+        (0..store.n_items())
+            .filter_map(|i| store.item(i).and_downcast::<EntryObject>())
+            .map(|e| e.entry().clone())
+            .collect()
+    }
+
+    /// Syncs `store` to `new`, returning how many entries were replaced or
+    /// added: what the list view binds again.
+    fn rebound(store: &gio::ListStore, new: Vec<Entry>) -> u32 {
+        let added = Rc::new(Cell::new(0));
+        let count = added.clone();
+        let handler = store.connect_items_changed(move |_, _, _, n| count.set(count.get() + n));
+        sync(store, new.clone());
+        store.disconnect(handler);
+        assert_eq!(entries(store), new);
+        added.get()
+    }
+
+    #[test]
+    fn a_changed_episode_replaces_only_its_entry() {
+        let store = gio::ListStore::new::<EntryObject>();
+        let list = |played| {
+            let mut list = vec![Entry::Header, heading("Today")];
+            list.extend((1..=500).map(|id| episode(id, id == 250 && played)));
+            list.push(Entry::Space(24));
+            list
+        };
+        assert_eq!(rebound(&store, list(false)), 503);
+        assert_eq!(rebound(&store, list(true)), 1);
+        assert_eq!(rebound(&store, list(true)), 0);
+    }
+
+    #[test]
+    fn added_and_removed_episodes_leave_the_rest_in_place() {
+        let store = gio::ListStore::new::<EntryObject>();
+        let with = |ids: &[i64]| {
+            let mut list = vec![heading("Today")];
+            list.extend(ids.iter().map(|id| episode(*id, false)));
+            list.push(heading("Yesterday"));
+            list.extend((100..200).map(|id| episode(id, false)));
+            list
+        };
+        rebound(&store, with(&[1, 2, 3]));
+        // Marked played under an Unplayed filter: one entry goes.
+        assert_eq!(rebound(&store, with(&[1, 3])), 0);
+        // A refresh finds a new episode.
+        assert_eq!(rebound(&store, with(&[0, 1, 3])), 1);
+        // Another order entirely is all new.
+        assert_eq!(rebound(&store, vec![Entry::Message("None".into())]), 1);
+        assert_eq!(rebound(&store, Vec::new()), 0);
+    }
 }

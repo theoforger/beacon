@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The New section: recent episodes of every show, one boxed list per
-//! recency group under its heading (as GNOME Podcasts' home view). The
+//! The New section: recent episodes of every show, a card per recency group
+//! under its heading (as GNOME Podcasts' home view), in one list view
+//! (`ui/episode_list.rs`). The
 //! content header's filter button sorts and filters it, as on podcast pages.
 
 use std::rc::Rc;
 
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowPrefs};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs};
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
 use relm4::gtk;
 use relm4::{Component, ComponentParts, ComponentSender, adw};
 
-use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
+use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::selection::Selection;
@@ -35,10 +36,7 @@ pub enum NewViewOutput {
 
 pub struct NewView {
     rows: RowSetup,
-    fill: LazyFill,
-    /// What the lists show now: each group and its episodes.
-    shown: Vec<(RecencyGroup, Vec<EpisodeId>)>,
-    lists: Vec<gtk::ListBox>,
+    list: EpisodeList,
 }
 
 #[relm4::component(pub)]
@@ -57,26 +55,7 @@ impl Component for NewView {
             gtk::Stack {
                 set_vexpand: true,
 
-                #[name = "scrolled"]
-                add_named[Some("list")] = &gtk::ScrolledWindow {
-                    set_hscrollbar_policy: gtk::PolicyType::Never,
-
-                    adw::Clamp {
-                        set_maximum_size: 900,
-
-                        // GNOME Podcasts' spacing (`home_episode_list.ui`):
-                        // 32px above and below, groups 24px apart.
-                        #[name = "groups"]
-                        gtk::Box {
-                            set_orientation: gtk::Orientation::Vertical,
-                            set_spacing: 24,
-                            set_margin_top: 32,
-                            set_margin_bottom: 32,
-                            set_margin_start: 12,
-                            set_margin_end: 12,
-                        },
-                    },
-                },
+                add_named[Some("list")] = model.list.widget(),
 
                 #[name = "empty"]
                 add_named[Some("empty")] = &adw::StatusPage {
@@ -98,14 +77,10 @@ impl Component for NewView {
             show_identity: true,
             selection,
         };
-        let model = NewView {
-            rows,
-            fill: LazyFill::default(),
-            shown: Vec::new(),
-            lists: Vec::new(),
-        };
+        // Translators: how a screen reader names the New section's list.
+        let list = EpisodeList::new(&rows, &gettext("New Episodes"), None, None);
+        let model = NewView { rows, list };
         let widgets = view_output!();
-        model.fill.follow(&widgets.scrolled);
 
         ComponentParts { model, widgets }
     }
@@ -152,45 +127,23 @@ impl Component for NewView {
             .stack
             .set_visible_child_name(if items.is_empty() { "empty" } else { "list" });
 
+        // GNOME Podcasts' spacing (`home_episode_list.ui`): 32px above and
+        // below, groups 24px apart, each heading 6px above its card.
         let groups = group(items);
-        let shape: Vec<_> = groups.iter().map(|(g, items)| (*g, ids(items))).collect();
-        let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, items)| items).collect();
+        let mut entries = Vec::new();
+        for (i, (group, items)) in groups.iter().enumerate() {
+            entries.push(Entry::Heading {
+                title: format::recency_title(*group),
+                fold: None,
+                top: if i == 0 { 32 } else { 24 },
+            });
+            entries.extend(Entry::card(items));
+        }
+        entries.push(Entry::Space(32));
         self.rows
             .selection
-            .set_items(all.iter().map(|item| (*item).clone()).collect());
-        if shape == self.shown && update_in_place(&self.lists, &all, &self.fill) {
-            return;
-        }
-
-        // The episodes changed: rebuild the groups and fill them lazily.
-        self.fill.cancel();
-        while let Some(child) = widgets.groups.first_child() {
-            widgets.groups.remove(&child);
-        }
-        self.lists.clear();
-        let mut work = Vec::new();
-        for (group, items) in groups {
-            let title = format::recency_title(group);
-            let heading = gtk::Label::builder()
-                .label(&title)
-                .xalign(0.0)
-                .css_classes(["heading"])
-                .accessible_role(gtk::AccessibleRole::Heading)
-                .build();
-            let list = new_list(&self.rows, &title);
-            // A heading 6px above its list, as in GNOME Podcasts.
-            let group = gtk::Box::builder()
-                .orientation(gtk::Orientation::Vertical)
-                .spacing(6)
-                .build();
-            group.append(&heading);
-            group.append(&list);
-            widgets.groups.append(&group);
-            work.extend(items.into_iter().map(|item| (list.clone(), item)));
-            self.lists.push(list);
-        }
-        self.shown = shape;
-        self.fill.start(work, self.rows.clone());
+            .set_items(groups.into_iter().flat_map(|(_, items)| items).collect());
+        self.list.set(entries);
     }
 }
 

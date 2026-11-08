@@ -3,8 +3,9 @@
 //! An episode in a list: cover, a title of at most two lines with the blue
 //! dot before it and the played check after it, the subtitle, a progress bar
 //! when partly played, a flat play button and the row menu. Two controls,
-//! as the HIG checklist allows; activating the row opens the details. A
-//! `GtkListBoxRow` for a `boxed-list`, as GNOME Podcasts' episode row is.
+//! as the HIG checklist allows; activating the row opens the details. The
+//! child of a `GtkListView` row (`ui/episode_list.rs`), bound again to
+//! another episode as the list scrolls; drawn as part of its group's card.
 //!
 //! In selection mode the play button and menu give way to a check box.
 //! The menu's Select, a secondary click or a long press selects.
@@ -14,7 +15,7 @@ use std::rc::Rc;
 
 use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
-use relm4::gtk::subclass::prelude::*;
+use relm4::adw::{self, prelude::BinExt, subclass::prelude::*};
 use relm4::gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::player::PlaybackState;
@@ -93,20 +94,20 @@ mod imp {
     impl ObjectSubclass for EpisodeRow {
         const NAME: &'static str = "BeaconEpisodeRow";
         type Type = super::EpisodeRow;
-        type ParentType = gtk::ListBoxRow;
+        type ParentType = adw::Bin;
     }
 
     impl ObjectImpl for EpisodeRow {}
     impl WidgetImpl for EpisodeRow {}
-    impl ListBoxRowImpl for EpisodeRow {}
+    impl BinImpl for EpisodeRow {}
 }
 
 glib::wrapper! {
-    /// A list box row that keeps its parts, so it can be updated in place
-    /// when the episode's state changes.
+    /// A row that keeps its parts, so it can show another episode, or the
+    /// same one changed, without being built again.
     pub struct EpisodeRow(ObjectSubclass<imp::EpisodeRow>)
-        @extends gtk::ListBoxRow, gtk::Widget,
-        @implements gtk::Accessible, gtk::Actionable, gtk::Buildable, gtk::ConstraintTarget;
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 pub struct Parts {
@@ -121,6 +122,8 @@ pub struct Parts {
     menu: gtk::MenuButton,
     play: gtk::Button,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
+    /// What a screen reader says for the row (see `bind`).
+    name: RefCell<String>,
     /// Whether the row shows its show, by cover and in the subtitle; not
     /// on the show's own page.
     show_identity: bool,
@@ -133,6 +136,7 @@ impl EpisodeRow {
     pub fn new(setup: &RowSetup) -> Self {
         let show_identity = setup.show_identity;
         let root: Self = glib::Object::new();
+        root.add_css_class("episode-card");
         let content = gtk::Box::builder()
             .spacing(12)
             .height_request(CONTENT_HEIGHT)
@@ -282,14 +286,15 @@ impl EpisodeRow {
             menu,
             play,
             episode,
+            name: RefCell::default(),
             show_identity,
         };
         let _ = root.imp().parts.set(parts);
         root.connect_selection();
         setup.selection.watch(&root);
         ROWS.with_borrow_mut(|rows| {
-            // Rows come and go with every list rebuilt; drop the gone ones
-            // whenever the list doubles, so it never grows without end.
+            // Rows go with their list's page; drop the gone ones whenever
+            // the list doubles, so it never grows without end.
             if rows.len() >= 64 && rows.len().is_power_of_two() {
                 rows.retain(|row| row.upgrade().is_some());
             }
@@ -321,9 +326,25 @@ impl EpisodeRow {
         play_button::set_icon(&parts.play, state);
     }
 
-    /// The episode the row shows.
-    pub fn item(&self) -> Option<EpisodeItem> {
-        self.imp().parts.get()?.episode.borrow().clone()
+    /// What a screen reader says for the row's episode.
+    pub fn accessible_name(&self) -> String {
+        self.imp()
+            .parts
+            .get()
+            .map(|parts| parts.name.borrow().clone())
+            .unwrap_or_default()
+    }
+
+    /// Round the top of its group's card when `first`, the bottom when
+    /// `last`; a separator under every other row.
+    pub fn set_edges(&self, first: bool, last: bool) {
+        for (class, on) in [("first", first), ("last", last)] {
+            if on {
+                self.add_css_class(class);
+            } else {
+                self.remove_css_class(class);
+            }
+        }
     }
 
     pub fn bind(&self, item: &EpisodeItem) {
@@ -356,7 +377,8 @@ impl EpisodeRow {
         let subtitle = format::subtitle(episode, show_title);
         parts.subtitle.set_label(&subtitle);
         // Screen readers read a row from its text, " · " included ("middle
-        // dot"), unless the row has a name: give it one that says it all.
+        // dot"), unless the row has a name: give it one that says it all,
+        // for the list to put on the list item that has focus.
         let mut name = vec![episode.info.title.clone()];
         if state.is_new() {
             name.push(gettext("New"));
@@ -367,7 +389,7 @@ impl EpisodeRow {
         name.push(format::spoken(&subtitle));
         // Translators: separates the parts of an episode row when a screen
         // reader reads it; a pause, not a symbol.
-        self.update_property(&[gtk::accessible::Property::Label(&name.join(&gettext(", ")))]);
+        parts.name.replace(name.join(&gettext(", ")));
         parts.progress.set_visible(state.is_partly_played());
         self.fit_title();
         if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {

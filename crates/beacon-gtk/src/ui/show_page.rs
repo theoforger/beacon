@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! A podcast page, pushed over the current section, built like GNOME
-//! Podcasts' show page: the hero, then the episodes in a `boxed-list`
-//! `GtkListBox`. When the feed has season tags, each season is its own list
-//! inside a `GtkExpander`, so it can be folded; the page remembers which
-//! seasons are folded. Rows are added lazily and updated in place.
+//! A podcast page, pushed over the current section: the hero, then the
+//! episodes, all in one list view (`ui/episode_list.rs`) so that long feeds
+//! scroll smoothly. When the feed has season tags, each season has its own
+//! card under a `GtkExpander` heading, so it can be folded; the page
+//! remembers which seasons are folded.
 
-use std::cell::RefCell;
-use std::collections::HashSet;
 use std::rc::Rc;
 
 use beacon_core::model::{
@@ -15,10 +13,10 @@ use beacon_core::model::{
 };
 use gettextrs::gettext;
 use relm4::adw::prelude::*;
-use relm4::gtk::{self, gdk, gio, pango};
+use relm4::gtk::{self, gdk, gio};
 use relm4::{Component, ComponentParts, ComponentSender, adw};
 
-use crate::ui::episode_list::{LazyFill, ids, new_list, update_in_place};
+use crate::ui::episode_list::{Entry, EpisodeList, Folding};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
@@ -38,6 +36,8 @@ pub enum ShowPageInput {
     MarkAll,
     CopyFeedAddress,
     Unsubscribe,
+    /// A season was folded or unfolded.
+    Refold,
 }
 
 #[derive(Debug)]
@@ -52,12 +52,6 @@ pub enum ShowPageOutput {
     Change(Vec<EpisodeId>, EpisodeChange),
 }
 
-/// A season, by number; `None` for the episodes without a season tag.
-type SeasonKey = Option<u32>;
-
-/// What a page lists: its show and each season's episodes.
-type Shape = (ShowId, Vec<(SeasonKey, Vec<EpisodeId>)>);
-
 pub struct ShowPage {
     data: Option<ShowPageData>,
     hero: ShowHero,
@@ -66,12 +60,9 @@ pub struct ShowPage {
     /// More Options: Mark All, Download All Episodes, Copy Feed Address.
     more: gtk::MenuButton,
     rows: RowSetup,
-    fill: LazyFill,
-    /// What the lists show now, to update in place when only states change.
-    shown: Option<Shape>,
-    lists: Vec<gtk::ListBox>,
+    list: EpisodeList,
     /// Folded seasons, kept while the app runs.
-    folded: Rc<RefCell<HashSet<(ShowId, SeasonKey)>>>,
+    folding: Folding,
 }
 
 #[relm4::component(pub)]
@@ -97,33 +88,7 @@ impl Component for ShowPage {
                     set_show_title: false,
                 },
 
-                #[wrap(Some)]
-                #[name = "scrolled"]
-                set_content = &gtk::ScrolledWindow {
-                    set_hscrollbar_policy: gtk::PolicyType::Never,
-
-                    adw::Clamp {
-                        set_maximum_size: 900,
-
-                        gtk::Box {
-                            set_orientation: gtk::Orientation::Vertical,
-                            set_margin_bottom: 24,
-                            set_margin_start: 12,
-                            set_margin_end: 12,
-
-                            append: model.hero.widget(),
-
-                            // Seasons 24px apart, as GNOME Podcasts spaces
-                            // its groups.
-                            #[name = "episodes"]
-                            gtk::Box {
-                                set_orientation: gtk::Orientation::Vertical,
-                                set_spacing: 24,
-                                set_margin_top: 12,
-                            },
-                        },
-                    },
-                },
+                set_content: Some(model.list.widget()),
             },
         }
     }
@@ -143,22 +108,34 @@ impl Component for ShowPage {
             show_identity: false,
             selection: Selection::default(),
         };
+        let hero = ShowHero::new();
+        let folding = Folding {
+            folded: Rc::default(),
+            changed: Rc::new({
+                let s = sender.clone();
+                move || s.input(ShowPageInput::Refold)
+            }),
+        };
+        // Translators: how a screen reader names a show's episode list.
+        let list = EpisodeList::new(
+            &rows,
+            &gettext("Episodes"),
+            Some(hero.widget().clone().upcast()),
+            Some(folding.clone()),
+        );
         let model = ShowPage {
             data: None,
-            hero: ShowHero::new(),
+            hero,
             more: more_button(),
             filter: page_filters::FilterButton::new({
                 let s = sender.clone();
                 move |choice| s.input(ShowPageInput::Choose(choice))
             }),
             rows,
-            fill: LazyFill::default(),
-            shown: None,
-            lists: Vec::new(),
-            folded: Rc::default(),
+            list,
+            folding,
         };
         let widgets = view_output!();
-        model.fill.follow(&widgets.scrolled);
 
         // The details toggle at the far end, as on every page; then the
         // show's More Options menu, which the HIG puts in the header bar
@@ -213,6 +190,7 @@ impl Component for ShowPage {
             ShowPageInput::Set(data) => {
                 if self.data.as_ref().map(|d| d.show.id) != Some(data.show.id) {
                     self.rows.selection.set_active(false);
+                    self.list.set(Vec::new());
                 }
                 root.set_title(&data.show.info.title);
                 widgets.header.set_show_title(true);
@@ -221,8 +199,8 @@ impl Component for ShowPage {
                     self.more.set_menu_model(Some(&more_menu(data.all_played)));
                 }
                 self.filter.set_prefs(&data.prefs);
-                self.show_episodes(&widgets.episodes, &data);
                 self.data = Some(*data);
+                self.show_episodes();
             }
             ShowPageInput::Choose(choice) => {
                 self.change_prefs(&sender, |p| *p = choice.apply(*p));
@@ -244,6 +222,7 @@ impl Component for ShowPage {
                     let _ = sender.output(ShowPageOutput::Unsubscribe(data.show.id));
                 }
             }
+            ShowPageInput::Refold => self.show_episodes(),
         }
     }
 }
@@ -260,114 +239,61 @@ impl ShowPage {
         }
     }
 
-    /// Show the page's episodes: update the rows in place when the same
-    /// episodes are listed, otherwise rebuild the lists and fill them lazily.
-    fn show_episodes(&mut self, container: &gtk::Box, data: &ShowPageData) {
-        let show = data.show.id;
-        let groups: Vec<(SeasonKey, Option<String>, &[EpisodeItem])> = match &data.seasons {
-            Some(seasons) => seasons
-                .iter()
-                .map(|s| {
-                    let key = s.season.as_ref().map(|s| s.number);
-                    let title = format::season_title(s.season.as_ref());
-                    (key, Some(title), s.episodes.as_slice())
-                })
-                .collect(),
-            None => vec![(None, None, data.episodes.as_slice())],
-        };
-        let shape: Vec<_> = groups
-            .iter()
-            .map(|(key, _, items)| (*key, ids(*items)))
-            .collect();
-        let all: Vec<&EpisodeItem> = groups.iter().flat_map(|(_, _, items)| *items).collect();
-        self.rows
-            .selection
-            .set_items(all.iter().map(|item| (*item).clone()).collect());
-        if self.shown.as_ref() == Some(&(show, shape.clone()))
-            && update_in_place(&self.lists, &all, &self.fill)
-        {
+    /// List the hero, then each season's heading and, unless folded, its
+    /// episodes; or the episodes alone when the feed has no seasons.
+    fn show_episodes(&self) {
+        let Some(data) = &self.data else {
             return;
+        };
+        let show = data.show.id;
+        let mut all = Vec::new();
+        let mut entries = vec![Entry::Header];
+        match &data.seasons {
+            Some(seasons) => {
+                // Seasons 24px apart, as GNOME Podcasts spaces its groups.
+                for (i, season) in seasons
+                    .iter()
+                    .filter(|s| !s.episodes.is_empty())
+                    .enumerate()
+                {
+                    let key = (show, season.season.as_ref().map(|s| s.number));
+                    entries.push(Entry::Heading {
+                        title: format::season_title(season.season.as_ref()),
+                        fold: Some(key),
+                        top: if i == 0 { 12 } else { 24 },
+                    });
+                    if !self.folding.folded.borrow().contains(&key) {
+                        entries.extend(Entry::card(&season.episodes));
+                    }
+                    all.extend(season.episodes.iter().cloned());
+                }
+            }
+            None if !data.episodes.is_empty() => {
+                entries.push(Entry::Space(12));
+                entries.extend(Entry::card(&data.episodes));
+                all.extend(data.episodes.iter().cloned());
+            }
+            None => {}
         }
-
-        self.fill.cancel();
-        while let Some(child) = container.first_child() {
-            container.remove(&child);
-        }
-        self.lists.clear();
-
-        let mut work = Vec::new();
         if all.is_empty() {
-            container.append(&empty_label(&data.prefs));
+            entries.push(Entry::Message(empty_message(&data.prefs)));
         }
-        for (key, title, items) in groups {
-            if items.is_empty() {
-                continue;
-            }
-            // Translators: how a screen reader names a show's episode list
-            // when the show has no seasons.
-            let name = title.clone().unwrap_or_else(|| gettext("Episodes"));
-            let list = new_list(&self.rows, &name);
-            match title {
-                Some(title) => container.append(&self.season(show, key, &title, &list)),
-                None => container.append(&list),
-            }
-            work.extend(items.iter().map(|item| (list.clone(), item.clone())));
-            self.lists.push(list);
-        }
-        self.shown = Some((show, shape));
-        self.fill.start(work, self.rows.clone());
-    }
-
-    /// A season: its title in a `GtkExpander`, unfolding to its list.
-    fn season(
-        &self,
-        show: ShowId,
-        key: SeasonKey,
-        title: &str,
-        list: &gtk::ListBox,
-    ) -> gtk::Expander {
-        let label = gtk::Label::builder()
-            .label(title)
-            .xalign(0.0)
-            .ellipsize(pango::EllipsizeMode::End)
-            .css_classes(["heading"])
-            .accessible_role(gtk::AccessibleRole::Heading)
-            .build();
-        let expander = gtk::Expander::builder()
-            .label_widget(&label)
-            .child(list)
-            .expanded(!self.folded.borrow().contains(&(show, key)))
-            .build();
-        list.set_margin_top(6);
-        let folded = self.folded.clone();
-        expander.connect_expanded_notify(move |expander| {
-            let mut folded = folded.borrow_mut();
-            if expander.is_expanded() {
-                folded.remove(&(show, key));
-            } else {
-                folded.insert((show, key));
-            }
-        });
-        expander
+        entries.push(Entry::Space(24));
+        self.rows.selection.set_items(all);
+        self.list.set(entries);
     }
 }
 
-fn empty_label(prefs: &ShowPrefs) -> gtk::Label {
+fn empty_message(prefs: &ShowPrefs) -> String {
     let only_unplayed =
         prefs.played == EpisodeFilter::Unplayed && prefs.downloaded == DownloadFilter::All;
-    let message = if only_unplayed {
+    if only_unplayed {
         gettext("No unplayed episodes: you are all caught up")
     } else if prefs.is_filtered() {
         gettext("No episodes match these filters")
     } else {
         gettext("This podcast has no episodes yet")
-    };
-    gtk::Label::builder()
-        .label(message)
-        .wrap(true)
-        .margin_top(24)
-        .css_classes(["dim-label"])
-        .build()
+    }
 }
 
 /// The page's More Options button, in its header bar.
