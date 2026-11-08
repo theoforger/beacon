@@ -3,6 +3,9 @@
 //! The narrow layout, keyboard focus and Back, and the remembered window
 //! size.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use relm4::adw::prelude::*;
 use relm4::gtk::{self, gdk, gio, glib};
 use relm4::{ComponentController, adw};
@@ -150,17 +153,24 @@ impl App {
         // The player moves into the bottom sheet, under its slim bar.
         breakpoint.add_setter(&self.sheet, "can-open", Some(&true.to_value()));
         breakpoint.add_setter(&self.sheet, "reveal-bottom-bar", Some(&true.to_value()));
-        let (bar, player, frame, sheet) = (
+        // Whether the sheet was open when the window went wide, to open it
+        // again when it goes narrow (it stayed closed, found by the user).
+        let was_open = Rc::new(Cell::new(false));
+        let (bar, player, frame, sheet, reopen) = (
             self.bar.sender().clone(),
             self.bar.widget().clone(),
             self.frame.clone(),
             self.sheet.clone(),
+            was_open.clone(),
         );
         breakpoint.connect_apply(move |_| {
             episode_row::set_narrow(true);
             frame.remove(&player);
             sheet.set_sheet(Some(&player));
             bar.emit(PlayerBarInput::Sheet(true));
+            if reopen.take() {
+                sheet.set_open(true);
+            }
         });
         let (bar, player, frame, sheet) = (
             self.bar.sender().clone(),
@@ -170,6 +180,7 @@ impl App {
         );
         breakpoint.connect_unapply(move |_| {
             episode_row::set_narrow(false);
+            was_open.set(sheet.is_open());
             sheet.set_open(false);
             sheet.set_sheet(None::<&gtk::Widget>);
             frame.add_bottom_bar(&player);
