@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 15:31-0500\n"
+"POT-Creation-Date: 2026-11-08 15:37-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,44 +22,44 @@ msgstr ""
 msgid "Feed address copied"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:161
+#: crates/beacon-gtk/src/app/actions.rs:171
 #, rust-format
 msgid "Unsubscribe From {show}?"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:163
+#: crates/beacon-gtk/src/app/actions.rs:173
 msgid ""
 "Its episodes, your progress in them and your favorites from it are removed "
 "from your library"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:166
+#: crates/beacon-gtk/src/app/actions.rs:176
 #: crates/beacon-gtk/src/ui/selection_bar.rs:157
 msgid "_Cancel"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:167
+#: crates/beacon-gtk/src/app/actions.rs:177
 #: crates/beacon-gtk/src/ui/show_hero.rs:104
 msgid "_Unsubscribe"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:203
+#: crates/beacon-gtk/src/app/actions.rs:213
 #, rust-format
 msgid "Unsubscribed from {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:275
+#: crates/beacon-gtk/src/app/actions.rs:285
 #, rust-format
 msgid "Could not refresh {n} podcast"
 msgid_plural "Could not refresh {n} podcasts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/actions.rs:284
+#: crates/beacon-gtk/src/app/actions.rs:294
 msgid "No new episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:286
+#: crates/beacon-gtk/src/app/actions.rs:296
 #, rust-format
 msgid "{n} new episode"
 msgid_plural "{n} new episodes"
@@ -329,7 +329,7 @@ msgstr ""
 #. Translators: separates the parts of an episode row when a screen
 #. reader reads it; a pause, not a symbol.
 #: crates/beacon-gtk/src/ui/format.rs:56
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:392
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:393
 msgid ", "
 msgstr ""
 
@@ -450,7 +450,7 @@ msgid "Shows"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/labels.rs:12
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:384
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:385
 msgid "New"
 msgstr ""
 
@@ -847,7 +847,11 @@ msgstr ""
 msgid "_Select"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:387
+#: crates/beacon-gtk/src/ui/widgets/episode_row/menu.rs:48
+msgid "_Reset Progress"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:388
 msgid "Played"
 msgstr ""
 
