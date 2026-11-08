@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 16:29-0500\n"
+"POT-Creation-Date: 2026-11-08 16:46-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -71,7 +71,7 @@ msgstr[1] ""
 msgid "Subscribed to {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/mod.rs:142 crates/beacon-gtk/src/app/mod.rs:165
+#: crates/beacon-gtk/src/app/mod.rs:145 crates/beacon-gtk/src/app/mod.rs:168
 #: crates/beacon-gtk/src/main.rs:29 crates/beacon-gtk/src/player/mpris.rs:89
 #: crates/beacon-gtk/src/ui/dialogs/about.rs:11
 #: data/com.theoforger.Beacon.desktop.in:4
@@ -132,7 +132,7 @@ msgid "Playing now"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/content/mod.rs:136
-#: crates/beacon-gtk/src/ui/content/mod.rs:137 data/shortcuts-dialog.ui:28
+#: crates/beacon-gtk/src/ui/content/mod.rs:137 data/shortcuts-dialog.ui:34
 msgid "Refresh Feeds"
 msgstr ""
 
@@ -946,13 +946,17 @@ msgid "Show Shortcuts"
 msgstr ""
 
 #: data/shortcuts-dialog.ui:22
+msgid "Toggle Episode Details"
+msgstr ""
+
+#: data/shortcuts-dialog.ui:28
 msgid "Go Back"
 msgstr ""
 
-#: data/shortcuts-dialog.ui:34
+#: data/shortcuts-dialog.ui:40
 msgid "Close Window"
 msgstr ""
 
-#: data/shortcuts-dialog.ui:40
+#: data/shortcuts-dialog.ui:46
 msgid "Quit"
 msgstr ""

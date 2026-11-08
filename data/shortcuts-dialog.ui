@@ -19,6 +19,12 @@
         </child>
         <child>
           <object class="AdwShortcutsItem">
+            <property name="title" translatable="yes">Toggle Episode Details</property>
+            <property name="action-name">win.details</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwShortcutsItem">
             <property name="title" translatable="yes">Go Back</property>
             <property name="action-name">win.back</property>
           </object>
