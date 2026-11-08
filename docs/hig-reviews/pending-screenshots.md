@@ -8,7 +8,6 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-11-07 | `ui/player_bar/compact.rs`, `app/window.rs`, `ui/widgets/episode_row/` | Resizing by hand, which headless shots cannot do: from narrow to wide with the player sheet open and back (going wide puts the bar back under the content with nothing under it); across the breakpoint on a long podcast page and New, no freeze, and rows swap cover size and Play at once | Resizing by hand | Play an episode on a long podcast page, open the sheet at 360px, widen the window; then narrow and widen New |
 
 ## Manual accessibility checks
 

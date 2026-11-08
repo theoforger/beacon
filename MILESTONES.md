@@ -203,11 +203,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`; reopened 2026-11-08 for the rows logged after the pass)
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`; reopened 2026-11-08 for the rows logged after the pass, cleared the same day)
 - [x] Accessibility and translation checks pass: strings through gettext, every file with strings in `POTFILES.in` (`episode_row/selecting.rs` added 2026-11-08), labels and tooltips on icon-only buttons; the Orca and keyboard walk-throughs deferred to M9 (decided by the user 2026-11-08)
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario (playback, chapters, selection, MPRIS on a session bus; the narrow layout measured with a display)
 - [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] Human review of the running app (2026-11-08)
 
 ## M5 Queue and lists
 
