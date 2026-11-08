@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 16:07-0500\n"
+"POT-Creation-Date: 2026-11-08 16:29-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -213,8 +213,8 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/details_pane/build.rs:108
 #: crates/beacon-gtk/src/ui/show_page.rs:303
 #: crates/beacon-gtk/src/ui/show_page.rs:306
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:224
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:228
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:235
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:239
 msgid "More Options"
 msgstr ""
 
@@ -325,132 +325,132 @@ msgstr ""
 #. with a space either side.
 #. Translators: separates the parts of an episode's subtitle when a
 #. screen reader reads it; a pause, not a symbol.
-#: crates/beacon-gtk/src/ui/format.rs:30 crates/beacon-gtk/src/ui/format.rs:56
-#: crates/beacon-gtk/src/ui/format.rs:82
+#: crates/beacon-gtk/src/ui/format.rs:29 crates/beacon-gtk/src/ui/format.rs:55
+#: crates/beacon-gtk/src/ui/format.rs:81
 msgid " • "
 msgstr ""
 
 #. Translators: a playback speed, as in "1.25×".
-#: crates/beacon-gtk/src/ui/format.rs:48
+#: crates/beacon-gtk/src/ui/format.rs:47
 #, rust-format
 msgid "{rate}×"
 msgstr ""
 
 #. Translators: separates the parts of an episode row when a screen
 #. reader reads it; a pause, not a symbol.
-#: crates/beacon-gtk/src/ui/format.rs:56
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:425
+#: crates/beacon-gtk/src/ui/format.rs:55
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:460
 msgid ", "
 msgstr ""
 
 #. Translators: as in "Season 3, Episode 2".
-#: crates/beacon-gtk/src/ui/format.rs:65
+#: crates/beacon-gtk/src/ui/format.rs:64
 #, rust-format
 msgid "Season {season}, Episode {episode}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:69
+#: crates/beacon-gtk/src/ui/format.rs:68
 #, rust-format
 msgid "Episode {episode}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:71 crates/beacon-gtk/src/ui/format.rs:160
+#: crates/beacon-gtk/src/ui/format.rs:70 crates/beacon-gtk/src/ui/format.rs:159
 #, rust-format
 msgid "Season {number}"
 msgstr ""
 
 #. Translators: season and episode numbers, as in "S3 E2".
-#: crates/beacon-gtk/src/ui/format.rs:90
+#: crates/beacon-gtk/src/ui/format.rs:89
 #, rust-format
 msgid "S{season} E{episode}"
 msgstr ""
 
 #. Translators: an episode number without a season, as in "E12".
-#: crates/beacon-gtk/src/ui/format.rs:96
+#: crates/beacon-gtk/src/ui/format.rs:95
 #, rust-format
 msgid "E{episode}"
 msgstr ""
 
 #. Translators: a season number without an episode, as in "S3".
-#: crates/beacon-gtk/src/ui/format.rs:100
+#: crates/beacon-gtk/src/ui/format.rs:99
 #, rust-format
 msgid "S{season}"
 msgstr ""
 
 #. Translators: a date in the current year, in GLib's strftime
 #. format, as in "Oct 27". Reorder freely.
-#: crates/beacon-gtk/src/ui/format.rs:121
+#: crates/beacon-gtk/src/ui/format.rs:120
 msgid "%b %-d"
 msgstr ""
 
 #. Translators: a date in another year, as in "Oct 27, 2025".
-#: crates/beacon-gtk/src/ui/format.rs:124
+#: crates/beacon-gtk/src/ui/format.rs:123
 msgid "%b %-d, %Y"
 msgstr ""
 
 #. Translators: an episode length under an hour, as in "52 min".
-#: crates/beacon-gtk/src/ui/format.rs:138
+#: crates/beacon-gtk/src/ui/format.rs:137
 #, rust-format
 msgid "{minutes} min"
 msgstr ""
 
 #. Translators: an episode length of an hour or more, as in "1 h 6 min".
-#: crates/beacon-gtk/src/ui/format.rs:141
+#: crates/beacon-gtk/src/ui/format.rs:140
 #, rust-format
 msgid "{hours} h {minutes} min"
 msgstr ""
 
 #. Translators: a season header with its name, as in "Season 3: Deserts".
-#: crates/beacon-gtk/src/ui/format.rs:155
+#: crates/beacon-gtk/src/ui/format.rs:154
 #, rust-format
 msgid "Season {number}: {name}"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:163
+#: crates/beacon-gtk/src/ui/format.rs:162
 msgid "Other Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:170
+#: crates/beacon-gtk/src/ui/format.rs:169
 msgid "Today"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:171
+#: crates/beacon-gtk/src/ui/format.rs:170
 msgid "Yesterday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:173
+#: crates/beacon-gtk/src/ui/format.rs:172
 msgid "Monday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:174
+#: crates/beacon-gtk/src/ui/format.rs:173
 msgid "Tuesday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:175
+#: crates/beacon-gtk/src/ui/format.rs:174
 msgid "Wednesday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:176
+#: crates/beacon-gtk/src/ui/format.rs:175
 msgid "Thursday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:177
+#: crates/beacon-gtk/src/ui/format.rs:176
 msgid "Friday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:178
+#: crates/beacon-gtk/src/ui/format.rs:177
 msgid "Saturday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:179
+#: crates/beacon-gtk/src/ui/format.rs:178
 msgid "Sunday"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:181
+#: crates/beacon-gtk/src/ui/format.rs:180
 msgid "Last Week"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/format.rs:182
+#: crates/beacon-gtk/src/ui/format.rs:181
 msgid "Earlier in the Month"
 msgstr ""
 
@@ -460,7 +460,7 @@ msgid "Shows"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/labels.rs:12
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:414
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:445
 msgid "New"
 msgstr ""
 
@@ -583,8 +583,8 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/play_button.rs:54
 #: crates/beacon-gtk/src/ui/player_bar/build.rs:91
 #: crates/beacon-gtk/src/ui/player_bar/compact.rs:74
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:217
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:221
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:228
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:232
 msgid "Play"
 msgstr ""
 
@@ -843,11 +843,11 @@ msgstr ""
 msgid "_Select"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:417
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:448
 msgid "Played"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:420
+#: crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs:451
 msgid "Favorite"
 msgstr ""
 

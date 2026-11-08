@@ -135,6 +135,7 @@ fn widgets_lay_out_as_designed() {
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
+    rows_word_their_titles_and_subtitles();
     narrow_rows_leave_out_play_and_shrink_the_cover();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
@@ -482,6 +483,58 @@ fn narrow_rows_leave_out_play_and_shrink_the_cover() {
     assert_eq!(cover.height(), 64);
     assert_eq!(minimum_width(&row), wide);
     window.destroy();
+}
+
+/// Titles take two lines in any window unless the progress bar needs the
+/// room; subtitles leave out the show, which the spoken name keeps where
+/// the cover shows it.
+fn rows_word_their_titles_and_subtitles() {
+    let labels = |row: &EpisodeRow| {
+        let mut found = Vec::new();
+        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if let Some(label) = widget.downcast_ref::<gtk::Label>() {
+                found.push(label.clone());
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        found
+    };
+    let title_lines = |row: &EpisodeRow| {
+        labels(row)
+            .iter()
+            .find(|l| l.has_css_class("heading"))
+            .map(gtk::Label::lines)
+    };
+    let row = EpisodeRow::new(&setup());
+    let mut item = partly_played();
+    row.bind(&item);
+    assert_eq!(
+        title_lines(&row),
+        Some(1),
+        "the progress bar needs the room"
+    );
+    item.episode.state.position = Duration::ZERO;
+    row.bind(&item);
+    assert_eq!(title_lines(&row), Some(2), "two lines in a wide window too");
+
+    assert!(
+        labels(&row)
+            .iter()
+            .all(|l| !l.label().contains("A show with")),
+        "no show in the subtitle"
+    );
+    assert!(row.accessible_name().contains("A show with a long name"));
+    let page_row = EpisodeRow::new(&RowSetup {
+        show_identity: false,
+        ..setup()
+    });
+    page_row.bind(&item);
+    assert!(!page_row.accessible_name().contains("A show with"));
 }
 
 /// A favourite's row shows a star after its title and says "Favorite";

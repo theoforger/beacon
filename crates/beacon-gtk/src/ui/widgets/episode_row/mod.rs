@@ -2,9 +2,9 @@
 
 //! An episode in a list: cover, a title of at most two lines with the blue
 //! dot before it and the played check and favourite star after it, the
-//! subtitle, a progress bar when partly played, a flat play button and the
-//! row menu. Two controls,
-//! as the HIG checklist allows; activating the row opens the details. The
+//! subtitle (without the show, which the cover shows), a progress bar when
+//! partly played, a flat play button and the row menu. Two controls, as the
+//! HIG checklist allows; activating the row opens the details. The
 //! child of a `GtkListView` row (`ui/episode_list.rs`), bound again to
 //! another episode as the list scrolls; drawn as part of its group's card.
 //!
@@ -46,23 +46,21 @@ pub struct RowSetup {
 thread_local! {
     /// The episode in the player, if any, and what the player is doing.
     static PLAYING: Cell<Option<(EpisodeId, PlaybackState)>> = const { Cell::new(None) };
-    /// Whether the window has the narrow layout: titles get two lines, the
-    /// cover is smaller and Play is left out.
+    /// Whether the window has the narrow layout: the cover is smaller and
+    /// Play is left out.
     static NARROW: Cell<bool> = const { Cell::new(false) };
     /// Every row made, so the playing one can show Pause without a reload.
     static ROWS: RefCell<Vec<glib::WeakRef<EpisodeRow>>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Tell the rows whether the window has the narrow layout: titles take two
-/// lines there, one elsewhere, and every row keeps the same height. There
-/// the cover is smaller and Play is left out, as the details page a tap
+/// Tell the rows whether the window has the narrow layout, where the
+/// cover is smaller and Play is left out, as the details page a tap
 /// away has it (asked by the user 2026-11-08): at 360px the row's fixed
 /// parts left the title about 144px.
 pub fn set_narrow(narrow: bool) {
     NARROW.set(narrow);
     ROWS.with_borrow(|rows| {
         for row in rows.iter().filter_map(glib::WeakRef::upgrade) {
-            row.fit_title();
             row.fit_narrow();
         }
     });
@@ -87,8 +85,7 @@ pub fn show_playing(playing: Option<(EpisodeId, PlaybackState)>) {
 const COVER_SIZE: i32 = 64;
 /// The cover in the narrow layout.
 const NARROW_COVER_SIZE: i32 = 48;
-/// Every row's content is this tall, as in GNOME Podcasts, whatever its
-/// title: one line in wide windows, two in the narrow layout.
+/// Every row's content is at least this tall, as in GNOME Podcasts.
 const CONTENT_HEIGHT: i32 = 64;
 
 mod imp {
@@ -147,13 +144,13 @@ pub struct Parts {
     episode: Rc<RefCell<Option<EpisodeItem>>>,
     /// What a screen reader says for the row (see `bind`).
     name: RefCell<String>,
-    /// Whether the row shows its show, by cover and in the subtitle; not
-    /// on the show's own page.
+    /// Whether the row shows its show, by cover (and in its spoken name);
+    /// not on the show's own page.
     show_identity: bool,
 }
 
 impl EpisodeRow {
-    /// A row that shows its show, by cover and in the subtitle, when
+    /// A row that shows its show, by cover, when
     /// `setup.show_identity` is set; on the show's own page it would only
     /// repeat on every row.
     pub fn new(setup: &RowSetup) -> Self {
@@ -324,18 +321,18 @@ impl EpisodeRow {
         root
     }
 
-    /// One line of title, or two in the narrow layout unless the progress
-    /// bar needs the room (GNOME Podcasts' `update_progressbar_spacing`).
+    /// Two lines of title, or one when the progress bar needs the room
+    /// (GNOME Podcasts' `update_progressbar_spacing`); no longer one in wide
+    /// windows (asked by the user 2026-11-08).
     fn fit_title(&self) {
         let Some(parts) = self.imp().parts.get() else {
             return;
         };
-        let two = NARROW.get()
-            && !parts
-                .progress
-                .get()
-                .is_some_and(gtk::ProgressBar::is_visible);
-        parts.title.set_lines(if two { 2 } else { 1 });
+        let progress = parts
+            .progress
+            .get()
+            .is_some_and(gtk::ProgressBar::is_visible);
+        parts.title.set_lines(if progress { 1 } else { 2 });
     }
 
     /// The narrow layout's smaller cover, and Play shown only outside it
@@ -438,12 +435,7 @@ impl EpisodeRow {
         } else {
             parts.title.remove_css_class("dim-label");
         }
-        let show_title = if parts.show_identity {
-            item.show_title.as_str()
-        } else {
-            ""
-        };
-        let subtitle = format::subtitle(episode, show_title);
+        let subtitle = format::subtitle(episode);
         parts.subtitle.set_label(&subtitle);
         // Screen readers read a row from its text, " • " included
         // ("bullet"), unless the row has a name: give it one that says it all,
@@ -457,6 +449,10 @@ impl EpisodeRow {
         }
         if state.favorite {
             name.push(gettext("Favorite"));
+        }
+        // The show, which only the cover shows, and the cover is not read.
+        if parts.show_identity && !item.show_title.is_empty() {
+            name.push(item.show_title.clone());
         }
         name.push(format::spoken(&subtitle));
         // Translators: separates the parts of an episode row when a screen

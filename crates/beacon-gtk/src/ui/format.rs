@@ -10,12 +10,11 @@ use chrono::{DateTime, Local, Utc};
 use gettextrs::gettext;
 use relm4::gtk::glib;
 
-/// "Show • S3 E2 • Oct 27 • 52 min", leaving out what is unknown.
-pub fn subtitle(episode: &Episode, show_title: &str) -> String {
+/// "S3 E2 • Oct 27 • 52 min", leaving out what is unknown. Without the
+/// show's name, which a row's cover shows where it matters (asked by the
+/// user 2026-11-08).
+pub fn subtitle(episode: &Episode) -> String {
     let mut parts = Vec::new();
-    if !show_title.is_empty() {
-        parts.push(show_title.to_owned());
-    }
     if let Some(numbers) = season_and_episode(episode) {
         parts.push(numbers);
     }
@@ -198,10 +197,7 @@ mod tests {
 
     #[test]
     fn subtitles_are_spoken_without_their_bullets() {
-        assert_eq!(
-            spoken("The Long Signal • S3 E2 • Oct 27 • 52 min"),
-            "The Long Signal, S3 E2, Oct 27, 52 min"
-        );
+        assert_eq!(spoken("S3 E2 • Oct 27 • 52 min"), "S3 E2, Oct 27, 52 min");
     }
 
     #[test]
