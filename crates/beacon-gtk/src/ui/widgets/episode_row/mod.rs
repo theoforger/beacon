@@ -46,19 +46,24 @@ pub struct RowSetup {
 thread_local! {
     /// The episode in the player, if any, and what the player is doing.
     static PLAYING: Cell<Option<(EpisodeId, PlaybackState)>> = const { Cell::new(None) };
-    /// Whether the window has the narrow layout, where titles get two lines.
+    /// Whether the window has the narrow layout: titles get two lines, the
+    /// cover is smaller and Play is left out.
     static NARROW: Cell<bool> = const { Cell::new(false) };
     /// Every row made, so the playing one can show Pause without a reload.
     static ROWS: RefCell<Vec<glib::WeakRef<EpisodeRow>>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Tell the rows whether the window has the narrow layout: titles take two
-/// lines there, one elsewhere, and every row keeps the same height.
+/// lines there, one elsewhere, and every row keeps the same height. There
+/// the cover is smaller and Play is left out, as the details page a tap
+/// away has it (asked by the user 2026-11-08): at 360px the row's fixed
+/// parts left the title about 144px.
 pub fn set_narrow(narrow: bool) {
     NARROW.set(narrow);
     ROWS.with_borrow(|rows| {
         for row in rows.iter().filter_map(glib::WeakRef::upgrade) {
             row.fit_title();
+            row.fit_narrow();
         }
     });
 }
@@ -80,6 +85,8 @@ pub fn show_playing(playing: Option<(EpisodeId, PlaybackState)>) {
 
 /// GNOME Podcasts' row cover (`episode_widget.ui`).
 const COVER_SIZE: i32 = 64;
+/// The cover in the narrow layout.
+const NARROW_COVER_SIZE: i32 = 48;
 /// Every row's content is this tall, as in GNOME Podcasts, whatever its
 /// title: one line in wide windows, two in the narrow layout.
 const CONTENT_HEIGHT: i32 = 64;
@@ -135,6 +142,8 @@ pub struct Parts {
     progress: OnceCell<gtk::ProgressBar>,
     menu: gtk::MenuButton,
     play: gtk::Button,
+    /// Play with its loading spinner: hidden whole, so its spacing goes too.
+    play_holder: gtk::Overlay,
     episode: Rc<RefCell<Option<EpisodeItem>>>,
     /// What a screen reader says for the row (see `bind`).
     name: RefCell<String>,
@@ -162,7 +171,12 @@ impl EpisodeRow {
         root.set_child(Some(&content));
         // GNOME Podcasts shows the cover on every row; Beacon leaves it out
         // on a podcast page, where it is the page's own (asked by the user).
-        let cover = show_identity.then(|| Cover::new(COVER_SIZE));
+        let size = if NARROW.get() {
+            NARROW_COVER_SIZE
+        } else {
+            COVER_SIZE
+        };
+        let cover = show_identity.then(|| Cover::new(size));
 
         // The dot, title, check and subtitle are left out of the
         // accessibility tree: the row's name says what they show (see
@@ -231,7 +245,8 @@ impl EpisodeRow {
             content.append(cover.widget());
         }
         content.append(&text);
-        content.append(&play_button::with_spinner(&play));
+        let play_holder = play_button::with_spinner(&play);
+        content.append(&play_holder);
         content.append(&menu);
 
         let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
@@ -290,6 +305,7 @@ impl EpisodeRow {
             progress: OnceCell::new(),
             menu,
             play,
+            play_holder,
             episode,
             name: RefCell::default(),
             show_identity,
@@ -320,6 +336,25 @@ impl EpisodeRow {
                 .get()
                 .is_some_and(gtk::ProgressBar::is_visible);
         parts.title.set_lines(if two { 2 } else { 1 });
+    }
+
+    /// The narrow layout's smaller cover, and Play shown only outside it
+    /// and outside selection mode.
+    fn fit_narrow(&self) {
+        let Some(parts) = self.imp().parts.get() else {
+            return;
+        };
+        let narrow = NARROW.get();
+        if let Some(cover) = &parts.cover {
+            cover.set_size(if narrow {
+                NARROW_COVER_SIZE
+            } else {
+                COVER_SIZE
+            });
+        }
+        parts
+            .play_holder
+            .set_visible(!narrow && !parts.selection.is_active());
     }
 
     /// Play, or Pause while this row's episode plays.

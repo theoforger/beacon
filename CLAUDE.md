@@ -123,7 +123,7 @@ Read the design's files from that link. Match how it looks.
 - Cover, title (one line in wide windows, two in the narrow layout; every row the same height, changed 2026-11-04), and a subtitle of show, season and episode, date and length, in dimmed body text (changed 2026-11-08 from the smaller caption style). The subtitle does not show time left. On a podcast page, rows leave out the cover and the show name, which are the page's own (changed 2026-11-04).
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Favourites have a grey star after the title (and after the check), added 2026-11-08. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.
-- The row play button has no fill, blends into the row, and gives hover feedback. It shows pause while playing.
+- The row play button has no fill, blends into the row, and gives hover feedback. It shows pause while playing. In the narrow layout rows leave out the play button (the details page, a tap away, has Play) and draw a 48px cover instead of 64px, so the title has room (changed 2026-11-08).
 - The row menu holds Show Details, Move Up and Move Down (queue only), Add to or Remove From Queue, Download or Delete Download, Add to or Remove From Favorites, Mark as Played or Unplayed, and Reset Progress, only when the episode has a saved position (added 2026-11-08; it leaves played, favourite and the queue alone, and the playing episode jumps back to its start).
 - Marking an episode as played or unplayed never touches the queue. That includes Mark All as Played on a podcast page.
 

@@ -93,7 +93,7 @@ impl EpisodeRow {
             check.set_active(false);
             check.set_visible(false);
         }
-        parts.play.set_visible(!active);
         parts.menu.set_visible(!active);
+        self.fit_narrow();
     }
 }

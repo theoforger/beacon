@@ -135,6 +135,7 @@ fn widgets_lay_out_as_designed() {
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
+    narrow_rows_leave_out_play_and_shrink_the_cover();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
 }
@@ -426,6 +427,60 @@ fn the_details_pane_offers_the_row_menus_actions() {
     pane.emit(DetailsPaneInput::Clear);
     settle();
     assert!(!more.is_mapped());
+    window.destroy();
+}
+
+/// In the narrow layout a row leaves out its Play, which the details page
+/// has, and draws a smaller cover, giving the title the room; wide again,
+/// both come back. Selection mode leaves out Play and its space too.
+fn narrow_rows_leave_out_play_and_shrink_the_cover() {
+    use crate::ui::widgets::episode_row;
+
+    let row = EpisodeRow::new(&setup());
+    row.bind(&partly_played());
+    let window = window(&row);
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    let find = |action: &str| {
+        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if widget
+                .downcast_ref::<gtk::Button>()
+                .is_some_and(|b| b.action_name().as_deref() == Some(action))
+            {
+                return widget;
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        panic!("no {action} button");
+    };
+    let cover = first::<gtk::Overlay>(row.upcast_ref())
+        .filter(|o| o.has_css_class("cover"))
+        .expect("a row that shows its show has a cover");
+    settle();
+    let wide = minimum_width(&row);
+    assert!(find("row.play").is_drawable());
+    assert_eq!(cover.height(), 64);
+
+    episode_row::set_narrow(true);
+    settle();
+    let narrow = minimum_width(&row);
+    assert!(!find("row.play").is_drawable(), "no Play when narrow");
+    assert_eq!(cover.height(), 48);
+    // Play, its spacing and 16px of cover.
+    assert!(wide - narrow >= 60, "narrow saves {}px", wide - narrow);
+
+    episode_row::set_narrow(false);
+    settle();
+    assert!(find("row.play").is_drawable());
+    assert_eq!(cover.height(), 64);
+    assert_eq!(minimum_width(&row), wide);
     window.destroy();
 }
 
