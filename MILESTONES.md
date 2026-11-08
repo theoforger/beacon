@@ -4,8 +4,8 @@ The checklist for building Beacon. Design details are in `docs/`. Tick an item o
 
 A milestone is finished when its deliverables are done and its own **exit gate** is ticked:
 
-- **HIG:** gate clean (`docs/hig-checklist.md`, HIG pages quoted); full screenshot set at 1440×900 and 360×640 in light and dark; `docs/hig-reviews/pending-screenshots.md` empty
-- **Accessibility and translation:** gettext, accessible labels and tooltips, keyboard walk-through, Orca, large text. For M0 to M3 the walk-throughs are deferred to the accessibility checkpoint after M3: log them in `docs/hig-reviews/pending-accessibility.md`
+- **HIG:** gate clean (`docs/hig-checklist.md`, HIG pages quoted); full screenshot set at 1440×900 and 360×640 in light and dark; the Screenshots table of `docs/hig-reviews/pending-screenshots.md` empty
+- **Accessibility and translation:** gettext, `POTFILES.in`, accessible labels and tooltips, exposed states, layouts that survive longer text. The checks that need a person (keyboard walk-through, Orca, large text, media keys) are deferred until the UI is final (decided 2026-11-08): log them in the Manual accessibility checks table of `docs/hig-reviews/pending-screenshots.md`, for M9. (For M0 to M3 they went to the accessibility checkpoint after M3.)
 - **Tests:** unit tests for all new logic, plus an integration test of each new feature's main scenario
 - **CI and docs:** CI green; `docs/decisions.md` and `docs/architecture.md` up to date
 - **Human review** of the running app
@@ -200,7 +200,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Exit gate
 
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
-- [ ] Accessibility and translation checks pass
+- [x] Accessibility and translation checks pass: strings through gettext, every file with strings in `POTFILES.in` (`episode_row/selecting.rs` added 2026-11-08), labels and tooltips on icon-only buttons; the Orca and keyboard walk-throughs deferred to M9 (decided by the user 2026-11-08)
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario (playback, chapters, selection, MPRIS on a session bus; the narrow layout measured with a display)
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
@@ -332,7 +332,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Full accessibility and translation audit (Orca, keyboard, large text at 360px)
+- [ ] Full accessibility and translation audit (Orca, keyboard, large text at 360px, media keys): every row of the Manual accessibility checks table in `docs/hig-reviews/pending-screenshots.md`, checked, fixed where needed and cleared
 - [ ] Shortcuts: Ctrl+F, F9 (sidebar), F10 (main menu), all listed in `shortcuts-dialog.ui`
 - [ ] Final app icon and symbolic icon (replacing the placeholders)
 - [ ] Metainfo: screenshots, branding colours, release notes, real URLs

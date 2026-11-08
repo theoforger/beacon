@@ -37,7 +37,7 @@ If a URL has moved, find the page from the HIG index instead of guessing.
 
 1. Every item in `docs/hig-checklist.md` that applies to the change.
 2. Anything else in the fetched pages that applies.
-3. The accessibility and translation section of the checklist. Always: strings through `gettext`, new files in `po/POTFILES.in`, accessible label and tooltip on icon-only buttons, no fixed-width labels. The walk-throughs (Orca, keyboard reachability, exposed states, large text) are deferred until the accessibility checkpoint after M3: until then, add a row per change to `docs/hig-reviews/pending-accessibility.md` saying what to check and how, instead of running them. From M4 on, run them here.
+3. The accessibility and translation section of the checklist. Always: strings through `gettext`, new files in `po/POTFILES.in`, accessible label and tooltip on icon-only buttons, no fixed-width labels. Also states exposed to assistive technology, checked in the code (and in tests where they can be). The checks that need a person (Orca, keyboard walk-throughs, large text, media keys) are deferred until the UI is final: add a row per change to the Manual accessibility checks table of `docs/hig-reviews/pending-screenshots.md` saying what to check and how. They are worked through in M9.
 4. The mockup in `docs/design/` and the Requirements in `CLAUDE.md`, for layout and behaviour.
 
 ## 4. Screenshots
@@ -48,7 +48,7 @@ Screenshots are costly, so take as few as the change needs, once it is finished.
 
 Then add a row to `docs/hig-reviews/pending-screenshots.md` for every affected view you did not capture, and for states that cannot be reached headless. Be specific: "Queue row drag handle at 360×640 dark, row menu open" rather than "check queue". Nothing affected is left unchecked and unlogged.
 
-**Milestone end** (the user asks for the milestone review, or this is the last change of a milestone). Run `build-aux/screenshots.sh` for all four views, then work through every row of `pending-screenshots.md`: reach each state, check it, record the result in `docs/hig-reviews/mN.md`, and delete the row. Report any rows that still need a human (Orca, interaction that cannot be driven headless). The milestone is not done while rows remain.
+**Milestone end** (the user asks for the milestone review, or this is the last change of a milestone). Run `build-aux/screenshots.sh` for all four views, then work through every row of the Screenshots table in `pending-screenshots.md` (the Manual accessibility checks table waits for M9): reach each state, check it, record the result in `docs/hig-reviews/mN.md`, and delete the row. Report any rows that still need a human (Orca, interaction that cannot be driven headless). The milestone is not done while rows remain.
 
 If the change is only reachable after interaction (a dialog, a popover, a narrow-mode page), say so and describe what still needs a human look.
 
@@ -67,8 +67,8 @@ Findings
 2. [PASS] …
 
 Screenshots: <views taken>, <what was seen>
-Deferred: <rows added to pending-screenshots.md and pending-accessibility.md, or none>
-Needs a human: <Orca, keyboard walk-through, anything not visible headless>
+Deferred: <rows added to either table of pending-screenshots.md, or none>
+Needs a human: <anything not visible headless; manual accessibility rows wait for M9>
 ```
 
 Then fix every FAIL and run the review again until it is clean.
