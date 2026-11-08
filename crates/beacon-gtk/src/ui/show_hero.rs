@@ -34,8 +34,6 @@ const WIDE_LINES: i32 = 6;
 const NARROW_LINES: i32 = 4;
 /// The Read More link's address, handled here rather than opened.
 const READ_MORE: &str = "beacon:read-more";
-/// Enough lines for any description, to measure all of it.
-const ALL_LINES: i32 = 10_000;
 
 /// The hero's widgets, shared with the handlers that fit it to its width.
 struct Parts {
@@ -49,6 +47,12 @@ struct Parts {
     read_more: gtk::Label,
     unsubscribe: gtk::Button,
     narrow: Cell<bool>,
+    /// The layout last set up (stacked or not), and the width the
+    /// description was last fitted to: re-aligning every label, or fitting
+    /// a long description again, on each step of a window resize made the
+    /// page lag (found by the user on Destination Linux, 2026-11-08).
+    laid_out: Cell<Option<bool>>,
+    fitted: Cell<i32>,
     /// A fit waits for the next turn of the main loop.
     fitting: Cell<bool>,
     show_title: RefCell<String>,
@@ -72,6 +76,10 @@ impl ShowHero {
                 .xalign(0.0)
                 .lines(lines)
                 .ellipsize(pango::EllipsizeMode::End)
+                // The page sets the width; asking each label how wide it
+                // would be unwrapped laid its whole text out again on every
+                // step of a resize.
+                .natural_wrap_mode(gtk::NaturalWrapMode::None)
                 .css_classes(classes)
                 .build()
         };
@@ -152,6 +160,8 @@ impl ShowHero {
             read_more,
             unsubscribe: unsubscribe.clone(),
             narrow: Cell::new(false),
+            laid_out: Cell::new(None),
+            fitted: Cell::new(0),
             fitting: Cell::new(false),
             show_title: RefCell::default(),
             markup: RefCell::default(),
@@ -181,6 +191,18 @@ impl ShowHero {
         }
     }
 
+    /// The description's line limit, whether Read More shows, and the text
+    /// column's height, for tests.
+    #[cfg(test)]
+    pub fn fitted(&self) -> (i32, bool, i32) {
+        let parts = &self.parts;
+        (
+            parts.description.lines(),
+            parts.read_more.is_visible(),
+            parts.text.height(),
+        )
+    }
+
     pub fn widget(&self) -> &gtk::Overlay {
         &self.root
     }
@@ -201,6 +223,7 @@ impl ShowHero {
         parts.description.set_visible(!markup.is_empty());
         parts.show_title.replace(info.title.clone());
         parts.markup.replace(markup);
+        parts.fitted.set(0);
         Parts::fit_later(parts);
     }
 }
@@ -250,16 +273,19 @@ impl Parts {
     /// description is cut short.
     fn fit(&self) {
         let narrow = self.narrow.get();
-        if narrow {
-            self.row.set_orientation(gtk::Orientation::Vertical);
-            self.row.set_spacing(12);
-            self.cover.set_size(NARROW_COVER_SIZE);
-        } else {
-            self.row.set_orientation(gtk::Orientation::Horizontal);
-            self.row.set_spacing(GAP);
-            self.cover.set_size(COVER_SIZE);
+        if self.laid_out.replace(Some(narrow)) != Some(narrow) {
+            if narrow {
+                self.row.set_orientation(gtk::Orientation::Vertical);
+                self.row.set_spacing(12);
+                self.cover.set_size(NARROW_COVER_SIZE);
+            } else {
+                self.row.set_orientation(gtk::Orientation::Horizontal);
+                self.row.set_spacing(GAP);
+                self.cover.set_size(COVER_SIZE);
+            }
+            self.align(narrow);
+            self.fitted.set(0);
         }
-        self.align(narrow);
         let width = if narrow {
             self.row.width()
         } else {
@@ -269,27 +295,115 @@ impl Parts {
             self.read_more.set_visible(false);
             return;
         }
-        let height = |widget: &gtk::Label| widget.measure(gtk::Orientation::Vertical, width).1;
-        // Not -1: GTK passes it to Pango, which takes it as one line.
-        self.description.set_lines(ALL_LINES);
-        let whole = height(&self.description);
-        let mut lines = if narrow { NARROW_LINES } else { WIDE_LINES };
+        if self.fitted.replace(width) == width {
+            return;
+        }
+        // Measured on a layout of its own: setting the label's lines to
+        // measure it, as this did, threw away its cached layout, so every
+        // frame of a resize laid the whole description out again.
+        let bottoms = self.line_bottoms(width);
+        let total = bottoms.len() as i32;
+        let (lines, cut) = if narrow {
+            (NARROW_LINES, total > NARROW_LINES)
+        } else {
+            // The rest of the text beside the cover, without the
+            // description and Read More: what the description's lines and
+            // Read More have to share the cover's height with.
+            let measure =
+                |widget: &gtk::Widget| widget.measure(gtk::Orientation::Vertical, width).1;
+            let read_more = measure(self.read_more.upcast_ref()) + self.text.spacing();
+            let rest = measure(self.text.upcast_ref())
+                - measure(self.description.upcast_ref())
+                - if self.read_more.is_visible() {
+                    read_more
+                } else {
+                    0
+                };
+            let margin = self.description.margin_top();
+            let fits = |lines: i32, extra: i32| {
+                rest + extra + margin + bottoms[(lines.min(total) - 1).max(0) as usize]
+                    <= COVER_SIZE
+            };
+            if total <= WIDE_LINES && fits(total, 0) {
+                (WIDE_LINES, false)
+            } else {
+                let lines = (1..=WIDE_LINES.min(total))
+                    .rev()
+                    .find(|&lines| fits(lines, read_more))
+                    .unwrap_or(1);
+                (lines, lines < total)
+            }
+        };
+        // Both are no-ops when unchanged, which leaves the cached layout.
         self.description.set_lines(lines);
-        if !narrow {
-            // Measure with Read More showing: it shows whenever lines go.
-            self.read_more.set_visible(true);
-            while lines > 1 && self.text.measure(gtk::Orientation::Vertical, width).1 > COVER_SIZE {
-                lines -= 1;
-                self.description.set_lines(lines);
+        self.read_more.set_visible(cut);
+    }
+
+    /// Where each of the description's lines ends at `width`, in pixels.
+    fn line_bottoms(&self, width: i32) -> Vec<i32> {
+        let layout = self.description.create_pango_layout(None);
+        layout.set_markup(&without_links(&self.markup.borrow()));
+        layout.set_width(width * pango::SCALE);
+        layout.set_wrap(pango::WrapMode::WordChar);
+        let mut bottoms = Vec::new();
+        let mut iter = layout.iter();
+        loop {
+            let (_, bottom) = iter.line_yrange();
+            bottoms.push(pango::units_to_double(bottom).ceil() as i32);
+            if !iter.next_line() {
+                break;
             }
         }
-        self.read_more
-            .set_visible(height(&self.description) < whole);
+        bottoms
     }
+}
+
+/// `markup` with its links as plain spans: a label handles `<a>`, but
+/// Pango's own markup, which measuring uses, rejects it and lays out
+/// nothing.
+fn without_links(markup: &str) -> String {
+    let mut out = String::with_capacity(markup.len());
+    let mut rest = markup;
+    while let Some(start) = rest.find("<a ") {
+        out.push_str(&rest[..start]);
+        match rest[start..].find('>') {
+            Some(end) => {
+                out.push_str("<span>");
+                rest = &rest[start + end + 1..];
+            }
+            None => {
+                rest = "";
+            }
+        }
+    }
+    out.push_str(rest);
+    out.replace("</a>", "</span>")
 }
 
 fn set_text(label: &gtk::Label, text: Option<&str>) {
     let text = text.unwrap_or_default();
     label.set_label(text);
     label.set_visible(!text.is_empty());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::without_links;
+
+    #[test]
+    fn links_become_spans_for_measuring() {
+        assert_eq!(
+            without_links(
+                "Site <a href=\"https://a.example/?x=1&amp;y=2\">a.example</a> and <b>more</b>"
+            ),
+            "Site <span>a.example</span> and <b>more</b>"
+        );
+        assert!(
+            relm4::gtk::pango::parse_markup(
+                &without_links("<a href=\"https://a.example\">a</a>"),
+                '\0'
+            )
+            .is_ok()
+        );
+    }
 }

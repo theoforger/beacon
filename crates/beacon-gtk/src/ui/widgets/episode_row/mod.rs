@@ -190,6 +190,8 @@ impl EpisodeRow {
             .wrap_mode(pango::WrapMode::WordChar)
             .lines(1)
             .ellipsize(pango::EllipsizeMode::End)
+            // The list sets the width; see `show_hero.rs`.
+            .natural_wrap_mode(gtk::NaturalWrapMode::None)
             .css_classes(["heading"])
             .accessible_role(gtk::AccessibleRole::Presentation)
             .build();

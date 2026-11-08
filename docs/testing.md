@@ -12,6 +12,10 @@ Two rules drive everything else:
 | Unit | Parsing, season grouping, queue and auto-continue logic, played state, auto-delete rules, OPML mapping, relm4 `update` functions | `cargo test` in `beacon-core`, plus component `update` tests that send messages and assert state. No display needed |
 | Integration | Feed fetch and refresh, SQLite migrations and queries, downloads and resume, iTunes client, and the main scenario of every feature | A local HTTP server serving fixture feeds and canned iTunes responses, in-memory SQLite, an injected clock for auto-delete. Feature scenarios send messages to the services and relm4 components and assert the resulting state and database rows. No display needed |
 
+## Layout tests
+
+`ui/display_tests.rs` builds widgets on a real display and checks how they lay out: the narrowest window, rows, lists, the podcast header's fit, chapter ticks. Run them on a private display, `xvfb-run cargo test`: on a desktop session that is locked or idle the windows never lay out and the checks fail with zero sizes. `resize_cost` there is not a check but a timing probe, ignored by default: it lays real feeds out at every width and prints each frame's work (`BEACON_PROBE_FEEDS=dir xvfb-run cargo test -p beacon-gtk resize_cost -- --ignored --nocapture`, with `NAME.xml` and `NAME.xml.cover` in the folder).
+
 ## No UI automation
 
 The project does not run end-to-end tests through the real window. What the screen shows is checked by the HIG gate after every UI change (screenshots of the affected views, with skipped views logged and checked at milestone end; keyboard and Orca walk-throughs, logged and deferred until the UI is final, in M9). To keep that gap small, keep logic out of widgets: components only translate messages into core calls and state into widget properties.

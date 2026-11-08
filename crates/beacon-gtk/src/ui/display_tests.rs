@@ -135,6 +135,7 @@ fn widgets_lay_out_as_designed() {
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
+    the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
     narrow_rows_leave_out_play_and_shrink_the_cover();
@@ -567,6 +568,71 @@ fn selection_shortcuts_work_in_selection_mode() {
     window.destroy();
 }
 
+/// Beside the cover (256px) the text keeps to its height, a long
+/// description losing lines and Read More showing; a short one shows whole;
+/// stacked under the cover, four lines.
+fn the_podcast_header_fits_its_description() {
+    use crate::ui::show_hero::ShowHero;
+
+    let long = "Destination Linux is a weekly show where Ryan, Jill, and guests share \
+        their passion for Linux and Open Source. It is a show for all experience \
+        levels, whether you are a beginner to Linux and Open Source or a long time \
+        user, this is the podcast for you. It covers a wide range of topics from the \
+        latest news, discussions on Linux and Open Source, Linux distributions, \
+        Linux applications, security, privacy, AI, gaming on Linux, and unique \
+        in-depth interviews with Linux developers and leaders and much more! \
+        Website https://example.com Become a Patron https://example.com/patron";
+    let fit = |description: &str, width: i32| {
+        let hero = ShowHero::new();
+        let mut info = beacon_core::model::ShowInfo {
+            title: "A podcast".into(),
+            ..Default::default()
+        };
+        info.description = Some(description.into());
+        hero.update(&ShowPageData {
+            show: beacon_core::model::Show {
+                id: ShowId(1),
+                feed_url: "https://example.com/feed.xml".parse().expect("a URL"),
+                info,
+                cover_path: None,
+                subscribed_at: Utc::now(),
+                last_refreshed_at: None,
+            },
+            prefs: Default::default(),
+            seasons: None,
+            episodes: Vec::new(),
+            all_played: false,
+        });
+        // A window of the width: the header takes all it is given.
+        let window = gtk::Window::builder()
+            .default_width(width)
+            .default_height(600)
+            .child(hero.widget())
+            .build();
+        window.present();
+        let until = std::time::Instant::now() + Duration::from_millis(300);
+        run_until(|| std::time::Instant::now() > until);
+        let fitted = hero.fitted();
+        window.destroy();
+        fitted
+    };
+
+    let (lines, read_more, height) = fit(long, 760);
+    assert!(read_more, "a long description is cut, with Read More");
+    assert!(
+        height <= 256,
+        "beside the cover the text is {height}px tall"
+    );
+    assert!((1..=6).contains(&lines));
+
+    let (_, read_more, _) = fit("A short description.", 760);
+    assert!(!read_more, "a short description shows whole");
+
+    let (lines, read_more, _) = fit(long, 400);
+    assert_eq!(lines, 4, "stacked, four lines");
+    assert!(read_more);
+}
+
 /// A favourite's row shows a star after its title and says "Favorite";
 /// rebound to another episode, the star goes.
 fn favorite_rows_show_a_star() {
@@ -704,4 +770,156 @@ fn the_narrow_layout_fits_the_narrowest_window() {
         narrow > wide && wide > 3 * line,
         "{narrow}px narrow, {wide}px wide"
     );
+}
+
+/// Not a check: how long a frame's work takes while the width changes, for
+/// a real show's podcast page and for the details pane showing its longest
+/// episode description. Feeds and covers come from `BEACON_PROBE_FEEDS`
+/// (`NAME.xml` and `NAME.xml.cover`). Run alone, on a private display:
+/// `BEACON_PROBE_FEEDS=dir xvfb-run cargo test -p beacon-gtk resize_cost -- --ignored --nocapture`.
+#[test]
+#[ignore = "a timing probe, not a check"]
+fn resize_cost() {
+    use crate::ui::details_pane::{DetailsPane, DetailsPaneInput};
+
+    let Some(dir) = std::env::var_os("BEACON_PROBE_FEEDS") else {
+        return;
+    };
+    if gtk::init().is_err() {
+        return;
+    }
+    adw::init().expect("libadwaita starts once GTK has");
+    let css = gtk::CssProvider::new();
+    css.load_from_path(concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/style.css"));
+    gtk::style_context_add_provider_for_display(
+        &gdk::Display::default().expect("GTK started, so there is a display"),
+        &css,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+    let dir = std::path::PathBuf::from(dir);
+    let mut names: Vec<_> = std::fs::read_dir(&dir)
+        .expect("the probe folder")
+        .filter_map(|e| e.ok()?.file_name().into_string().ok())
+        .filter(|n| n.ends_with(".xml"))
+        .collect();
+    names.sort();
+    for name in names {
+        let feed = beacon_core::services::feeds::parse_feed(
+            &std::fs::read(dir.join(&name)).expect("the feed"),
+        )
+        .expect("a feed");
+        let items: Vec<EpisodeItem> = feed
+            .episodes
+            .into_iter()
+            .enumerate()
+            .map(|(i, parsed)| EpisodeItem {
+                episode: Episode {
+                    id: EpisodeId(i as i64 + 1),
+                    show_id: ShowId(1),
+                    info: parsed.info,
+                    state: EpisodeState::default(),
+                    added_at: Utc::now(),
+                },
+                show_title: feed.show.title.clone(),
+                cover: None,
+                in_queue: false,
+            })
+            .collect();
+        let longest = items
+            .iter()
+            .max_by_key(|i| i.episode.info.description.as_ref().map_or(0, String::len))
+            .cloned()
+            .expect("episodes");
+        let cover = dir.join(format!("{name}.cover"));
+        let data = ShowPageData {
+            show: beacon_core::model::Show {
+                id: ShowId(1),
+                feed_url: "https://example.com/feed.xml".parse().expect("a URL"),
+                info: feed.show.clone(),
+                cover_path: cover.exists().then_some(cover),
+                subscribed_at: Utc::now(),
+                last_refreshed_at: None,
+            },
+            prefs: Default::default(),
+            seasons: None,
+            episodes: items,
+            all_played: false,
+        };
+        let page = ShowPage::builder()
+            .launch(gtk::ToggleButton::new())
+            .detach();
+        page.emit(ShowPageInput::Set(Box::new(data)));
+        let nav = adw::NavigationView::new();
+        nav.push(page.widget());
+        probe(
+            &format!("{name} podcast page"),
+            nav.upcast_ref(),
+            360..=1200,
+        );
+        let pane = DetailsPane::builder().launch(()).detach();
+        pane.emit(DetailsPaneInput::Show(Box::new(longest)));
+        probe(
+            &format!("{name} details pane"),
+            pane.widget().upcast_ref(),
+            280..=600,
+        );
+    }
+}
+
+/// Lay `widget` out at every width in `widths`, narrowing then widening,
+/// and print how long each frame's work took.
+fn probe(name: &str, widget: &gtk::Widget, widths: std::ops::RangeInclusive<i32>) {
+    let holder = gtk::Box::builder().halign(gtk::Align::Start).build();
+    holder.append(widget);
+    widget.set_size_request(*widths.end(), 700);
+    let window = gtk::Window::builder()
+        .default_width(1300)
+        .default_height(760)
+        .child(&holder)
+        .build();
+    window.present();
+    let settle = |ms| {
+        let until = std::time::Instant::now() + Duration::from_millis(ms);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    settle(800);
+    let clock = window
+        .frame_clock()
+        .expect("a mapped window has a frame clock");
+    let started = Rc::new(std::cell::Cell::new(None::<std::time::Instant>));
+    let work = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let mark = started.clone();
+    let before_id = clock.connect_before_paint(move |_| mark.set(Some(std::time::Instant::now())));
+    let (mark, record) = (started.clone(), work.clone());
+    let after_id = clock.connect_after_paint(move |_| {
+        if let Some(start) = mark.take() {
+            record
+                .borrow_mut()
+                .push(start.elapsed().as_secs_f64() * 1000.0);
+        }
+    });
+    let (low, high) = (*widths.start(), *widths.end());
+    for width in (low..=high).rev().step_by(8).chain((low..=high).step_by(8)) {
+        let before = work.borrow().len();
+        widget.set_size_request(width, 700);
+        let until = std::time::Instant::now() + Duration::from_millis(300);
+        run_until(|| work.borrow().len() > before || std::time::Instant::now() > until);
+        if let Some(ms) = work.borrow().get(before).filter(|ms| **ms > 20.0) {
+            eprintln!("SLOW {name} at {width}px: {ms:.1}ms");
+        }
+    }
+    clock.disconnect(before_id);
+    clock.disconnect(after_id);
+    let mut frames = work.borrow().clone();
+    frames.sort_by(f64::total_cmp);
+    let mean = frames.iter().sum::<f64>() / frames.len().max(1) as f64;
+    eprintln!(
+        "PROBE {name}: {} frames, mean {mean:.1}ms, median {:.1}ms, p90 {:.1}ms, max {:.1}ms",
+        frames.len(),
+        frames[frames.len() / 2],
+        frames[frames.len() * 9 / 10],
+        frames[frames.len() - 1]
+    );
+    window.destroy();
+    settle(200);
 }

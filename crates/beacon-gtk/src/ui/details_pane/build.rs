@@ -122,6 +122,8 @@ pub(super) fn widgets(
         .wrap(true)
         .wrap_mode(pango::WrapMode::WordChar)
         .use_markup(true)
+        // The pane sets the width; see `show_hero.rs`.
+        .natural_wrap_mode(gtk::NaturalWrapMode::None)
         .build();
     // Links, bold, italics and lists, as GNOME Podcasts shows them, and like
     // it not selectable: a selectable label selects all its text when it
