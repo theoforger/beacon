@@ -30,6 +30,9 @@ pub enum RowAction {
     ToggleQueue,
     ToggleFavorite,
     TogglePlayed,
+    /// Start the episode from the beginning next time, leaving whether it
+    /// is played alone.
+    ResetProgress,
 }
 
 /// A tile on the Shows grid.

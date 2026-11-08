@@ -124,7 +124,7 @@ Read the design's files from that link. Match how it looks.
 - Unplayed episodes have a blue dot. Viewing the details removes it, and marking an episode unplayed does not bring it back. Played episodes have a grey check after the title. Partly played episodes have a progress bar.
 - The playing episode shows no In Queue marker.
 - The row play button has no fill, blends into the row, and gives hover feedback. It shows pause while playing.
-- The row menu holds Show Details, Move Up and Move Down (queue only), Add to or Remove From Queue, Download or Delete Download, Add to or Remove From Favorites, and Mark as Played or Unplayed.
+- The row menu holds Show Details, Move Up and Move Down (queue only), Add to or Remove From Queue, Download or Delete Download, Add to or Remove From Favorites, Mark as Played or Unplayed, and Reset Progress, only when the episode has a saved position (added 2026-11-08; it leaves played, favourite and the queue alone, and the playing episode jumps back to its start).
 - Marking an episode as played or unplayed never touches the queue. That includes Mark All as Played on a podcast page.
 
 **Details pane**

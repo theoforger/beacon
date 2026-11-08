@@ -43,6 +43,10 @@ pub(super) fn menu_for(item: &EpisodeItem) -> gio::Menu {
         }),
         Some("row.played"),
     );
+    // Only where there is progress to reset (asked by the user, 2026-11-08).
+    if !state.position.is_zero() {
+        changes.append(Some(&gettext("_Reset Progress")), Some("row.reset"));
+    }
 
     let menu = gio::Menu::new();
     menu.append_section(None, &details);
@@ -98,5 +102,32 @@ mod tests {
             .map(|(_, action)| action)
             .collect();
         assert_eq!(&actions[..2], ["row.details", "row.select"]);
+    }
+
+    #[test]
+    fn reset_progress_is_offered_only_with_progress() {
+        let mut item = EpisodeItem {
+            episode: Episode {
+                id: EpisodeId(1),
+                show_id: ShowId(1),
+                info: EpisodeInfo::default(),
+                state: EpisodeState::default(),
+                added_at: Utc::now(),
+            },
+            show_title: String::new(),
+            cover: None,
+            in_queue: false,
+        };
+        let resets = |item: &EpisodeItem| {
+            items(menu_for(item).upcast_ref())
+                .iter()
+                .any(|(_, action)| action == "row.reset")
+        };
+        assert!(!resets(&item), "nothing to reset");
+        item.episode.state.position = std::time::Duration::from_secs(90);
+        assert!(resets(&item));
+        // Played as well: still the position alone.
+        item.episode.state.played = true;
+        assert!(resets(&item));
     }
 }

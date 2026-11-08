@@ -143,6 +143,16 @@ impl App {
                     store.set_played(id, !state.played, now)
                 });
             }
+            // The playing episode goes back to its start, which is then
+            // saved as it plays; any other has its saved position cleared.
+            RowAction::ResetProgress => {
+                if self.now_playing.as_ref().is_some_and(|now| now.id == id) {
+                    self.seek(std::time::Duration::ZERO);
+                }
+                self.job(sender, Parts::EPISODE, false, move |store| {
+                    store.set_position(id, std::time::Duration::ZERO)
+                });
+            }
         }
     }
 

@@ -137,6 +137,28 @@ async fn marking_played_never_touches_the_queue() {
 }
 
 #[tokio::test]
+async fn resetting_progress_leaves_the_rest_alone() {
+    let server = MockServer::start_async().await;
+    let (library, show) = subscribed(&server, "plain.xml", Store::open_in_memory().unwrap()).await;
+    library.with_store(|store| {
+        let id = store.episodes(show).unwrap()[0].id;
+        store
+            .set_position(id, std::time::Duration::from_secs(300))
+            .unwrap();
+        store.set_favorite(id, true).unwrap();
+        store.enqueue(id).unwrap();
+        store.mark_seen(id).unwrap();
+
+        // What the row menu's Reset Progress does.
+        store.set_position(id, std::time::Duration::ZERO).unwrap();
+        let state = store.episode(id).unwrap().unwrap().state;
+        assert_eq!(state.position, std::time::Duration::ZERO);
+        assert!(state.favorite && state.seen && !state.played);
+        assert_eq!(store.queue().unwrap(), [id]);
+    });
+}
+
+#[tokio::test]
 async fn the_blue_dot_goes_when_seen_and_stays_gone() {
     let server = MockServer::start_async().await;
     let (library, show) = subscribed(&server, "plain.xml", Store::open_in_memory().unwrap()).await;

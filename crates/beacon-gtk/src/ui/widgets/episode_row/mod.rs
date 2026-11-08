@@ -243,6 +243,7 @@ impl EpisodeRow {
             ("queue", RowAction::ToggleQueue),
             ("favorite", RowAction::ToggleFavorite),
             ("played", RowAction::TogglePlayed),
+            ("reset", RowAction::ResetProgress),
         ] {
             let entry = gio::SimpleAction::new(name, None);
             let episode = episode.clone();
