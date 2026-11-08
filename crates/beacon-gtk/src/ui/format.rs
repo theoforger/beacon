@@ -10,7 +10,7 @@ use chrono::{DateTime, Local, Utc};
 use gettextrs::gettext;
 use relm4::gtk::glib;
 
-/// "Show · S3 E2 · Oct 27 · 52 min", leaving out what is unknown.
+/// "Show • S3 E2 • Oct 27 • 52 min", leaving out what is unknown.
 pub fn subtitle(episode: &Episode, show_title: &str) -> String {
     let mut parts = Vec::new();
     if !show_title.is_empty() {
@@ -25,8 +25,9 @@ pub fn subtitle(episode: &Episode, show_title: &str) -> String {
     if let Some(duration) = episode.info.duration {
         parts.push(length(duration));
     }
-    // Translators: separates the parts of an episode's subtitle.
-    parts.join(&gettext(" · "))
+    // Translators: separates the parts of an episode's subtitle; a bullet,
+    // with a space either side.
+    parts.join(&gettext(" • "))
 }
 
 /// A position or length on a clock: "18:42", or "1:02:05" past an hour.
@@ -47,15 +48,15 @@ pub fn rate(rate: f64) -> String {
     gettext("{rate}×").replace("{rate}", &format!("{rate:.2}"))
 }
 
-/// A subtitle as a screen reader should say it: the dots between its parts
-/// are read aloud ("middle dot"), so they become pauses.
+/// A subtitle as a screen reader should say it: the bullets between its
+/// parts are read aloud ("bullet"), so they become pauses.
 pub fn spoken(subtitle: &str) -> String {
     // Translators: separates the parts of an episode's subtitle when a
     // screen reader reads it; a pause, not a symbol.
-    subtitle.replace(&gettext(" · "), &gettext(", "))
+    subtitle.replace(&gettext(" • "), &gettext(", "))
 }
 
-/// The details pane's subtitle: "Season 3, Episode 2 · Oct 27 · 52 min".
+/// The details pane's subtitle: "Season 3, Episode 2 • Oct 27 • 52 min".
 pub fn long_subtitle(episode: &Episode) -> String {
     let number = episode.info.number.map(number);
     let numbers = match (&episode.info.season, number) {
@@ -78,7 +79,7 @@ pub fn long_subtitle(episode: &Episode) -> String {
     if let Some(duration) = episode.info.duration {
         parts.push(length(duration));
     }
-    parts.join(&gettext(" · "))
+    parts.join(&gettext(" • "))
 }
 
 fn season_and_episode(episode: &Episode) -> Option<String> {
@@ -196,9 +197,9 @@ mod tests {
     }
 
     #[test]
-    fn subtitles_are_spoken_without_their_dots() {
+    fn subtitles_are_spoken_without_their_bullets() {
         assert_eq!(
-            spoken("The Long Signal · S3 E2 · Oct 27 · 52 min"),
+            spoken("The Long Signal • S3 E2 • Oct 27 • 52 min"),
             "The Long Signal, S3 E2, Oct 27, 52 min"
         );
     }

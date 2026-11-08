@@ -376,8 +376,8 @@ impl EpisodeRow {
         };
         let subtitle = format::subtitle(episode, show_title);
         parts.subtitle.set_label(&subtitle);
-        // Screen readers read a row from its text, " · " included ("middle
-        // dot"), unless the row has a name: give it one that says it all,
+        // Screen readers read a row from its text, " • " included
+        // ("bullet"), unless the row has a name: give it one that says it all,
         // for the list to put on the list item that has focus.
         let mut name = vec![episode.info.title.clone()];
         if state.is_new() {
