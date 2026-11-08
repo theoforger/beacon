@@ -92,6 +92,21 @@ fn count<T: IsA<gtk::Widget>>(widget: &gtk::Widget) -> usize {
     found
 }
 
+/// The first `T` in `widget`, depth first.
+fn first<T: IsA<gtk::Widget>>(widget: &gtk::Widget) -> Option<T> {
+    if let Some(found) = widget.downcast_ref::<T>() {
+        return Some(found.clone());
+    }
+    let mut child = widget.first_child();
+    while let Some(widget) = child {
+        if let Some(found) = first::<T>(&widget) {
+            return Some(found);
+        }
+        child = widget.next_sibling();
+    }
+    None
+}
+
 fn window(child: &impl IsA<gtk::Widget>) -> gtk::Window {
     let window = gtk::Window::builder()
         .default_width(800)
@@ -116,6 +131,7 @@ fn widgets_lay_out_as_designed() {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
     the_narrow_layout_fits_the_narrowest_window();
+    narrow_headers_fit_three_window_buttons();
     the_player_bar_lists_chapters();
     long_lists_make_rows_only_for_the_screen();
     seasons_fold_away_their_episodes();
@@ -319,6 +335,41 @@ fn the_player_bar_lists_chapters() {
     settle();
     assert_eq!(*asked.borrow(), [Duration::from_secs(40 * 60)]);
     window.destroy();
+}
+
+/// With minimise, maximise and close beside the title (GTK's default, and
+/// some distributions'), New's header still fits the narrowest window once
+/// the narrow layout has left out what it leaves out.
+fn narrow_headers_fit_three_window_buttons() {
+    use crate::navigation::Location;
+    use crate::ui::content::{Content, ContentInput};
+
+    let settings = gtk::Settings::default().expect("GTK started");
+    let layout = settings.gtk_decoration_layout();
+    settings.set_gtk_decoration_layout(Some("menu:minimize,maximize,close"));
+    let content = Content::builder().launch(()).detach();
+    // In a collapsed split view, as in the app, so Back to the sidebar shows.
+    let split = adw::NavigationSplitView::builder()
+        .sidebar(&adw::NavigationPage::new(&gtk::Label::new(None), "Beacon"))
+        .content(&adw::NavigationPage::new(content.widget(), "New"))
+        .collapsed(true)
+        .show_content(true)
+        .build();
+    let window = window(&split);
+    content.emit(ContentInput::ShowSection(Location::New));
+    let until = std::time::Instant::now() + Duration::from_millis(100);
+    run_until(|| std::time::Instant::now() > until);
+    // What the narrow breakpoint hides.
+    content.widgets().details_toggle().set_visible(false);
+    content.widgets().refresh_holder().set_visible(false);
+    // The page's breakpoint bin reports less and clips what it holds, so
+    // measure the page inside it.
+    let page = first::<adw::ToolbarView>(content.widget().upcast_ref())
+        .expect("New's page has a toolbar view");
+    let needed = minimum_width(&page);
+    window.destroy();
+    settings.set_gtk_decoration_layout(layout.as_deref());
+    assert!(needed <= NARROWEST, "New's narrow page needs {needed}px");
 }
 
 /// Where the seek bar's chapter ticks are, as fractions of its width.

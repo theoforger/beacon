@@ -123,13 +123,19 @@ impl Component for Content {
                 set_child = &adw::ToolbarView {
                     #[name = "root_header"]
                     add_top_bar = &adw::HeaderBar {
-                        // Only in Shows and New, where new episodes appear.
-                        #[name = "refresh"]
-                        pack_start = &gtk::Button {
-                            set_icon_name: "view-refresh-symbolic",
-                            set_action_name: Some("win.refresh"),
-                            set_tooltip_text: Some(&gettext("Refresh Feeds")),
-                            update_property: &[gtk::accessible::Property::Label(&gettext("Refresh Feeds"))],
+                        // Only in Shows and New, where new episodes appear;
+                        // its holder is hidden in narrow windows, where the
+                        // main menu's Refresh Feeds is one Back away.
+                        #[name = "refresh_holder"]
+                        pack_start = &adw::Bin {
+                            #[name = "refresh"]
+                            #[wrap(Some)]
+                            set_child = &gtk::Button {
+                                set_icon_name: "view-refresh-symbolic",
+                                set_action_name: Some("win.refresh"),
+                                set_tooltip_text: Some(&gettext("Refresh Feeds")),
+                                update_property: &[gtk::accessible::Property::Label(&gettext("Refresh Feeds"))],
+                            },
                         },
 
                         #[name = "details_toggle"]
@@ -361,6 +367,12 @@ impl ContentWidgets {
     /// The root page's details toggle. The toggles on deeper pages follow it.
     pub fn details_toggle(&self) -> &gtk::ToggleButton {
         &self.details_toggle
+    }
+
+    /// What holds Refresh Feeds, hidden in narrow windows so the header
+    /// fits 360px even with minimise, maximise and close beside it.
+    pub fn refresh_holder(&self) -> &adw::Bin {
+        &self.refresh_holder
     }
 
     /// Type to search: typing anywhere in `window` opens the search bar

@@ -138,6 +138,11 @@ impl App {
             Some(&false.to_value()),
         );
         breakpoint.add_setter(
+            self.content.widgets().refresh_holder(),
+            "visible",
+            Some(&false.to_value()),
+        );
+        breakpoint.add_setter(
             self.details.widgets().back_button(),
             "visible",
             Some(&true.to_value()),
