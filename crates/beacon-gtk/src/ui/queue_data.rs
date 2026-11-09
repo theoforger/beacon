@@ -90,15 +90,17 @@ pub fn next_item(
     }
 }
 
-/// The Queue view's groups.
+/// The Queue view's groups: `playing` as Now Playing, and what follows
+/// `after`, the playing episode or else the last played.
 pub fn queue_data(
     store: &Store,
-    current: Option<EpisodeId>,
+    playing: Option<EpisodeId>,
+    after: Option<EpisodeId>,
     source: Option<Source>,
     lists: Lists,
 ) -> Result<QueueData, StoreError> {
     let context = Context::load(store)?;
-    let next = up_next(store, &context, current, source, lists)?;
+    let next = up_next(store, &context, after, source, lists)?;
     let items = |ids: &[EpisodeId]| -> Result<Vec<EpisodeItem>, StoreError> {
         let mut items = Vec::new();
         for id in ids {
@@ -108,7 +110,7 @@ pub fn queue_data(
         }
         Ok(items)
     };
-    let now_playing = match current {
+    let now_playing = match playing {
         Some(id) => store.episode(id)?.map(|e| context.item(e)),
         None => None,
     };
@@ -196,7 +198,7 @@ mod tests {
             title(next_item(&store, Some(page[0]), source, lists).unwrap()),
             Some("Day 1".into())
         );
-        let data = queue_data(&store, Some(page[0]), source, lists).unwrap();
+        let data = queue_data(&store, Some(page[0]), Some(page[0]), source, lists).unwrap();
         assert_eq!(data.queued.len(), 1);
         assert_eq!(
             title(data.from_source.first().cloned()),
@@ -207,7 +209,7 @@ mod tests {
 
         // The last on the page, nothing queued: nothing next.
         store.dequeue(page[2]).unwrap();
-        let last = queue_data(&store, Some(page[2]), source, lists).unwrap();
+        let last = queue_data(&store, Some(page[2]), Some(page[2]), source, lists).unwrap();
         assert!(last.next.is_none());
         assert_eq!(
             next_item(&store, Some(page[2]), source, lists).unwrap(),

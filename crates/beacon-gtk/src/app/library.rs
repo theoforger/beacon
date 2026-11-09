@@ -101,6 +101,7 @@ struct Context {
     page: Option<ShowId>,
     details: Option<EpisodeId>,
     playing: Option<EpisodeId>,
+    after: Option<EpisodeId>,
     source: Option<Source>,
 }
 
@@ -171,6 +172,7 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
         loaded.queue = Some(queue_data::queue_data(
             store,
             context.playing,
+            context.playing.or(context.after),
             context.source,
             lists,
         )?);
@@ -186,6 +188,7 @@ impl App {
             page: self.last_show,
             details: self.details_episode.map(|(episode, _)| episode),
             playing: self.now_playing.as_ref().map(|now| now.id),
+            after: self.after,
             source: self.source,
         })
     }

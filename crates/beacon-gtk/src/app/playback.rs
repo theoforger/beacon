@@ -175,6 +175,8 @@ impl App {
             buffered: false,
         });
         self.last_position.set(Some((episode.id, start)));
+        self.after = Some(episode.id);
+        let _ = self.settings.set_int64("last-episode", episode.id.0);
         self.bar
             .emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
                 id: episode.id,

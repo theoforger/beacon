@@ -60,7 +60,7 @@ impl App {
             }
             PlayerBarOutput::Seek(to) => self.seek(to),
             PlayerBarOutput::Next => {
-                let current = self.now_playing.as_ref().map(|now| now.id);
+                let current = self.now_playing.as_ref().map(|now| now.id).or(self.after);
                 self.play_next(current, sender);
             }
             PlayerBarOutput::Rate(rate) => {

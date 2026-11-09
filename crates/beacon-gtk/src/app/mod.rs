@@ -113,6 +113,10 @@ pub struct App {
     /// pane's episode was opened from, for its Play.
     source: Option<Source>,
     details_source: Option<Source>,
+    /// The episode the list carries on after: the playing one, or else
+    /// the last played. It and `source` are kept in settings, so the
+    /// Queue's Next from survives a restart (found missing by the user).
+    after: Option<EpisodeId>,
     /// What plays after the playing episode, as last loaded; preloaded
     /// once the playing one has buffered.
     up_next: Option<beacon_core::model::Episode>,
@@ -261,6 +265,7 @@ impl Component for App {
             details_episode: None,
             source: None,
             details_source: None,
+            after: None,
             up_next: None,
             requests: library::Requests::default(),
             has_shows: false,
@@ -323,6 +328,7 @@ impl Component for App {
         }
 
         model.restore_window_state(&root);
+        model.restore_play_source();
         let settings = model.settings.clone();
         let library = model.library.clone();
         let last_position = model.last_position.clone();

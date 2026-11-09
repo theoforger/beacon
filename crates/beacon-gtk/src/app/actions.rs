@@ -176,9 +176,17 @@ impl App {
     /// that list. Pausing or resuming the playing one changes nothing.
     pub(super) fn take_source(&mut self, id: EpisodeId, source: Option<Source>) {
         let playing = self.now_playing.as_ref().map(|now| now.id);
-        if playing != Some(id) && source.is_some() {
-            self.source = source;
+        if let Some(source) = source.filter(|_| playing != Some(id)) {
+            self.source = Some(source);
+            let _ = self.settings.set_string("play-source", &source.key());
         }
+    }
+
+    /// The list and the episode Next from carries on after, as last saved.
+    pub(super) fn restore_play_source(&mut self) {
+        self.source = Source::from_key(&self.settings.string("play-source"));
+        let last = self.settings.int64("last-episode");
+        self.after = (last > 0).then_some(EpisodeId(last));
     }
 
     pub(super) fn open_show(&mut self, id: ShowId, sender: &ComponentSender<Self>) {

@@ -16,6 +16,33 @@ pub enum Source {
     Downloaded,
 }
 
+impl Source {
+    /// The source as a settings value: "new", "show:12", "favorites",
+    /// "downloaded".
+    pub fn key(self) -> String {
+        match self {
+            Source::New => "new".into(),
+            Source::Show(id) => format!("show:{}", id.0),
+            Source::Favorites => "favorites".into(),
+            Source::Downloaded => "downloaded".into(),
+        }
+    }
+
+    /// The source a settings value names, if any.
+    pub fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "new" => Some(Source::New),
+            "favorites" => Some(Source::Favorites),
+            "downloaded" => Some(Source::Downloaded),
+            _ => key
+                .strip_prefix("show:")?
+                .parse()
+                .ok()
+                .map(|id| Source::Show(crate::model::ShowId(id))),
+        }
+    }
+}
+
 /// What follows the playing episode.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UpNext {
@@ -105,6 +132,20 @@ mod tests {
         let next = up_next(&ids(&[2, 3]), &ids(&[2, 3]), Some(EpisodeId(2)));
         assert_eq!(next.queued, ids(&[3]));
         assert!(next.from_source.is_empty());
+    }
+
+    #[test]
+    fn sources_round_trip_through_settings() {
+        for source in [
+            Source::New,
+            Source::Show(crate::model::ShowId(12)),
+            Source::Favorites,
+            Source::Downloaded,
+        ] {
+            assert_eq!(Source::from_key(&source.key()), Some(source));
+        }
+        assert_eq!(Source::from_key(""), None);
+        assert_eq!(Source::from_key("show:x"), None);
     }
 
     #[test]

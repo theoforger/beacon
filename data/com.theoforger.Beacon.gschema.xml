@@ -60,5 +60,15 @@
       <summary>Playback speed</summary>
       <description>How fast episodes play, as chosen in the speed menu.</description>
     </key>
+    <key name="play-source" type="s">
+      <default>""</default>
+      <summary>List the last episode was played from</summary>
+      <description>What plays after the queue: “new”, “show:ID”, “favorites” or “downloaded”, or empty for none.</description>
+    </key>
+    <key name="last-episode" type="x">
+      <default>0</default>
+      <summary>Last episode played</summary>
+      <description>The episode the queue’s Next from list carries on after, kept across restarts; 0 for none.</description>
+    </key>
   </schema>
 </schemalist>
