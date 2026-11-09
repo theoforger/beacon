@@ -53,4 +53,25 @@ impl Store {
             .collect::<Result<_, _>>()?;
         Ok(episodes)
     }
+
+    /// The favourite episodes, newest first.
+    pub fn favorite_episodes(&self) -> Result<Vec<Episode>, StoreError> {
+        self.episodes_where("favorite = 1")
+    }
+
+    /// The downloaded episodes, newest first.
+    pub fn downloaded_episodes(&self) -> Result<Vec<Episode>, StoreError> {
+        self.episodes_where("download_path IS NOT NULL")
+    }
+
+    /// Episodes of every show matching `condition`, newest first.
+    fn episodes_where(&self, condition: &str) -> Result<Vec<Episode>, StoreError> {
+        let mut stmt = self.conn.prepare(&format!(
+            "{EPISODE_COLUMNS} WHERE {condition} ORDER BY published_at DESC, id DESC"
+        ))?;
+        let episodes = stmt
+            .query_map([], episode_from_row)?
+            .collect::<Result<_, _>>()?;
+        Ok(episodes)
+    }
 }

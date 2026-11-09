@@ -32,6 +32,10 @@ impl App {
         root: &adw::ApplicationWindow,
     ) {
         match output {
+            ContentOutput::ClearQueue(queued) => self.clear_queue(queued, widgets, sender),
+            ContentOutput::DeleteAllDownloads(ids) => {
+                self.confirm_delete_downloads(ids, sender, root);
+            }
             ContentOutput::Action(item, action, source) => {
                 self.row_action(*item, action, source, widgets, sender);
             }

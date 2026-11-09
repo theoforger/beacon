@@ -180,6 +180,26 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
     }))
 }
 
+/// The Favorites section, newest first.
+pub fn favorite_items(store: &Store) -> Result<Vec<EpisodeItem>, StoreError> {
+    let context = Context::load(store)?;
+    Ok(store
+        .favorite_episodes()?
+        .into_iter()
+        .map(|e| context.item(e))
+        .collect())
+}
+
+/// The Downloaded section, newest first.
+pub fn downloaded_items(store: &Store) -> Result<Vec<EpisodeItem>, StoreError> {
+    let context = Context::load(store)?;
+    Ok(store
+        .downloaded_episodes()?
+        .into_iter()
+        .map(|e| context.item(e))
+        .collect())
+}
+
 /// One episode with its show, for the details pane.
 pub fn episode_item(store: &Store, id: EpisodeId) -> Result<Option<EpisodeItem>, StoreError> {
     let context = Context::load(store)?;

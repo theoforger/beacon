@@ -363,20 +363,29 @@ fn narrow_headers_fit_three_window_buttons() {
         .show_content(true)
         .build();
     let window = window(&split);
-    content.emit(ContentInput::ShowSection(Location::New));
-    let until = std::time::Instant::now() + Duration::from_millis(100);
-    run_until(|| std::time::Instant::now() > until);
     // What the narrow breakpoint hides.
     content.widgets().details_toggle().set_visible(false);
     content.widgets().refresh_holder().set_visible(false);
     // The page's breakpoint bin reports less and clips what it holds, so
     // measure the page inside it.
     let page = first::<adw::ToolbarView>(content.widget().upcast_ref())
-        .expect("New's page has a toolbar view");
-    let needed = minimum_width(&page);
+        .expect("the root page has a toolbar view");
+    // New has the most buttons; Queue and Downloaded have Clear.
+    let mut needed = Vec::new();
+    for section in [Location::New, Location::Queue, Location::Downloaded] {
+        content.emit(ContentInput::ShowSection(section));
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+        needed.push((section, minimum_width(&page)));
+    }
     window.destroy();
     settings.set_gtk_decoration_layout(layout.as_deref());
-    assert!(needed <= NARROWEST, "New's narrow page needs {needed}px");
+    for (section, needed) in needed {
+        assert!(
+            needed <= NARROWEST,
+            "{section:?}'s narrow page needs {needed}px"
+        );
+    }
 }
 
 /// The details pane's More Options holds the episode's actions as a row's

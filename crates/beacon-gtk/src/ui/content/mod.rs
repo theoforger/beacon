@@ -21,18 +21,16 @@ use crate::navigation::Location;
 use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
 use crate::ui::labels;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
-use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
+use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
 use crate::ui::queue_data::QueueData;
-use crate::ui::queue_view::{QueueView, QueueViewInput, QueueViewOutput};
-use crate::ui::selection::Selection;
-use crate::ui::selection_bar;
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 use beacon_core::queue::Source;
 
+mod lists;
 mod sections;
-use sections::{bring_forward, empty_state, new_details_toggle, section_id};
+use sections::{bring_forward, new_details_toggle, section_id};
 
 const ROOT_TAG: &str = "root";
 
@@ -61,6 +59,8 @@ pub enum ContentInput {
     /// Whether feeds are refreshing.
     Refreshing(bool),
     SetQueue(Box<QueueData>),
+    SetFavorites(Vec<EpisodeItem>),
+    SetDownloaded(Vec<EpisodeItem>),
 }
 
 #[derive(Debug)]
@@ -81,22 +81,22 @@ pub enum ContentOutput {
     GoBack,
     /// A change to the selected episodes.
     Change(Vec<EpisodeId>, EpisodeChange),
+    /// The Queue's Clear, with the episodes it held.
+    ClearQueue(Vec<EpisodeId>),
+    /// Downloaded's Clear, with the downloaded episodes.
+    DeleteAllDownloads(Vec<EpisodeId>),
 }
 
 pub struct Content {
     shows: Controller<ShowsGrid>,
-    new: Controller<NewView>,
+    /// New, Queue, Favorites and Downloaded, with their selection.
+    lists: lists::Lists,
     show_page: Controller<ShowPage>,
-    queue: Controller<QueueView>,
     add_page: Controller<AddPage>,
     /// New's sort and filters, as last set by the window.
     new_prefs: ShowPrefs,
     /// New's filter button, shown only in New.
     new_filter: page_filters::FilterButton,
-    /// New's selection; its selection mode is the root page's.
-    new_selection: Selection,
-    /// The Select button, shown only in New.
-    new_select: gtk::Button,
     refresh_bar: sections::RefreshBar,
 }
 
@@ -203,14 +203,8 @@ impl Component for Content {
                 ShowsGridOutput::AddPodcast => input.emit(ContentInput::OpenAdd),
             }
         });
-        let new_selection = Selection::default();
-        let new = NewView::builder()
-            .launch(new_selection.clone())
-            .forward(&output, |message| match message {
-                NewViewOutput::Action(item, action) => {
-                    ContentOutput::Action(item, action, Some(Source::New))
-                }
-            });
+        let lists = lists::Lists::new(&output);
+        lists.connect_clear(&output);
         // The podcast page packs its details toggle itself, at the far end
         // of its header like the root page's, before its filter button.
         let show_toggle = new_details_toggle();
@@ -230,11 +224,6 @@ impl Component for Content {
                 ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
             },
         );
-        let queue = QueueView::builder()
-            .launch(())
-            .forward(&output, |message| match message {
-                QueueViewOutput::Action(item, action) => ContentOutput::Action(item, action, None),
-            });
         let add_page = AddPage::builder()
             .launch(())
             .forward(&output, |message| match message {
@@ -244,18 +233,15 @@ impl Component for Content {
 
         let model = Content {
             shows,
-            new,
+            lists,
             show_page,
-            queue,
             add_page,
             new_prefs: ShowPrefs::default(),
             new_filter: page_filters::FilterButton::new({
                 let s = sender.clone();
                 move |choice| s.input(ContentInput::ChooseNew(choice))
             }),
-            new_select: selection_bar::select_button(&new_selection),
             refresh_bar: sections::RefreshBar::new(),
-            new_selection,
         };
         model.new_filter.widget().set_visible(false);
         let widgets = view_output!();
@@ -286,13 +272,13 @@ impl Component for Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
-        model.new_select.set_visible(false);
-        widgets.root_header.pack_end(&model.new_select);
+        widgets.root_header.pack_end(&model.lists.select);
+        widgets.root_header.pack_start(&model.lists.clear);
         sections::attach_new_selection(
             &widgets.root_toolbar,
             &widgets.root_header,
-            &model.new_select,
-            &model.new_selection,
+            &model.lists.select,
+            &model.lists.selection,
             &widgets.search_bar,
             &widgets.navigation,
             Box::new(move |ids, change| {
@@ -301,12 +287,10 @@ impl Component for Content {
         );
 
         for location in Location::ALL {
-            let page: gtk::Widget = match location {
-                Location::Shows => model.shows.widget().clone().upcast(),
-                Location::New => model.new.widget().clone().upcast(),
-                Location::Queue => model.queue.widget().clone().upcast(),
-                other => empty_state(other).upcast(),
-            };
+            let page: gtk::Widget = model
+                .lists
+                .page(location)
+                .unwrap_or_else(|| model.shows.widget().clone().upcast());
             widgets.stack.add_named(&page, Some(section_id(location)));
         }
 
@@ -325,8 +309,7 @@ impl Component for Content {
             ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
-                self.new_selection.set_active(false);
-                self.new_select.set_visible(location == Location::New);
+                self.lists.show(location);
                 self.new_filter
                     .widget()
                     .set_visible(location == Location::New);
@@ -363,7 +346,7 @@ impl Component for Content {
             } => {
                 self.new_prefs = prefs;
                 self.new_filter.set_prefs(&prefs);
-                self.new.emit(NewViewInput::Set {
+                self.lists.set_new(NewViewInput::Set {
                     items,
                     prefs,
                     has_shows,
@@ -371,7 +354,9 @@ impl Component for Content {
             }
             ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
             ContentInput::Refreshing(running) => self.refresh_bar.set_running(running),
-            ContentInput::SetQueue(data) => self.queue.emit(QueueViewInput::Set(data)),
+            ContentInput::SetQueue(data) => self.lists.set_queue(data),
+            ContentInput::SetFavorites(items) => self.lists.set_favorites(items),
+            ContentInput::SetDownloaded(items) => self.lists.set_downloaded(items),
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(self.new_prefs);
                 if prefs != self.new_prefs {

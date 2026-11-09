@@ -11,6 +11,7 @@ pub mod dialogs;
 mod display_tests;
 pub mod episode_actions;
 pub mod episode_list;
+pub mod episodes_view;
 pub mod errors;
 pub mod format;
 pub mod labels;

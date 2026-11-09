@@ -8,6 +8,7 @@
 mod actions;
 mod controls;
 mod library;
+mod lists;
 mod media;
 mod playback;
 mod window;
@@ -70,6 +71,10 @@ pub enum AppMsg {
     Content(ContentOutput),
     /// The user confirmed unsubscribing in the dialog.
     ConfirmUnsubscribe(ShowId),
+    /// Undo of Clear Queue.
+    Requeue(Vec<EpisodeId>),
+    /// Delete All Downloads, confirmed.
+    DeleteDownloads(Vec<EpisodeId>),
     Player(PlayerEvent),
     /// What the player bar asks for.
     Bar(PlayerBarOutput),
@@ -92,6 +97,7 @@ pub enum AppCommand {
     /// An episode's chapters, loaded for the details pane and the player
     /// bar.
     Chapters(EpisodeId, Vec<beacon_core::model::Chapter>),
+    DownloadsDeleted(Result<usize, StoreError>),
 }
 
 pub struct App {
@@ -374,6 +380,8 @@ impl Component for App {
             AppMsg::Refresh => self.start_refresh(&sender, false),
             AppMsg::Content(output) => self.handle_content(output, widgets, &sender, root),
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, &sender),
+            AppMsg::Requeue(ids) => self.requeue(ids, &sender),
+            AppMsg::DeleteDownloads(ids) => self.delete_downloads(ids, &sender),
             AppMsg::Player(event) => self.player_event(event, widgets, &sender),
             AppMsg::Bar(output) => self.bar_output(output, widgets, &sender),
             AppMsg::Media(control) => self.media_control(control, widgets, &sender, root),
@@ -399,6 +407,9 @@ impl Component for App {
             AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
             AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),
+            AppCommand::DownloadsDeleted(result) => {
+                self.downloads_deleted(result, widgets, &sender)
+            }
             AppCommand::Chapters(id, chapters) => {
                 self.bar
                     .emit(PlayerBarInput::Chapters(id, chapters.clone()));

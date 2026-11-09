@@ -43,6 +43,8 @@ pub struct Parts {
     pub counts: bool,
     /// The Queue view, and whether Next has anything to play.
     pub queue: bool,
+    pub favorites: bool,
+    pub downloaded: bool,
 }
 
 impl Parts {
@@ -53,6 +55,8 @@ impl Parts {
         details: true,
         counts: true,
         queue: true,
+        favorites: true,
+        downloaded: true,
     };
     pub(super) const NONE: Parts = Parts {
         shows: false,
@@ -61,6 +65,8 @@ impl Parts {
         details: false,
         counts: false,
         queue: false,
+        favorites: false,
+        downloaded: false,
     };
     /// Everything an episode's state shows up in.
     pub(super) const EPISODE: Parts = Parts::ALL;
@@ -71,6 +77,8 @@ impl Parts {
         page: true,
         details: true,
         queue: true,
+        favorites: true,
+        downloaded: true,
         ..Parts::NONE
     };
     /// New's filters decide what follows an episode started from it.
@@ -106,6 +114,8 @@ pub struct Requests {
     details: u64,
     counts: u64,
     queue: u64,
+    favorites: u64,
+    downloaded: u64,
 }
 
 #[derive(Debug, Default)]
@@ -117,6 +127,8 @@ pub struct Loaded {
     details: Option<Option<EpisodeItem>>,
     counts: Option<LibraryCounts>,
     queue: Option<QueueData>,
+    favorites: Option<Vec<EpisodeItem>>,
+    downloaded: Option<Vec<EpisodeItem>>,
     /// Push the loaded podcast page rather than only refresh it.
     open_page: bool,
 }
@@ -144,6 +156,12 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
     }
     if parts.counts {
         loaded.counts = Some(store.counts()?);
+    }
+    if parts.favorites {
+        loaded.favorites = Some(models::favorite_items(store)?);
+    }
+    if parts.downloaded {
+        loaded.downloaded = Some(models::downloaded_items(store)?);
     }
     if parts.queue {
         let lists = Lists {
@@ -210,6 +228,8 @@ impl App {
             (parts.details, &mut requests.details),
             (parts.counts, &mut requests.counts),
             (parts.queue, &mut requests.queue),
+            (parts.favorites, &mut requests.favorites),
+            (parts.downloaded, &mut requests.downloaded),
         ] {
             if wanted {
                 *slot = generation;
@@ -284,6 +304,18 @@ impl App {
                 new: counts.new_episodes,
                 queue: counts.queue,
             }));
+        }
+        if let Some(items) = loaded
+            .favorites
+            .filter(|_| current(self.requests.favorites))
+        {
+            self.content.emit(ContentInput::SetFavorites(items));
+        }
+        if let Some(items) = loaded
+            .downloaded
+            .filter(|_| current(self.requests.downloaded))
+        {
+            self.content.emit(ContentInput::SetDownloaded(items));
         }
         if let Some(queue) = loaded.queue.filter(|_| current(self.requests.queue)) {
             self.bar.emit(PlayerBarInput::HasNext(queue.next.is_some()));

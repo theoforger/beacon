@@ -34,12 +34,14 @@ pub enum QueueViewOutput {
 }
 
 pub struct QueueView {
+    selection: Selection,
     list: EpisodeList,
 }
 
 #[relm4::component(pub)]
 impl Component for QueueView {
-    type Init = ();
+    /// The sections' selection, whose bar is in the content header.
+    type Init = Selection;
     type Input = QueueViewInput;
     type Output = QueueViewOutput;
     type CommandOutput = ();
@@ -53,26 +55,28 @@ impl Component for QueueView {
 
             add_named[Some("empty")] = &adw::StatusPage {
                 set_icon_name: Some(labels::icon(Location::Queue)),
-                set_title: &gettext("Queue Empty"),
-                set_description: Some(&gettext("Episodes added to the queue play next")),
+                set_title: &gettext("Queue Is Empty"),
+                set_description: Some(&gettext("Add episodes to the queue to play them next")),
             },
         }
     }
 
-    fn init(_init: (), root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+    fn init(
+        selection: Self::Init,
+        root: Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
         let rows = RowSetup {
             on_action: Rc::new(move |item, action| {
                 let _ = sender.output(QueueViewOutput::Action(Box::new(item.clone()), action));
             }),
             show_identity: true,
-            // No selection mode here: its bar is New's and the podcast
-            // pages'.
-            selection: Selection::default(),
-            selectable: false,
+            selection: selection.clone(),
+            selectable: true,
         };
         // Translators: how a screen reader names the Queue section's list.
         let list = EpisodeList::new(&rows, &gettext("Queue"), None, None);
-        let model = QueueView { list };
+        let model = QueueView { selection, list };
         let widgets = view_output!();
         widgets.stack.set_visible_child_name("empty");
         ComponentParts { model, widgets }
@@ -87,6 +91,14 @@ impl Component for QueueView {
     ) {
         let QueueViewInput::Set(data) = message;
         let entries = entries(&data);
+        let listed = data
+            .now_playing
+            .iter()
+            .chain(&data.queued)
+            .chain(&data.from_source)
+            .cloned()
+            .collect();
+        self.selection.set_items_for(Location::Queue, listed);
         widgets
             .stack
             .set_visible_child_name(if entries.is_empty() { "empty" } else { "list" });

@@ -11,7 +11,6 @@ use relm4::gtk::glib;
 use relm4::{adw, gtk};
 
 use crate::navigation::Location;
-use crate::ui::labels;
 use crate::ui::selection::Selection;
 use crate::ui::selection_bar::{self, OnChange};
 
@@ -36,30 +35,6 @@ pub(super) fn section_id(location: Location) -> &'static str {
         Location::Favorites => "favorites",
         Location::Downloaded => "downloaded",
     }
-}
-
-/// Sections whose views arrive later (M5) show their empty state.
-pub(super) fn empty_state(location: Location) -> adw::StatusPage {
-    let (title, description) = match location {
-        Location::Queue => (
-            gettext("Queue Is Empty"),
-            gettext("Add episodes to the queue to play them next"),
-        ),
-        Location::Favorites => (
-            gettext("No Favorites"),
-            gettext("Mark an episode as a favorite to find it here"),
-        ),
-        Location::Downloaded => (
-            gettext("No Downloads"),
-            gettext("Download an episode to listen offline"),
-        ),
-        Location::Shows | Location::New => unreachable!("Shows and New have their own views"),
-    };
-    adw::StatusPage::builder()
-        .icon_name(labels::icon(location))
-        .title(title)
-        .description(description)
-        .build()
 }
 
 /// Show `page`: push it, or go back to it if it is already further down.

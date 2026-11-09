@@ -14,6 +14,7 @@ use relm4::adw::prelude::*;
 use relm4::gtk;
 use relm4::{Component, ComponentParts, ComponentSender, adw};
 
+use crate::navigation::Location;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::format;
 use crate::ui::models::{EpisodeItem, RowAction};
@@ -141,9 +142,10 @@ impl Component for NewView {
             entries.extend(Entry::card(items));
         }
         entries.push(Entry::Space(32));
-        self.rows
-            .selection
-            .set_items(groups.into_iter().flat_map(|(_, items)| items).collect());
+        self.rows.selection.set_items_for(
+            Location::New,
+            groups.into_iter().flat_map(|(_, items)| items).collect(),
+        );
         self.list.set(entries);
     }
 }

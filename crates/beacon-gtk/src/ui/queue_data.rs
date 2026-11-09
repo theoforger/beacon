@@ -55,8 +55,8 @@ fn source_ids(store: &Store, source: Source, lists: Lists) -> Result<Vec<Episode
             },
             None => Vec::new(),
         },
-        // Their views arrive later in M5.
-        Source::Favorites | Source::Downloaded => Vec::new(),
+        Source::Favorites => store.favorite_episodes()?.iter().map(|e| e.id).collect(),
+        Source::Downloaded => store.downloaded_episodes()?.iter().map(|e| e.id).collect(),
     })
 }
 

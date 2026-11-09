@@ -5,13 +5,14 @@
 //! episode lists; its rows and its selection bar follow it.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use beacon_core::model::EpisodeId;
 use relm4::gtk::glib;
 use relm4::gtk::prelude::*;
 
+use crate::navigation::Location;
 use crate::ui::models::EpisodeItem;
 use crate::ui::widgets::episode_row::EpisodeRow;
 
@@ -26,6 +27,10 @@ struct Inner {
     chosen: RefCell<HashSet<EpisodeId>>,
     rows: RefCell<Vec<glib::WeakRef<EpisodeRow>>>,
     listeners: RefCell<Vec<Listener>>,
+    /// The section selected in, where one selection serves several (see
+    /// `set_scope`), and each section's items.
+    scope: Cell<Option<Location>>,
+    scoped: RefCell<HashMap<Location, Vec<EpisodeItem>>>,
 }
 
 /// A page's selection, shared by its rows and its selection bar.
@@ -133,6 +138,31 @@ impl Selection {
         if self.is_active() {
             self.changed();
         }
+    }
+
+    /// One selection serves the sections under the content header (New,
+    /// Queue, Favorites, Downloaded), whose selection bar is one: each sets
+    /// its items for itself, and the section showing is the one selected
+    /// in. Showing another leaves selection mode.
+    pub fn set_scope(&self, scope: Location) {
+        self.set_active(false);
+        self.inner.scope.set(Some(scope));
+        let items = self
+            .inner
+            .scoped
+            .borrow()
+            .get(&scope)
+            .cloned()
+            .unwrap_or_default();
+        self.set_items(items);
+    }
+
+    /// `scope`'s items, taking effect when it is the section showing.
+    pub fn set_items_for(&self, scope: Location, items: Vec<EpisodeItem>) {
+        if self.inner.scope.get() == Some(scope) {
+            self.set_items(items.clone());
+        }
+        self.inner.scoped.borrow_mut().insert(scope, items);
     }
 
     /// The selected episodes, in the page's order.
@@ -245,5 +275,24 @@ mod tests {
         selection.select_none();
         assert_eq!(selection.count(), 0);
         assert!(selection.is_active());
+    }
+
+    #[test]
+    fn each_section_selects_in_its_own_items() {
+        let selection = Selection::default();
+        selection.set_scope(Location::New);
+        selection.set_items_for(Location::New, vec![item(1), item(2)]);
+        // The Queue's items wait until it shows.
+        selection.set_items_for(Location::Queue, vec![item(3)]);
+        selection.select_all();
+        assert_eq!(ids(&selection), [1, 2]);
+
+        // Another section: selection mode ends, and its items are selected in.
+        selection.set_scope(Location::Queue);
+        assert!(!selection.is_active());
+        selection.select_all();
+        assert_eq!(ids(&selection), [3]);
+        selection.set_items_for(Location::New, vec![item(1)]);
+        assert_eq!(ids(&selection), [3], "New's update leaves the Queue alone");
     }
 }

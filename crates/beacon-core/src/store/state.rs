@@ -138,6 +138,29 @@ impl Store {
         Ok(())
     }
 
+    /// Empty the queue (its Clear).
+    pub fn clear_queue(&self) -> Result<(), StoreError> {
+        self.conn.execute("DELETE FROM queue", [])?;
+        Ok(())
+    }
+
+    /// Record an episode's downloaded file, or forget it (`None`).
+    pub fn set_download(
+        &self,
+        id: EpisodeId,
+        path: Option<&std::path::Path>,
+        now: DateTime<Utc>,
+    ) -> Result<(), StoreError> {
+        let path = path.map(|p| p.to_string_lossy().into_owned());
+        self.conn.execute(
+            "UPDATE episodes SET download_path = ?2,
+                 downloaded_at = CASE WHEN ?2 IS NULL THEN NULL ELSE ?3 END
+             WHERE id = ?1",
+            params![id.0, path, now],
+        )?;
+        Ok(())
+    }
+
     pub fn dequeue(&self, id: EpisodeId) -> Result<(), StoreError> {
         self.conn
             .execute("DELETE FROM queue WHERE episode_id = ?1", [id.0])?;

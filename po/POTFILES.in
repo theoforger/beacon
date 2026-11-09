@@ -2,17 +2,20 @@
 # Files with translatable strings. Keep sorted.
 crates/beacon-gtk/src/app/actions.rs
 crates/beacon-gtk/src/app/library.rs
+crates/beacon-gtk/src/app/lists.rs
 crates/beacon-gtk/src/app/mod.rs
 crates/beacon-gtk/src/main.rs
 crates/beacon-gtk/src/player/mpris.rs
 crates/beacon-gtk/src/ui/add_page.rs
 crates/beacon-gtk/src/ui/chapter_list.rs
+crates/beacon-gtk/src/ui/content/lists.rs
 crates/beacon-gtk/src/ui/content/mod.rs
 crates/beacon-gtk/src/ui/content/sections.rs
 crates/beacon-gtk/src/ui/details_pane/build.rs
 crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
 crates/beacon-gtk/src/ui/episode_actions.rs
+crates/beacon-gtk/src/ui/episodes_view.rs
 crates/beacon-gtk/src/ui/errors.rs
 crates/beacon-gtk/src/ui/format.rs
 crates/beacon-gtk/src/ui/labels.rs

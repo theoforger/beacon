@@ -220,6 +220,61 @@ async fn the_blue_dot_goes_when_seen_and_stays_gone() {
 }
 
 #[tokio::test]
+async fn favorites_list_newest_first() {
+    let server = MockServer::start_async().await;
+    let (library, show) =
+        subscribed(&server, "seasons.xml", Store::open_in_memory().unwrap()).await;
+    library.with_store(|store| {
+        let ids: Vec<_> = store.episodes(show).unwrap().iter().map(|e| e.id).collect();
+        assert!(store.favorite_episodes().unwrap().is_empty());
+        store.set_favorite(ids[2], true).unwrap();
+        store.set_favorite(ids[0], true).unwrap();
+        let favorites: Vec<_> = store
+            .favorite_episodes()
+            .unwrap()
+            .iter()
+            .map(|e| e.id)
+            .collect();
+        assert_eq!(favorites, [ids[0], ids[2]]);
+        assert!(store.downloaded_episodes().unwrap().is_empty());
+    });
+}
+
+#[tokio::test]
+async fn clearing_the_queue_and_deleting_downloads() {
+    let server = MockServer::start_async().await;
+    let (library, show) =
+        subscribed(&server, "seasons.xml", Store::open_in_memory().unwrap()).await;
+    let dir = std::env::temp_dir().join(format!("beacon-test-downloads-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("episode.mp3");
+    std::fs::write(&file, b"audio").unwrap();
+    let ids: Vec<_> = library.with_store(|store| {
+        let ids: Vec<_> = store.episodes(show).unwrap().iter().map(|e| e.id).collect();
+        store.enqueue(ids[0]).unwrap();
+        store.enqueue(ids[1]).unwrap();
+        store.clear_queue().unwrap();
+        assert!(store.queue().unwrap().is_empty());
+
+        store.set_download(ids[0], Some(&file), now()).unwrap();
+        // One whose file is already gone.
+        store
+            .set_download(ids[1], Some(&dir.join("gone.mp3")), now())
+            .unwrap();
+        assert_eq!(store.downloaded_episodes().unwrap().len(), 2);
+        ids
+    });
+    assert_eq!(library.delete_downloads(&ids).unwrap(), 2);
+    assert!(!file.exists());
+    library.with_store(|store| {
+        assert!(store.downloaded_episodes().unwrap().is_empty());
+        let state = store.episode(ids[0]).unwrap().unwrap().state;
+        assert!(state.download_path.is_none() && state.downloaded_at.is_none());
+    });
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[tokio::test]
 async fn favorites_and_unsubscribing() {
     let server = MockServer::start_async().await;
     let (library, show) = subscribed(&server, "plain.xml", Store::open_in_memory().unwrap()).await;

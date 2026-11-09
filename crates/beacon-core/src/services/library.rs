@@ -154,6 +154,27 @@ impl Library {
     /// shows' covers. `None` when it has no image of its own, or the same
     /// image as its show (GNOME Podcasts' rule), or the image cannot be
     /// fetched: the show's cover stands in.
+    /// Delete the downloaded files of `ids` and forget them; a file
+    /// already gone is forgotten too. Returns how many were downloaded.
+    pub fn delete_downloads(&self, ids: &[EpisodeId]) -> Result<usize, StoreError> {
+        let store = self.lock();
+        let now = self.clock.now();
+        let mut deleted = 0;
+        for id in ids {
+            let Some(path) = store.episode(*id)?.and_then(|e| e.state.download_path) else {
+                continue;
+            };
+            match std::fs::remove_file(&path) {
+                Ok(()) => {}
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+                Err(err) => return Err(err.into()),
+            }
+            store.set_download(*id, None, now)?;
+            deleted += 1;
+        }
+        Ok(deleted)
+    }
+
     pub async fn episode_cover(&self, id: EpisodeId) -> Result<Option<PathBuf>, StoreError> {
         let (episode_image, show_image) = {
             let store = self.lock();
