@@ -18,7 +18,7 @@ use gstreamer as gst;
 #[cfg(test)]
 use gstreamer::prelude::*;
 use gstreamer_play as gst_play;
-use relm4::gtk::glib;
+use gtk::glib;
 
 /// How often the player reports the position while playing.
 const POSITION_INTERVAL_MS: u32 = 250;

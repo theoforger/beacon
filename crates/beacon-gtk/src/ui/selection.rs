@@ -9,8 +9,8 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use beacon_core::model::EpisodeId;
-use relm4::gtk::glib;
-use relm4::gtk::prelude::*;
+use gtk::glib;
+use gtk::prelude::*;
 
 use crate::navigation::Location;
 use crate::ui::models::EpisodeItem;

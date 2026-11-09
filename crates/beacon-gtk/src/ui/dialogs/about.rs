@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use adw::prelude::*;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::{adw, gtk};
 
 use crate::config::{APP_ID, VERSION};
 

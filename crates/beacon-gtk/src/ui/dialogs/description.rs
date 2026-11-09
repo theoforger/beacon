@@ -3,8 +3,8 @@
 //! A show's full description, opened by Read More on its page when the page
 //! shows only the start of it.
 
-use relm4::adw::{self, prelude::*};
-use relm4::gtk::{self, pango};
+use adw::prelude::*;
+use gtk::{self, pango};
 
 use crate::ui::links;
 

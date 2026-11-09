@@ -1,9 +1,9 @@
 # Beacon
 
-A podcast app for GNOME. Rust, relm4 0.11, libadwaita 1.9, GNOME 50 runtime, packaged as a Flatpak. App ID `com.theoforger.Beacon`. Licence GPL-3.0-or-later.
+A podcast app for GNOME. Rust, gtk4-rs and libadwaita-rs (GTK 4.24, libadwaita 1.10), GNOME 51 runtime, packaged as a Flatpak. App ID `com.theoforger.Beacon`. Licence GPL-3.0-or-later.
 
 - `MILESTONES.md`: milestone checklist; tick items as they land.
-- `docs/architecture.md`: target layout, components and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add page and iTunes, auto-delete, sync).
+- `docs/architecture.md`: target layout, views and the widget map, plus what is built. `docs/testing.md`: test strategy. `docs/specs/`: feature specs (OPML, Add page and iTunes, auto-delete, sync).
 - `docs/decisions.md`: every crate and custom widget, with the reason, plus planned crates. `docs/hig-checklist.md`: the HIG gate. `docs/design/`: the mockup.
 
 ## Commands
@@ -35,18 +35,18 @@ Headless screenshots for the HIG gate: `build-aux/screenshots.sh` writes 1440×9
 
 ## Architecture
 
-Cargo workspace. `crates/beacon-core` holds the model, SQLite store and services (feeds, iTunes, downloads, cleanup, OPML) and never imports GTK, GLib or relm4. `crates/beacon-gtk` is the app: `App` owns the window and switches sections; deeper pages are pushed onto the content pane's `AdwNavigationView`, which owns that stack; `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components; services run as relm4 workers or commands. Views send typed messages and render state; they never touch the network, database or files. Cargo builds the binary and embeds the GResource (`build.rs`); Meson installs data files and runs gettext.
+Cargo workspace. `crates/beacon-core` holds the model, SQLite store and services (feeds, iTunes, downloads, cleanup, OPML) and never imports GTK or GLib. `crates/beacon-gtk` is the app: `App` owns the window and switches sections; deeper pages are pushed onto the content pane's `AdwNavigationView`, which owns that stack; the window (`app/object.rs`, an `AdwApplicationWindow` subclass) holds `App` and handles its `AppMsg`s and background results one at a time from one channel (`app/sender.rs`); background work runs on a tokio runtime the app owns. `Sidebar`, `Content`, `DetailsPane`, `PlayerBar` and the section views are GObject subclasses: each takes a typed input enum through `send`, queued so it handles one at a time (`ui/messages.rs`), and reports a typed output enum to the callback its owner connects. Views send typed messages and render state; they never touch the network, database or files. Cargo builds the binary and embeds the GResource (`build.rs`); Meson installs data files and runs gettext.
 
 ## Rules
 
 1. Dependencies point one way: `beacon-gtk` → `beacon-core`.
 2. No I/O in the UI layer.
-3. One component per file, under about 400 lines.
+3. One view per file, under about 400 lines.
 4. Typed messages only; no stringly-typed events.
 5. All CSS in `data/style.css`, libadwaita named colours and style classes only.
 6. Every user-visible string through gettext (`gettextrs::gettext`), including tooltips and accessible labels. Add new files with strings to `po/POTFILES.in`.
 7. Every icon-only button gets `set_tooltip_text` and an accessible `Label` property.
-8. Prefer maintained crates and stock libadwaita widgets. Every new crate (with last release, downloads, repository health, licence) and every custom widget gets an entry in `docs/decisions.md`. Add crates with `cargo add` (latest release, no exact pin); keep relm4, gtk4-rs, libadwaita-rs and gstreamer-rs in step; the GNOME 50 runtime is the ceiling.
+8. Prefer maintained crates and stock libadwaita widgets. Every new crate (with last release, downloads, repository health, licence) and every custom widget gets an entry in `docs/decisions.md`. Add crates with `cargo add` (latest release, no exact pin); keep gtk4-rs, libadwaita-rs and gstreamer-rs in step; the GNOME 51 runtime is the ceiling, and each binding's version feature matches it (gtk `v4_24`, adw `v1_10`, gstreamer `v1_28`).
 9. SPDX header `GPL-3.0-or-later` in every source file.
 10. Errors are typed in core and shown as toasts or status pages, never panics. The UI maps each error variant to its own gettext message; an error's `Display` text is for logs only, since core has no translations.
 11. Unit tests ship with every logic change; every feature ships with an integration test of its main scenario. A bug fix starts with a failing test. CI never calls live iTunes or podcast servers.
@@ -70,7 +70,7 @@ This section is the contract for Claude Code. It records everything agreed in th
 ### Build requirements
 
 1. Project setup comes before any feature work (done in M0).
-2. Use Rust and the relm4 framework.
+2. Use Rust with gtk4-rs and libadwaita-rs directly, views as GObject subclasses (changed 2026-11-09 from the relm4 framework).
 3. Prefer well-maintained, off-the-shelf Rust libraries over writing things from scratch.
 4. After every UI change, check it against the GNOME Human Interface Guidelines (HIG).
 5. Use libadwaita components wherever possible instead of building widgets.
@@ -78,14 +78,14 @@ This section is the contract for Claude Code. It records everything agreed in th
 
 ### Decisions
 
-- **Build environment:** build in a Flatpak against the GNOME 50 runtime, so the build does not depend on the host.
-- **Target:** GNOME 50 for now.
+- **Build environment:** build in a Flatpak against the GNOME 51 runtime, so the build does not depend on the host.
+- **Target:** GNOME 51 (moved from GNOME 50 on 2026-11-09).
 - **Directory search:** iTunes Search API.
 - **Sync:** nextcloud-gpodder (subscriptions, play positions, played state), behind a backend trait so gpodder.net-style servers can follow; see `docs/specs/sync.md` (decided 2026-11-08, replacing "none for now").
 - **Downloads:** manual only, never automatic. An auto-delete feature removes old downloaded episodes, configurable in Settings.
 - **Translation and accessibility:** both from day one.
 - **Window sizes:** small desktop windows only, down to 360px wide. No Phosh-specific work.
-- **Versions:** use the latest release of every crate and do not pin to a specific version. Only the GNOME 50 runtime is fixed.
+- **Versions:** use the latest release of every crate and do not pin to a specific version. Only the GNOME 51 runtime is fixed.
 - **Licence:** GPL-3.0-or-later. Put the licence text in `LICENSE` and an SPDX header in every source file.
 - **Distribution:** Flathub is not the goal right now, but build to its requirements from the start so submitting later is a checklist, not a rewrite. That means a validated metainfo file and desktop file (checked in CI), the narrowest sandbox permissions that work, portals for file access, and cargo sources generated for an offline Flatpak build.
 - **Name and app ID:** Beacon, with the app ID `com.theoforger.Beacon`. Use the ID everywhere it appears: the `.desktop` and metainfo file names, the GSettings schema ID and path (`/com/theoforger/Beacon/`), the gresource prefix, the icon names, the Flatpak manifest and `GApplication`. Flathub accepts a reverse-DNS ID only for a domain the developer controls, so keep `theoforger.com` under your control.

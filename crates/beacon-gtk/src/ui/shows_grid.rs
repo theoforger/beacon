@@ -4,14 +4,15 @@
 //! ending in an Add Podcast tile. With no subscriptions it is an empty state
 //! with an Add Podcast button.
 
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gio, glib, pango};
-use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw};
+use gtk::{self, gio, glib, pango};
 
 use beacon_core::model::ShowId;
 
 use crate::ui::covers::{Cover, square};
+use crate::ui::messages::Output;
 use crate::ui::models::ShowCard;
 
 /// The narrowest a cover gets, as in GNOME Podcasts. Covers grow to fill
@@ -35,84 +36,85 @@ enum Tile {
     Add,
 }
 
-pub struct ShowsGrid {
-    tiles: gio::ListStore,
-    /// The cards shown, so a reload that changes nothing rebuilds nothing.
-    cards: Option<Vec<ShowCard>>,
-    empty: bool,
-}
+mod imp {
+    use std::cell::{OnceCell, RefCell};
 
-#[relm4::component(pub)]
-impl SimpleComponent for ShowsGrid {
-    type Init = ();
-    type Input = ShowsGridInput;
-    type Output = ShowsGridOutput;
+    use super::*;
 
-    view! {
-        #[name = "stack"]
-        gtk::Stack {
-
-            add_named[Some("empty")] = &adw::StatusPage {
-                set_icon_name: Some("com.theoforger.Beacon-symbolic"),
-                set_title: &gettext("No Podcasts"),
-                set_description: Some(&gettext("Add a podcast by searching for it or pasting its feed address")),
-
-                #[wrap(Some)]
-                set_child = &gtk::Button {
-                    set_label: &gettext("Add Podcast"),
-                    set_halign: gtk::Align::Center,
-                    add_css_class: "pill",
-                    add_css_class: "suggested-action",
-                    connect_clicked[sender] => move |_| {
-                        let _ = sender.output(ShowsGridOutput::AddPodcast);
-                    },
-                },
-            },
-
-            add_named[Some("grid")] = &gtk::ScrolledWindow {
-                set_hscrollbar_policy: gtk::PolicyType::Never,
-
-                // The HIG asks for a maximum width, against long rows.
-                #[wrap(Some)]
-                set_child = &adw::ClampScrollable {
-                    set_maximum_size: 1200,
-                    set_vscroll_policy: gtk::ScrollablePolicy::Natural,
-
-                    // As in GNOME Podcasts: 2 to 7 columns, fixed margins
-                    // around each tile (`.shows-grid`), and rows as tall as
-                    // their tiles' natural height, so covers stay square.
-                    #[wrap(Some)]
-                    #[name = "grid"]
-                    set_child = &gtk::GridView {
-                        set_min_columns: 2,
-                        set_max_columns: 7,
-                        set_vscroll_policy: gtk::ScrollablePolicy::Natural,
-                        set_single_click_activate: true,
-                        add_css_class: "shows-grid",
-                        update_property: &[gtk::accessible::Property::Label(&gettext("Shows"))],
-                    },
-                },
-            },
-        }
+    #[derive(Default)]
+    pub struct ShowsGrid {
+        pub stack: OnceCell<gtk::Stack>,
+        pub tiles: OnceCell<gio::ListStore>,
+        /// The cards shown, so a reload that changes nothing rebuilds nothing.
+        pub cards: RefCell<Option<Vec<ShowCard>>>,
+        pub output: Output<ShowsGridOutput>,
     }
 
-    fn init(
-        _init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let model = ShowsGrid {
-            tiles: gio::ListStore::new::<glib::BoxedAnyObject>(),
-            cards: None,
-            empty: true,
-        };
-        let widgets = view_output!();
+    #[glib::object_subclass]
+    impl ObjectSubclass for ShowsGrid {
+        const NAME: &'static str = "BeaconShowsGrid";
+        type Type = super::ShowsGrid;
+        type ParentType = adw::Bin;
+    }
 
-        widgets
-            .grid
-            .set_model(Some(&gtk::NoSelection::new(Some(model.tiles.clone()))));
-        widgets.grid.set_factory(Some(&tile_factory()));
-        widgets.grid.connect_activate(move |grid, position| {
+    impl ObjectImpl for ShowsGrid {
+        fn constructed(&self) {
+            self.parent_constructed();
+            self.obj().build();
+        }
+    }
+    impl WidgetImpl for ShowsGrid {}
+    impl BinImpl for ShowsGrid {}
+}
+
+glib::wrapper! {
+    pub struct ShowsGrid(ObjectSubclass<imp::ShowsGrid>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl Default for ShowsGrid {
+    fn default() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl ShowsGrid {
+    fn build(&self) {
+        let output = self.imp().output.clone();
+        let add = gtk::Button::builder()
+            .label(gettext("Add Podcast"))
+            .halign(gtk::Align::Center)
+            .css_classes(["pill", "suggested-action"])
+            .build();
+        add.connect_clicked({
+            let output = output.clone();
+            move |_| output.emit(ShowsGridOutput::AddPodcast)
+        });
+        let empty = adw::StatusPage::builder()
+            .icon_name("com.theoforger.Beacon-symbolic")
+            .title(gettext("No Podcasts"))
+            .description(gettext(
+                "Add a podcast by searching for it or pasting its feed address",
+            ))
+            .child(&add)
+            .build();
+
+        // As in GNOME Podcasts: 2 to 7 columns, fixed margins around each
+        // tile (`.shows-grid`), and rows as tall as their tiles' natural
+        // height, so covers stay square.
+        let tiles = gio::ListStore::new::<glib::BoxedAnyObject>();
+        let grid = gtk::GridView::builder()
+            .min_columns(2)
+            .max_columns(7)
+            .vscroll_policy(gtk::ScrollablePolicy::Natural)
+            .single_click_activate(true)
+            .css_classes(["shows-grid"])
+            .model(&gtk::NoSelection::new(Some(tiles.clone())))
+            .factory(&tile_factory())
+            .build();
+        grid.update_property(&[gtk::accessible::Property::Label(&gettext("Shows"))]);
+        grid.connect_activate(move |grid, position| {
             let Some(object) = grid
                 .model()
                 .and_then(|m| m.item(position))
@@ -120,34 +122,57 @@ impl SimpleComponent for ShowsGrid {
             else {
                 return;
             };
-            let output = match &*object.borrow::<Tile>() {
+            let message = match &*object.borrow::<Tile>() {
                 Tile::Show(card) => ShowsGridOutput::OpenShow(card.id),
                 Tile::Add => ShowsGridOutput::AddPodcast,
             };
-            let _ = sender.output(output);
+            output.emit(message);
         });
+        // The HIG asks for a maximum width, against long rows.
+        let clamp = adw::ClampScrollable::builder()
+            .maximum_size(1200)
+            .vscroll_policy(gtk::ScrollablePolicy::Natural)
+            .child(&grid)
+            .build();
+        let scrolled = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .child(&clamp)
+            .build();
 
-        ComponentParts { model, widgets }
+        let stack = gtk::Stack::new();
+        stack.add_named(&empty, Some("empty"));
+        stack.add_named(&scrolled, Some("grid"));
+        stack.set_visible_child_name("empty");
+        self.set_child(Some(&stack));
+        let imp = self.imp();
+        let _ = imp.stack.set(stack);
+        let _ = imp.tiles.set(tiles);
     }
 
-    fn post_view() {
-        stack.set_visible_child_name(if model.empty { "empty" } else { "grid" });
+    pub fn connect_output(&self, receive: impl Fn(ShowsGridOutput) + 'static) {
+        self.imp().output.connect(receive);
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-        let ShowsGridInput::SetCards(cards) = message;
-        if self.cards.as_ref() == Some(&cards) {
+    pub fn send(&self, input: ShowsGridInput) {
+        let ShowsGridInput::SetCards(cards) = input;
+        let imp = self.imp();
+        if imp.cards.borrow().as_ref() == Some(&cards) {
             return;
         }
-        self.cards = Some(cards.clone());
-        self.empty = cards.is_empty();
+        let empty = cards.is_empty();
+        imp.cards.replace(Some(cards.clone()));
         let tiles: Vec<glib::BoxedAnyObject> = cards
             .into_iter()
             .map(Tile::Show)
             .chain([Tile::Add])
             .map(glib::BoxedAnyObject::new)
             .collect();
-        self.tiles.splice(0, self.tiles.n_items(), &tiles);
+        let store = imp.tiles.get().expect("built when constructed");
+        store.splice(0, store.n_items(), &tiles);
+        imp.stack
+            .get()
+            .expect("built when constructed")
+            .set_visible_child_name(if empty { "empty" } else { "grid" });
     }
 }
 

@@ -11,8 +11,8 @@ use std::time::Duration;
 
 use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
+use gtk::glib;
 use mpris_server::{Metadata, PlaybackStatus, Time, TrackId};
-use relm4::gtk::glib;
 
 use crate::config::APP_ID;
 use crate::player::PlaybackState;

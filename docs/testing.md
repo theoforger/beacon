@@ -9,8 +9,8 @@ Two rules drive everything else:
 
 | Layer | What it covers | How |
 | --- | --- | --- |
-| Unit | Parsing, season grouping, queue and auto-continue logic, played state, auto-delete rules, OPML mapping, relm4 `update` functions | `cargo test` in `beacon-core`, plus component `update` tests that send messages and assert state. No display needed |
-| Integration | Feed fetch and refresh, SQLite migrations and queries, downloads and resume, iTunes client, and the main scenario of every feature | A local HTTP server serving fixture feeds and canned iTunes responses, in-memory SQLite, an injected clock for auto-delete. Feature scenarios send messages to the services and relm4 components and assert the resulting state and database rows. No display needed |
+| Unit | Parsing, season grouping, queue and auto-continue logic, played state, auto-delete rules, OPML mapping, views' input handling | `cargo test` in `beacon-core`, plus view tests that `send` input and assert state. No display needed |
+| Integration | Feed fetch and refresh, SQLite migrations and queries, downloads and resume, iTunes client, and the main scenario of every feature | A local HTTP server serving fixture feeds and canned iTunes responses, in-memory SQLite, an injected clock for auto-delete. Feature scenarios send messages to the services and views and assert the resulting state and database rows. No display needed |
 
 ## Layout tests
 
@@ -18,7 +18,7 @@ Two rules drive everything else:
 
 ## No UI automation
 
-The project does not run end-to-end tests through the real window. What the screen shows is checked by the HIG gate after every UI change (screenshots of the affected views, with skipped views logged and checked at milestone end; keyboard and Orca walk-throughs, logged and deferred until the UI is final, in M9). To keep that gap small, keep logic out of widgets: components only translate messages into core calls and state into widget properties.
+The project does not run end-to-end tests through the real window. What the screen shows is checked by the HIG gate after every UI change (screenshots of the affected views, with skipped views logged and checked at milestone end; keyboard and Orca walk-throughs, logged and deferred until the UI is final, in M9). To keep that gap small, keep logic out of widgets: views only translate messages into core calls and state into widget properties.
 
 ## Scenarios
 

@@ -11,8 +11,7 @@ use std::time::Duration;
 
 use beacon_core::model::{Episode, EpisodeId, EpisodeInfo, EpisodeState, Season, ShowId};
 use chrono::Utc;
-use relm4::gtk::{self, gdk, glib, prelude::*};
-use relm4::{Component, ComponentController, adw};
+use gtk::{self, gdk, glib, prelude::*};
 
 use crate::ui::dialogs::description::text_height;
 use crate::ui::episode_list::{Entry, EpisodeList};
@@ -199,9 +198,7 @@ fn long_lists_make_rows_only_for_the_screen() {
 /// Folding a season takes its episodes out of the list; unfolding brings
 /// them back.
 fn seasons_fold_away_their_episodes() {
-    let page = ShowPage::builder()
-        .launch(gtk::ToggleButton::new())
-        .detach();
+    let page = ShowPage::new(&gtk::ToggleButton::new());
     let season = |number: u32, ids: std::ops::RangeInclusive<i64>| SeasonItems {
         season: Some(Season { number, name: None }),
         episodes: ids.map(|id| episode(id, Some(number))).collect(),
@@ -220,17 +217,17 @@ fn seasons_fold_away_their_episodes() {
         episodes: Vec::new(),
         all_played: false,
     };
-    page.emit(ShowPageInput::Set(Box::new(data.clone())));
+    page.send(ShowPageInput::Set(Box::new(data.clone())));
     let nav = adw::NavigationView::new();
-    nav.push(page.widget());
+    nav.push(&page);
     let window = window(&nav);
-    let rows = || count::<EpisodeRow>(page.widget().upcast_ref());
+    let rows = || count::<EpisodeRow>(page.upcast_ref());
     run_until(|| rows() == 6);
     assert_eq!(rows(), 6);
 
     let expanders = || {
         let mut found = Vec::new();
-        let mut stack = vec![page.widget().clone().upcast::<gtk::Widget>()];
+        let mut stack = vec![page.clone().upcast::<gtk::Widget>()];
         while let Some(widget) = stack.pop() {
             if let Ok(expander) = widget.clone().downcast::<gtk::Expander>() {
                 found.push(expander);
@@ -257,7 +254,7 @@ fn seasons_fold_away_their_episodes() {
 
     // A refresh keeps the fold.
     data.all_played = true;
-    page.emit(ShowPageInput::Set(Box::new(data)));
+    page.send(ShowPageInput::Set(Box::new(data)));
     let settled = std::time::Instant::now() + Duration::from_millis(300);
     run_until(|| std::time::Instant::now() > settled);
     assert_eq!(rows(), 3);
@@ -272,16 +269,16 @@ fn the_player_bar_lists_chapters() {
 
     use crate::ui::player_bar::{NowPlayingCard, PlayerBarInput, PlayerBarOutput};
 
-    let bar = PlayerBar::builder().launch(());
+    let bar = PlayerBar::default();
     let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
     let record = asked.clone();
-    let bar = bar.connect_receiver(move |_, output| {
+    bar.connect_output(move |output| {
         if let PlayerBarOutput::Seek(to) = output {
             record.borrow_mut().push(to);
         }
     });
-    let window = window(bar.widget());
-    bar.emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+    let window = window(&bar);
+    bar.send(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
         id: EpisodeId(7),
         title: "Letters home".into(),
         show_title: "Paper Trails".into(),
@@ -313,15 +310,15 @@ fn the_player_bar_lists_chapters() {
     assert!(!button.is_sensitive(), "no chapters yet");
 
     // Another episode's chapters are not this one's.
-    bar.emit(PlayerBarInput::Chapters(EpisodeId(8), chapters.clone()));
+    bar.send(PlayerBarInput::Chapters(EpisodeId(8), chapters.clone()));
     settle();
     assert!(!button.is_sensitive());
 
     // The stored chapters come before the player knows the length.
-    bar.emit(PlayerBarInput::Chapters(EpisodeId(7), chapters));
+    bar.send(PlayerBarInput::Chapters(EpisodeId(7), chapters));
     settle();
-    bar.emit(PlayerBarInput::Duration(Duration::from_secs(3600)));
-    bar.emit(PlayerBarInput::Position(Duration::from_secs(15 * 60)));
+    bar.send(PlayerBarInput::Duration(Duration::from_secs(3600)));
+    bar.send(PlayerBarInput::Position(Duration::from_secs(15 * 60)));
     settle();
     assert!(button.is_sensitive());
     // A tick at 10 and at 40 minutes of the hour, not both at the end.
@@ -343,7 +340,7 @@ fn the_player_bar_lists_chapters() {
     assert_eq!(*asked.borrow(), [Duration::from_secs(40 * 60)]);
 
     // How much the player holds fills the trough that far.
-    bar.emit(PlayerBarInput::Buffered(0.5));
+    bar.send(PlayerBarInput::Buffered(0.5));
     settle();
     let filled = fill(&seek);
     assert!(
@@ -363,11 +360,11 @@ fn narrow_headers_fit_three_window_buttons() {
     let settings = gtk::Settings::default().expect("GTK started");
     let layout = settings.gtk_decoration_layout();
     settings.set_gtk_decoration_layout(Some("menu:minimize,maximize,close"));
-    let content = Content::builder().launch(()).detach();
+    let content = Content::default();
     // In a collapsed split view, as in the app, so Back to the sidebar shows.
     let split = adw::NavigationSplitView::builder()
         .sidebar(&adw::NavigationPage::new(&gtk::Label::new(None), "Beacon"))
-        .content(&adw::NavigationPage::new(content.widget(), "New"))
+        .content(&adw::NavigationPage::new(&content, "New"))
         .collapsed(true)
         .show_content(true)
         .build();
@@ -377,12 +374,12 @@ fn narrow_headers_fit_three_window_buttons() {
     content.widgets().refresh_holder().set_visible(false);
     // The page's breakpoint bin reports less and clips what it holds, so
     // measure the page inside it.
-    let page = first::<adw::ToolbarView>(content.widget().upcast_ref())
-        .expect("the root page has a toolbar view");
+    let page =
+        first::<adw::ToolbarView>(content.upcast_ref()).expect("the root page has a toolbar view");
     // New has the most buttons; Queue and Downloaded have Clear.
     let mut needed = Vec::new();
     for section in [Location::New, Location::Queue, Location::Downloaded] {
-        content.emit(ContentInput::ShowSection(section));
+        content.send(ContentInput::ShowSection(section));
         let until = std::time::Instant::now() + Duration::from_millis(100);
         run_until(|| std::time::Instant::now() > until);
         needed.push((section, minimum_width(&page)));
@@ -406,14 +403,13 @@ fn the_details_pane_offers_the_row_menus_actions() {
 
     let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
     let record = asked.clone();
-    let pane = DetailsPane::builder()
-        .launch(())
-        .connect_receiver(move |_, output| {
-            if let DetailsPaneOutput::Action(item, action) = output {
-                record.borrow_mut().push((item.episode.id, action));
-            }
-        });
-    let window = window(pane.widget());
+    let pane = DetailsPane::default();
+    pane.connect_output(move |output| {
+        if let DetailsPaneOutput::Action(item, action) = output {
+            record.borrow_mut().push((item.episode.id, action));
+        }
+    });
+    let window = window(&pane);
     let more = pane.widgets().more().clone();
     let settle = || {
         let until = std::time::Instant::now() + Duration::from_millis(100);
@@ -424,7 +420,7 @@ fn the_details_pane_offers_the_row_menus_actions() {
 
     let item = partly_played();
     let id = item.episode.id;
-    pane.emit(DetailsPaneInput::Show(Box::new(item)));
+    pane.send(DetailsPaneInput::Show(Box::new(item)));
     settle();
     assert!(more.is_mapped());
     let labels: Vec<_> = items(&more.menu_model().expect("a menu"))
@@ -446,7 +442,7 @@ fn the_details_pane_offers_the_row_menus_actions() {
     settle();
     assert_eq!(*asked.borrow(), [(id, RowAction::ResetProgress)]);
 
-    pane.emit(DetailsPaneInput::Clear);
+    pane.send(DetailsPaneInput::Clear);
     settle();
     assert!(!more.is_mapped());
     window.destroy();
@@ -758,11 +754,11 @@ fn the_narrow_layout_fits_the_narrowest_window() {
 
     // The player spans the window: in the narrow layout, the slim bar and
     // the sheet with the whole player, speed, sleep timer and volume kept.
-    let bar = PlayerBar::builder().launch(()).detach();
+    let bar = PlayerBar::default();
     bar.widgets().set_sheet(true);
     for (part, needed) in [
         ("slim bar", minimum_width(bar.widgets().mini())),
-        ("player sheet", minimum_width(bar.widget())),
+        ("player sheet", minimum_width(&bar)),
     ] {
         assert!(needed <= NARROWEST, "the narrow {part} needs {needed}px");
     }
@@ -886,22 +882,20 @@ fn resize_cost() {
             episodes: items,
             all_played: false,
         };
-        let page = ShowPage::builder()
-            .launch(gtk::ToggleButton::new())
-            .detach();
-        page.emit(ShowPageInput::Set(Box::new(data)));
+        let page = ShowPage::new(&gtk::ToggleButton::new());
+        page.send(ShowPageInput::Set(Box::new(data)));
         let nav = adw::NavigationView::new();
-        nav.push(page.widget());
+        nav.push(&page);
         probe(
             &format!("{name} podcast page"),
             nav.upcast_ref(),
             360..=1200,
         );
-        let pane = DetailsPane::builder().launch(()).detach();
-        pane.emit(DetailsPaneInput::Show(Box::new(longest)));
+        let pane = DetailsPane::default();
+        pane.send(DetailsPaneInput::Show(Box::new(longest)));
         probe(
             &format!("{name} details pane"),
-            pane.widget().upcast_ref(),
+            pane.upcast_ref(),
             280..=600,
         );
     }

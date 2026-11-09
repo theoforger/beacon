@@ -2,14 +2,11 @@
 
 //! The details pane's widgets: built once, then set as episodes come and go.
 
+use adw::prelude::*;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gio, pango};
-use relm4::{ComponentSender, adw};
+use gtk::{self, gio, pango};
 
-use super::{
-    ACTIONS, COVER_SIZE, DetailsPane, DetailsPaneInput, DetailsPaneOutput, DetailsPaneWidgets,
-};
+use super::{ACTIONS, COVER_SIZE, DetailsPaneInput, DetailsPaneOutput, DetailsPaneWidgets, Sender};
 use crate::ui::covers::Cover;
 use crate::ui::episode_actions;
 use crate::ui::links;
@@ -26,10 +23,7 @@ fn heading(label: &str) -> gtk::Label {
         .build()
 }
 
-pub(super) fn widgets(
-    root: &adw::ToolbarView,
-    sender: &ComponentSender<DetailsPane>,
-) -> DetailsPaneWidgets {
+pub(super) fn widgets(root: &adw::ToolbarView, sender: &Sender) -> DetailsPaneWidgets {
     let header = adw::HeaderBar::builder()
         .title_widget(&adw::WindowTitle::new(&gettext("Episode Details"), ""))
         .build();
@@ -42,7 +36,7 @@ pub(super) fn widgets(
     back.connect_clicked({
         let sender = sender.clone();
         move |_| {
-            let _ = sender.output(DetailsPaneOutput::Close);
+            sender.output(DetailsPaneOutput::Close);
         }
     });
     header.pack_start(&back);
@@ -194,7 +188,7 @@ pub(super) fn widgets(
 }
 
 /// Wire Play, the show link and the chapter rows to the pane.
-fn connect(widgets: &DetailsPaneWidgets, sender: &ComponentSender<DetailsPane>) {
+fn connect(widgets: &DetailsPaneWidgets, sender: &Sender) {
     let input = sender.clone();
     widgets
         .play

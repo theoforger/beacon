@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Duration;
 
-use relm4::gtk::{self, gdk, glib, prelude::*};
+use gtk::{self, gdk, glib, prelude::*};
 
 use crate::ui::cover_cache::{Key, cached, decode, decode_size, device_pixels, store};
 use crate::ui::widgets::smooth_texture::SmoothTexture;

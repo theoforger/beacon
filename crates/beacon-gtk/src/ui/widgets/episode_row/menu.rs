@@ -3,7 +3,7 @@
 //! The row menu, built when opened.
 
 use gettextrs::gettext;
-use relm4::gtk::gio;
+use gtk::gio;
 
 use crate::ui::episode_actions;
 use crate::ui::models::EpisodeItem;
@@ -27,7 +27,7 @@ pub(super) fn menu_for(item: &EpisodeItem, selectable: bool) -> gio::Menu {
 
 #[cfg(test)]
 mod tests {
-    use relm4::gtk::prelude::*;
+    use gtk::prelude::*;
 
     use super::*;
     use crate::ui::episode_actions::{item, items};

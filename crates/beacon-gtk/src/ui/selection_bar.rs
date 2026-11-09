@@ -14,9 +14,9 @@ use std::rc::Rc;
 
 use beacon_core::model::{EpisodeChange, EpisodeId};
 use gettextrs::{gettext, ngettext};
-use relm4::adw;
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gio, glib};
+
+use adw::prelude::*;
+use gtk::{self, gio, glib};
 
 use crate::ui::selection::Selection;
 

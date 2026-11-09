@@ -9,15 +9,17 @@
 use std::rc::Rc;
 use std::time::Duration;
 
+use adw::prelude::*;
 use gettextrs::{gettext, ngettext};
-use relm4::adw::prelude::*;
-use relm4::gtk;
-use relm4::{Component, ComponentParts, ComponentSender, adw};
+
+use adw::subclass::prelude::*;
+use gtk::glib;
 
 use crate::navigation::Location;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::format;
 use crate::ui::labels;
+use crate::ui::messages::Output;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::queue_data::QueueData;
 use crate::ui::selection::Selection;
@@ -33,42 +35,49 @@ pub enum QueueViewOutput {
     Action(Box<EpisodeItem>, RowAction),
 }
 
-pub struct QueueView {
-    selection: Selection,
-    list: EpisodeList,
-}
+mod imp {
+    use std::cell::OnceCell;
 
-#[relm4::component(pub)]
-impl Component for QueueView {
-    /// The sections' selection, whose bar is in the content header.
-    type Init = Selection;
-    type Input = QueueViewInput;
-    type Output = QueueViewOutput;
-    type CommandOutput = ();
+    use super::*;
 
-    view! {
-        #[name = "stack"]
-        gtk::Stack {
-            set_vexpand: true,
-
-            add_named[Some("list")] = model.list.widget(),
-
-            add_named[Some("empty")] = &adw::StatusPage {
-                set_icon_name: Some(labels::icon(Location::Queue)),
-                set_title: &gettext("Queue Is Empty"),
-                set_description: Some(&gettext("Add episodes to the queue to play them next")),
-            },
-        }
+    #[derive(Default)]
+    pub struct QueueView {
+        pub parts: OnceCell<super::Parts>,
+        pub output: Output<QueueViewOutput>,
     }
 
-    fn init(
-        selection: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
+    #[glib::object_subclass]
+    impl ObjectSubclass for QueueView {
+        const NAME: &'static str = "BeaconQueueView";
+        type Type = super::QueueView;
+        type ParentType = adw::Bin;
+    }
+
+    impl ObjectImpl for QueueView {}
+    impl WidgetImpl for QueueView {}
+    impl BinImpl for QueueView {}
+}
+
+glib::wrapper! {
+    pub struct QueueView(ObjectSubclass<imp::QueueView>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+pub struct Parts {
+    selection: Selection,
+    list: EpisodeList,
+    stack: gtk::Stack,
+}
+
+impl QueueView {
+    /// The sections' selection, whose bar is in the content header.
+    pub fn new(selection: Selection) -> Self {
+        let view: Self = glib::Object::new();
+        let output = view.imp().output.clone();
         let rows = RowSetup {
             on_action: Rc::new(move |item, action| {
-                let _ = sender.output(QueueViewOutput::Action(Box::new(item.clone()), action));
+                output.emit(QueueViewOutput::Action(Box::new(item.clone()), action));
             }),
             show_identity: true,
             selection: selection.clone(),
@@ -76,20 +85,31 @@ impl Component for QueueView {
         };
         // Translators: how a screen reader names the Queue section's list.
         let list = EpisodeList::new(&rows, &gettext("Queue"), None, None);
-        let model = QueueView { selection, list };
-        let widgets = view_output!();
-        widgets.stack.set_visible_child_name("empty");
-        ComponentParts { model, widgets }
+        let empty = adw::StatusPage::builder()
+            .icon_name(labels::icon(Location::Queue))
+            .title(gettext("Queue Is Empty"))
+            .description(gettext("Add episodes to the queue to play them next"))
+            .build();
+        let stack = gtk::Stack::builder().vexpand(true).build();
+        stack.add_named(list.widget(), Some("list"));
+        stack.add_named(&empty, Some("empty"));
+        stack.set_visible_child_name("empty");
+        view.set_child(Some(&stack));
+        let _ = view.imp().parts.set(Parts {
+            selection,
+            list,
+            stack,
+        });
+        view
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        _sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
-        let QueueViewInput::Set(data) = message;
+    pub fn connect_output(&self, receive: impl Fn(QueueViewOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: QueueViewInput) {
+        let parts = self.imp().parts.get().expect("set when made");
+        let QueueViewInput::Set(data) = input;
         let entries = entries(&data);
         let listed = data
             .now_playing
@@ -98,11 +118,11 @@ impl Component for QueueView {
             .chain(&data.from_source)
             .cloned()
             .collect();
-        self.selection.set_items_for(Location::Queue, listed);
-        widgets
+        parts.selection.set_items_for(Location::Queue, listed);
+        parts
             .stack
             .set_visible_child_name(if entries.is_empty() { "empty" } else { "list" });
-        self.list.set(entries);
+        parts.list.set(entries);
     }
 }
 

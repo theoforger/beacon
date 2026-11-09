@@ -10,7 +10,7 @@ use std::collections::{HashMap, VecDeque};
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
-use relm4::gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
+use gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
 
 use crate::ui::widgets::smooth_texture::SmoothTexture;
 

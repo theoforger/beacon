@@ -9,8 +9,8 @@
 //! is hidden meanwhile but keeps its room, so nothing changes size.
 
 use gettextrs::gettext;
-use relm4::adw;
-use relm4::gtk::{self, prelude::*};
+
+use gtk::{self, prelude::*};
 
 use crate::player::PlaybackState;
 

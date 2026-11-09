@@ -4,8 +4,8 @@
 
 use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
-use relm4::gtk::subclass::prelude::*;
-use relm4::gtk::{self, gdk, glib, prelude::*};
+use gtk::subclass::prelude::*;
+use gtk::{self, gdk, glib, prelude::*};
 
 use super::EpisodeRow;
 

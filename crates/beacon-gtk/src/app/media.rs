@@ -8,11 +8,12 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
+use adw::prelude::*;
 use beacon_core::model::EpisodeId;
 use beacon_core::playback::{self, SeekBy};
-use relm4::adw::prelude::*;
-use relm4::{ComponentSender, adw, gtk::glib};
+use gtk::glib;
 
+use super::sender::AppSender;
 use super::{App, AppMsg, AppWidgets};
 use crate::player::PlaybackState;
 use crate::player::mpris::{MediaControl, Mpris, Track};
@@ -30,11 +31,11 @@ pub struct Media {
 impl Media {
     /// Start the server in the background; what it is asked arrives as
     /// `AppMsg::Media`.
-    pub fn start(&self, sender: &ComponentSender<App>) {
+    pub fn start(&self, sender: &AppSender) {
         let server = self.server.clone();
-        let input = sender.input_sender().clone();
+        let input = sender.clone();
         glib::spawn_future_local(async move {
-            match Mpris::start(move |control| input.emit(AppMsg::Media(control))).await {
+            match Mpris::start(move |control| input.input(AppMsg::Media(control))).await {
                 Ok(mpris) => {
                     let _ = server.set(mpris);
                 }
@@ -89,7 +90,7 @@ impl App {
         &mut self,
         control: MediaControl,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
         root: &adw::ApplicationWindow,
     ) {
         let player = self.player.clone();

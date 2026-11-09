@@ -10,8 +10,8 @@ use gettextrs::gettext;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, glib, pango};
+use adw::prelude::*;
+use gtk::{self, glib, pango};
 
 use crate::ui::covers::Cover;
 use crate::ui::dialogs::description;
@@ -399,11 +399,8 @@ mod tests {
             "Site <span>a.example</span> and <b>more</b>"
         );
         assert!(
-            relm4::gtk::pango::parse_markup(
-                &without_links("<a href=\"https://a.example\">a</a>"),
-                '\0'
-            )
-            .is_ok()
+            gtk::pango::parse_markup(&without_links("<a href=\"https://a.example\">a</a>"), '\0')
+                .is_ok()
         );
     }
 }

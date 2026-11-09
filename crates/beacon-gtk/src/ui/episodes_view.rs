@@ -9,15 +9,17 @@
 use std::rc::Rc;
 use std::time::Duration;
 
+use adw::prelude::*;
 use gettextrs::{gettext, ngettext};
-use relm4::adw::prelude::*;
-use relm4::gtk;
-use relm4::{Component, ComponentParts, ComponentSender, adw};
+
+use adw::subclass::prelude::*;
+use gtk::glib;
 
 use crate::navigation::Location;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::format;
 use crate::ui::labels;
+use crate::ui::messages::Output;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::selection::Selection;
 use crate::ui::widgets::episode_row::RowSetup;
@@ -32,74 +34,89 @@ pub enum EpisodesViewOutput {
     Action(Box<EpisodeItem>, RowAction),
 }
 
-pub struct EpisodesView {
+mod imp {
+    use std::cell::OnceCell;
+
+    use super::*;
+
+    #[derive(Default)]
+    pub struct EpisodesView {
+        pub parts: OnceCell<super::Parts>,
+        pub output: Output<EpisodesViewOutput>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for EpisodesView {
+        const NAME: &'static str = "BeaconEpisodesView";
+        type Type = super::EpisodesView;
+        type ParentType = adw::Bin;
+    }
+
+    impl ObjectImpl for EpisodesView {}
+    impl WidgetImpl for EpisodesView {}
+    impl BinImpl for EpisodesView {}
+}
+
+glib::wrapper! {
+    pub struct EpisodesView(ObjectSubclass<imp::EpisodesView>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+pub struct Parts {
     section: Location,
     selection: Selection,
     list: EpisodeList,
+    stack: gtk::Stack,
 }
 
-#[relm4::component(pub)]
-impl Component for EpisodesView {
+impl EpisodesView {
     /// Which section (Favorites or Downloaded), and the sections' selection.
-    type Init = (Location, Selection);
-    type Input = EpisodesViewInput;
-    type Output = EpisodesViewOutput;
-    type CommandOutput = ();
-
-    view! {
-        #[name = "stack"]
-        gtk::Stack {
-            set_vexpand: true,
-
-            add_named[Some("list")] = model.list.widget(),
-
-            add_named[Some("empty")] = &adw::StatusPage {
-                set_icon_name: Some(labels::icon(model.section)),
-                set_title: &empty.0,
-                set_description: Some(&empty.1),
-            },
-        }
-    }
-
-    fn init(
-        (section, selection): Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
+    pub fn new(section: Location, selection: Selection) -> Self {
+        let view: Self = glib::Object::new();
+        let output = view.imp().output.clone();
         let rows = RowSetup {
             on_action: Rc::new(move |item, action| {
-                let _ = sender.output(EpisodesViewOutput::Action(Box::new(item.clone()), action));
+                output.emit(EpisodesViewOutput::Action(Box::new(item.clone()), action));
             }),
             show_identity: true,
             selection: selection.clone(),
             selectable: true,
         };
         let list = EpisodeList::new(&rows, &labels::title(section), None, None);
-        let empty = empty_page(section);
-        let model = EpisodesView {
+        let (title, description) = empty_page(section);
+        let empty = adw::StatusPage::builder()
+            .icon_name(labels::icon(section))
+            .title(title)
+            .description(description)
+            .build();
+        let stack = gtk::Stack::builder().vexpand(true).build();
+        stack.add_named(list.widget(), Some("list"));
+        stack.add_named(&empty, Some("empty"));
+        stack.set_visible_child_name("empty");
+        view.set_child(Some(&stack));
+        let _ = view.imp().parts.set(Parts {
             section,
             selection,
             list,
-        };
-        let widgets = view_output!();
-        widgets.stack.set_visible_child_name("empty");
-        ComponentParts { model, widgets }
+            stack,
+        });
+        view
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        _sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
-        let EpisodesViewInput::Set(items) = message;
-        widgets
+    pub fn connect_output(&self, receive: impl Fn(EpisodesViewOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: EpisodesViewInput) {
+        let parts = self.imp().parts.get().expect("set when made");
+        let EpisodesViewInput::Set(items) = input;
+        parts
             .stack
             .set_visible_child_name(if items.is_empty() { "empty" } else { "list" });
-        let entries = entries(self.section, &items);
-        self.selection.set_items_for(self.section, items);
-        self.list.set(entries);
+        let entries = entries(parts.section, &items);
+        parts.selection.set_items_for(parts.section, items);
+        parts.list.set(entries);
     }
 }
 

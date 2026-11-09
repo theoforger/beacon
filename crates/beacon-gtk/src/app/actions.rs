@@ -4,15 +4,15 @@
 //! subscribing and unsubscribing, and refreshing, each done as a background
 //! job on the store (`library.rs`).
 
+use adw::prelude::*;
 use beacon_core::LibraryError;
 use beacon_core::model::{EpisodeChange, EpisodeId, ShowId};
 use beacon_core::queue::Source;
 use beacon_core::services::library::RefreshSummary;
 use gettextrs::{gettext, ngettext};
-use relm4::adw::prelude::*;
-use relm4::{ComponentController, ComponentSender, adw};
 use url::Url;
 
+use super::sender::AppSender;
 use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::ui::content::{ContentInput, ContentOutput};
 use crate::ui::details_pane::DetailsPaneInput;
@@ -28,7 +28,7 @@ impl App {
         &mut self,
         output: ContentOutput,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
         root: &adw::ApplicationWindow,
     ) {
         match output {
@@ -87,12 +87,7 @@ impl App {
     }
 
     /// Selection mode's actions: one change to every selected episode.
-    fn change_episodes(
-        &mut self,
-        ids: Vec<EpisodeId>,
-        change: EpisodeChange,
-        sender: &ComponentSender<Self>,
-    ) {
+    fn change_episodes(&mut self, ids: Vec<EpisodeId>, change: EpisodeChange, sender: &AppSender) {
         let Some(now) = self.library.as_ref().map(|l| l.now()) else {
             return;
         };
@@ -109,7 +104,7 @@ impl App {
         action: RowAction,
         source: Option<Source>,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         let Some(now) = self.library.as_ref().map(|l| l.now()) else {
             return;
@@ -128,7 +123,7 @@ impl App {
                 // Show what the row already knows at once; viewing clears
                 // the blue dot for good, which the reload then shows.
                 self.details_episode = Some((id, item.episode.show_id));
-                self.details.emit(DetailsPaneInput::Show(Box::new(item)));
+                self.details.send(DetailsPaneInput::Show(Box::new(item)));
                 // The episode's own cover, as GNOME Podcasts shows it in its
                 // details (rows keep the show's), and its chapters.
                 self.load_details(id, sender);
@@ -189,17 +184,12 @@ impl App {
         self.after = (last > 0).then_some(EpisodeId(last));
     }
 
-    pub(super) fn open_show(&mut self, id: ShowId, sender: &ComponentSender<Self>) {
+    pub(super) fn open_show(&mut self, id: ShowId, sender: &AppSender) {
         self.last_show = Some(id);
         self.job(sender, Parts::PAGE, true, |_| Ok(()));
     }
 
-    fn confirm_unsubscribe(
-        &self,
-        id: ShowId,
-        sender: &ComponentSender<Self>,
-        root: &adw::ApplicationWindow,
-    ) {
+    fn confirm_unsubscribe(&self, id: ShowId, sender: &AppSender, root: &adw::ApplicationWindow) {
         let dialog = adw::AlertDialog::new(
             Some(&gettext("Unsubscribe From {show}?").replace("{show}", &self.show_title(id))),
             Some(&gettext(
@@ -224,19 +214,14 @@ impl App {
         self.titles.get(&id).cloned().unwrap_or_default()
     }
 
-    pub(super) fn unsubscribe(
-        &mut self,
-        id: ShowId,
-        widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
-    ) {
+    pub(super) fn unsubscribe(&mut self, id: ShowId, widgets: &AppWidgets, sender: &AppSender) {
         if self.details_episode.is_some_and(|(_, show)| show == id) {
             self.details_episode = None;
         }
         if self.last_show == Some(id) {
             self.last_show = None;
         }
-        self.content.emit(ContentInput::CloseShow);
+        self.content.send(ContentInput::CloseShow);
         let title = self.show_title(id);
         self.job(sender, Parts::ALL, false, move |store| {
             store.delete_show(id)
@@ -252,9 +237,9 @@ impl App {
         url: &Url,
         result: Result<ShowId, LibraryError>,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
-        self.content.emit(ContentInput::SubscribeDone);
+        self.content.send(ContentInput::SubscribeDone);
         match result {
             Ok(id) => {
                 self.last_show = Some(id);
@@ -277,12 +262,12 @@ impl App {
     }
 
     /// Refresh every feed; `at_startup` for the one when the app opens.
-    pub(super) fn start_refresh(&self, sender: &ComponentSender<Self>, at_startup: bool) {
+    pub(super) fn start_refresh(&self, sender: &AppSender, at_startup: bool) {
         let Some(library) = self.library.clone() else {
             return;
         };
         self.refresh.set_enabled(false);
-        self.content.emit(ContentInput::Refreshing(true));
+        self.content.send(ContentInput::Refreshing(true));
         sender.oneshot_command(async move {
             AppCommand::Refreshed(library.refresh_all().await, at_startup)
         });
@@ -293,10 +278,10 @@ impl App {
         summary: &RefreshSummary,
         at_startup: bool,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         self.refresh.set_enabled(true);
-        self.content.emit(ContentInput::Refreshing(false));
+        self.content.send(ContentInput::Refreshing(false));
         self.reload(sender, Parts::ALL);
         for (show, err) in &summary.failed {
             tracing::warn!("could not refresh show {show:?}: {err}");

@@ -7,16 +7,18 @@
 
 use std::rc::Rc;
 
+use adw::prelude::*;
 use beacon_core::browse::RecencyGroup;
 use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs};
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk;
-use relm4::{Component, ComponentParts, ComponentSender, adw};
+
+use adw::subclass::prelude::*;
+use gtk::glib;
 
 use crate::navigation::Location;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::format;
+use crate::ui::messages::Output;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::selection::Selection;
 use crate::ui::widgets::episode_row::RowSetup;
@@ -35,45 +37,50 @@ pub enum NewViewOutput {
     Action(Box<EpisodeItem>, RowAction),
 }
 
-pub struct NewView {
-    rows: RowSetup,
-    list: EpisodeList,
-}
+mod imp {
+    use std::cell::OnceCell;
 
-#[relm4::component(pub)]
-impl Component for NewView {
-    /// The section's selection, whose bar is in the content header.
-    type Init = Selection;
-    type Input = NewViewInput;
-    type Output = NewViewOutput;
-    type CommandOutput = ();
+    use super::*;
 
-    view! {
-        gtk::Box {
-            set_orientation: gtk::Orientation::Vertical,
-
-            #[name = "stack"]
-            gtk::Stack {
-                set_vexpand: true,
-
-                add_named[Some("list")] = model.list.widget(),
-
-                #[name = "empty"]
-                add_named[Some("empty")] = &adw::StatusPage {
-                    set_icon_name: Some("view-list-bullet-symbolic"),
-                },
-            },
-        }
+    #[derive(Default)]
+    pub struct NewView {
+        pub parts: OnceCell<super::Parts>,
+        pub output: Output<NewViewOutput>,
     }
 
-    fn init(
-        selection: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
+    #[glib::object_subclass]
+    impl ObjectSubclass for NewView {
+        const NAME: &'static str = "BeaconNewView";
+        type Type = super::NewView;
+        type ParentType = adw::Bin;
+    }
+
+    impl ObjectImpl for NewView {}
+    impl WidgetImpl for NewView {}
+    impl BinImpl for NewView {}
+}
+
+glib::wrapper! {
+    pub struct NewView(ObjectSubclass<imp::NewView>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+pub struct Parts {
+    rows: RowSetup,
+    list: EpisodeList,
+    stack: gtk::Stack,
+    empty: adw::StatusPage,
+}
+
+impl NewView {
+    /// The section's selection, whose bar is in the content header.
+    pub fn new(selection: Selection) -> Self {
+        let view: Self = glib::Object::new();
+        let output = view.imp().output.clone();
         let rows = RowSetup {
             on_action: Rc::new(move |item, action| {
-                let _ = sender.output(NewViewOutput::Action(Box::new(item.clone()), action));
+                output.emit(NewViewOutput::Action(Box::new(item.clone()), action));
             }),
             show_identity: true,
             selection,
@@ -81,24 +88,33 @@ impl Component for NewView {
         };
         // Translators: how a screen reader names the New section's list.
         let list = EpisodeList::new(&rows, &gettext("New Episodes"), None, None);
-        let model = NewView { rows, list };
-        let widgets = view_output!();
-
-        ComponentParts { model, widgets }
+        let empty = adw::StatusPage::builder()
+            .icon_name("view-list-bullet-symbolic")
+            .build();
+        let stack = gtk::Stack::builder().vexpand(true).build();
+        stack.add_named(list.widget(), Some("list"));
+        stack.add_named(&empty, Some("empty"));
+        view.set_child(Some(&stack));
+        let _ = view.imp().parts.set(Parts {
+            rows,
+            list,
+            stack,
+            empty,
+        });
+        view
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        _sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
+    pub fn connect_output(&self, receive: impl Fn(NewViewOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: NewViewInput) {
+        let parts = self.imp().parts.get().expect("set when made");
         let NewViewInput::Set {
             items,
             prefs,
             has_shows,
-        } = message;
+        } = input;
 
         let only_unplayed =
             prefs.played == EpisodeFilter::Unplayed && prefs.downloaded == DownloadFilter::All;
@@ -123,9 +139,9 @@ impl Component for NewView {
                 gettext("Episodes from the last month appear here"),
             )
         };
-        widgets.empty.set_title(&title);
-        widgets.empty.set_description(Some(&description));
-        widgets
+        parts.empty.set_title(&title);
+        parts.empty.set_description(Some(&description));
+        parts
             .stack
             .set_visible_child_name(if items.is_empty() { "empty" } else { "list" });
 
@@ -142,11 +158,11 @@ impl Component for NewView {
             entries.extend(Entry::card(items));
         }
         entries.push(Entry::Space(32));
-        self.rows.selection.set_items_for(
+        parts.rows.selection.set_items_for(
             Location::New,
             groups.into_iter().flat_map(|(_, items)| items).collect(),
         );
-        self.list.set(entries);
+        parts.list.set(entries);
     }
 }
 

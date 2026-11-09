@@ -5,10 +5,9 @@
 use std::cell::RefCell;
 use std::time::Duration;
 
+use adw::prelude::*;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk::glib;
-use relm4::{adw, gtk};
+use gtk::glib;
 
 use crate::navigation::Location;
 use crate::ui::selection::Selection;

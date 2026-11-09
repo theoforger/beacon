@@ -5,12 +5,12 @@
 //! HIG's Toasts page has toasts offer; deleting downloads deletes files, so
 //! it asks first, as Unsubscribe does.
 
+use adw::prelude::*;
 use beacon_core::model::EpisodeId;
 use gettextrs::{gettext, ngettext};
-use relm4::adw::prelude::*;
-use relm4::{ComponentSender, adw};
 
 use super::library::Parts;
+use super::sender::AppSender;
 use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::ui::errors;
 
@@ -20,7 +20,7 @@ impl App {
         &mut self,
         queued: Vec<EpisodeId>,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         if queued.is_empty() {
             return;
@@ -38,7 +38,7 @@ impl App {
     }
 
     /// Undo of Clear Queue: the episodes join the queue again, in order.
-    pub(super) fn requeue(&mut self, ids: Vec<EpisodeId>, sender: &ComponentSender<Self>) {
+    pub(super) fn requeue(&mut self, ids: Vec<EpisodeId>, sender: &AppSender) {
         self.job(sender, Parts::EPISODE, false, move |store| {
             ids.iter().try_for_each(|id| store.enqueue(*id))
         });
@@ -48,7 +48,7 @@ impl App {
     pub(super) fn confirm_delete_downloads(
         &self,
         ids: Vec<EpisodeId>,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
         root: &adw::ApplicationWindow,
     ) {
         if ids.is_empty() {
@@ -78,7 +78,7 @@ impl App {
         dialog.present(Some(root));
     }
 
-    pub(super) fn delete_downloads(&self, ids: Vec<EpisodeId>, sender: &ComponentSender<Self>) {
+    pub(super) fn delete_downloads(&self, ids: Vec<EpisodeId>, sender: &AppSender) {
         let Some(library) = self.library.clone() else {
             return;
         };
@@ -91,7 +91,7 @@ impl App {
         &mut self,
         result: Result<usize, beacon_core::StoreError>,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         match result {
             Ok(count) => toast(

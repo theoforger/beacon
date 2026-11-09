@@ -12,12 +12,12 @@ use std::rc::Rc;
 use beacon_core::model::EpisodeId;
 use beacon_core::queue::Source;
 use gettextrs::gettext;
-use relm4::gtk::prelude::*;
-use relm4::{Component, ComponentController, Controller, Sender, gtk};
+use gtk::prelude::*;
 
 use super::ContentOutput;
 use crate::navigation::Location;
 use crate::ui::episodes_view::{EpisodesView, EpisodesViewInput, EpisodesViewOutput};
+use crate::ui::messages::Output;
 use crate::ui::models::EpisodeItem;
 use crate::ui::new_view::{NewView, NewViewInput, NewViewOutput};
 use crate::ui::queue_data::QueueData;
@@ -26,10 +26,10 @@ use crate::ui::selection::Selection;
 use crate::ui::selection_bar;
 
 pub(super) struct Lists {
-    pub(super) new: Controller<NewView>,
-    queue: Controller<QueueView>,
-    favorites: Controller<EpisodesView>,
-    downloaded: Controller<EpisodesView>,
+    pub(super) new: NewView,
+    queue: QueueView,
+    favorites: EpisodesView,
+    downloaded: EpisodesView,
     pub(super) selection: Selection,
     /// The header's Select, in the sections that have selection mode.
     pub(super) select: gtk::Button,
@@ -42,29 +42,36 @@ pub(super) struct Lists {
 }
 
 impl Lists {
-    pub(super) fn new(output: &Sender<ContentOutput>) -> Self {
+    pub(super) fn new(output: &Output<ContentOutput>) -> Self {
         let selection = Selection::default();
-        let new = NewView::builder()
-            .launch(selection.clone())
-            .forward(output, |message| match message {
+        let new = NewView::new(selection.clone());
+        new.connect_output({
+            let output = output.clone();
+            move |message| match message {
                 NewViewOutput::Action(item, action) => {
-                    ContentOutput::Action(item, action, Some(Source::New))
+                    output.emit(ContentOutput::Action(item, action, Some(Source::New)));
+                }
+            }
+        });
+        let queue = QueueView::new(selection.clone());
+        queue.connect_output({
+            let output = output.clone();
+            move |message| match message {
+                // The Queue's rows keep the list the playing one came from.
+                QueueViewOutput::Action(item, action) => {
+                    output.emit(ContentOutput::Action(item, action, None));
+                }
+            }
+        });
+        let list = |section: Location, source: Source| {
+            let view = EpisodesView::new(section, selection.clone());
+            let output = output.clone();
+            view.connect_output(move |message| match message {
+                EpisodesViewOutput::Action(item, action) => {
+                    output.emit(ContentOutput::Action(item, action, Some(source)));
                 }
             });
-        let queue = QueueView::builder()
-            .launch(selection.clone())
-            .forward(output, |message| match message {
-                // The Queue's rows keep the list the playing one came from.
-                QueueViewOutput::Action(item, action) => ContentOutput::Action(item, action, None),
-            });
-        let list = |section: Location, source: Source| {
-            EpisodesView::builder()
-                .launch((section, selection.clone()))
-                .forward(output, move |message| match message {
-                    EpisodesViewOutput::Action(item, action) => {
-                        ContentOutput::Action(item, action, Some(source))
-                    }
-                })
+            view
         };
         let favorites = list(Location::Favorites, Source::Favorites);
         let downloaded = list(Location::Downloaded, Source::Downloaded);
@@ -91,16 +98,16 @@ impl Lists {
     }
 
     /// Ask for the section showing's Clear when it is clicked.
-    pub(super) fn connect_clear(&self, output: &Sender<ContentOutput>) {
+    pub(super) fn connect_clear(&self, output: &Output<ContentOutput>) {
         let (output, showing) = (output.clone(), self.showing.clone());
         let (queued, downloads) = (self.queued.clone(), self.downloads.clone());
         self.clear.connect_clicked(move |_| match showing.get() {
             Location::Queue => {
-                let _ = output.send(ContentOutput::ClearQueue(queued.borrow().clone()));
+                output.emit(ContentOutput::ClearQueue(queued.borrow().clone()));
             }
             Location::Downloaded => {
                 let ids = downloads.borrow().clone();
-                let _ = output.send(ContentOutput::DeleteAllDownloads(ids));
+                output.emit(ContentOutput::DeleteAllDownloads(ids));
             }
             _ => {}
         });
@@ -109,10 +116,10 @@ impl Lists {
     /// The page for `location`, if it is one of these sections.
     pub(super) fn page(&self, location: Location) -> Option<gtk::Widget> {
         Some(match location {
-            Location::New => self.new.widget().clone().upcast(),
-            Location::Queue => self.queue.widget().clone().upcast(),
-            Location::Favorites => self.favorites.widget().clone().upcast(),
-            Location::Downloaded => self.downloaded.widget().clone().upcast(),
+            Location::New => self.new.clone().upcast(),
+            Location::Queue => self.queue.clone().upcast(),
+            Location::Favorites => self.favorites.clone().upcast(),
+            Location::Downloaded => self.downloaded.clone().upcast(),
             Location::Shows => return None,
         })
     }
@@ -149,21 +156,21 @@ impl Lists {
         self.queued
             .replace(data.queued.iter().map(|i| i.episode.id).collect());
         self.update_clear();
-        self.queue.emit(QueueViewInput::Set(data));
+        self.queue.send(QueueViewInput::Set(data));
     }
 
     pub(super) fn set_favorites(&self, items: Vec<EpisodeItem>) {
-        self.favorites.emit(EpisodesViewInput::Set(items));
+        self.favorites.send(EpisodesViewInput::Set(items));
     }
 
     pub(super) fn set_downloaded(&self, items: Vec<EpisodeItem>) {
         self.downloads
             .replace(items.iter().map(|i| i.episode.id).collect());
         self.update_clear();
-        self.downloaded.emit(EpisodesViewInput::Set(items));
+        self.downloaded.send(EpisodesViewInput::Set(items));
     }
 
     pub(super) fn set_new(&self, input: NewViewInput) {
-        self.new.emit(input);
+        self.new.send(input);
     }
 }

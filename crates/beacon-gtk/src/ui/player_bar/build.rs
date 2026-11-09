@@ -7,13 +7,12 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Duration;
 
+use adw::prelude::*;
 use beacon_core::playback::{self, SleepTimer};
 use gettextrs::{gettext, ngettext};
-use relm4::ComponentSender;
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gio, glib, pango};
+use gtk::{self, gio, glib, pango};
 
-use super::{COVER_SIZE, PlayerBar, PlayerBarOutput, PlayerBarWidgets, chapters, compact};
+use super::{COVER_SIZE, PlayerBarOutput, PlayerBarWidgets, Sender, chapters, compact};
 use crate::ui::covers::Cover;
 use crate::ui::format;
 use crate::ui::play_button;
@@ -23,7 +22,7 @@ use crate::ui::play_button;
 /// listener's.
 pub(super) fn widgets(
     root: gtk::Stack,
-    sender: &ComponentSender<PlayerBar>,
+    sender: &Sender,
     setting: &Rc<Cell<bool>>,
 ) -> PlayerBarWidgets {
     root.update_property(&[gtk::accessible::Property::Label(&gettext(
@@ -74,7 +73,7 @@ pub(super) fn widgets(
     now_button.connect_clicked({
         let sender = sender.clone();
         move |_| {
-            let _ = sender.output(PlayerBarOutput::OpenDetails);
+            sender.output(PlayerBarOutput::OpenDetails);
         }
     });
 
@@ -104,7 +103,7 @@ pub(super) fn widgets(
     let clicked = |button: &gtk::Button, output: fn() -> PlayerBarOutput| {
         let sender = sender.clone();
         button.connect_clicked(move |_| {
-            let _ = sender.output(output());
+            sender.output(output());
         });
     };
     clicked(&back, || PlayerBarOutput::SkipBack);
@@ -153,7 +152,7 @@ pub(super) fn widgets(
         move |scale| {
             if !setting.get() {
                 let position = Duration::from_secs_f64(scale.value().max(0.0));
-                let _ = sender.output(PlayerBarOutput::Seek(position));
+                sender.output(PlayerBarOutput::Seek(position));
             }
         }
     });
@@ -177,7 +176,7 @@ pub(super) fn widgets(
         let sender = sender.clone();
         move |_, target| {
             if let Some(rate) = target.and_then(|t| t.get::<f64>()) {
-                let _ = sender.output(PlayerBarOutput::Rate(rate));
+                sender.output(PlayerBarOutput::Rate(rate));
             }
         }
     });
@@ -206,7 +205,7 @@ pub(super) fn widgets(
         let sender = sender.clone();
         move |_, target| {
             if let Some(value) = target.and_then(|t| t.get::<String>()) {
-                let _ = sender.output(PlayerBarOutput::SleepTimer(timer_from(&value)));
+                sender.output(PlayerBarOutput::SleepTimer(timer_from(&value)));
             }
         }
     });
@@ -264,7 +263,7 @@ pub(super) fn widgets(
         let setting = setting.clone();
         move |scale| {
             if !setting.get() {
-                let _ = sender.output(PlayerBarOutput::Volume(scale.value()));
+                sender.output(PlayerBarOutput::Volume(scale.value()));
             }
         }
     });

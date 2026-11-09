@@ -28,8 +28,8 @@ jobs:
   rust:
     name: Clippy, tests and data validation
     runs-on: ubuntu-latest
-    # Fedora 44 ships GNOME 50 (GTK 4.22, libadwaita 1.9), matching the Flatpak runtime.
-    container: fedora:44
+    # Fedora 45 ships GNOME 51 (GTK 4.24, libadwaita 1.10, GStreamer 1.28), matching the Flatpak runtime.
+    container: fedora:45
     steps:
       - name: Install build dependencies
         run: >
@@ -62,7 +62,7 @@ jobs:
     name: Flatpak
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
       options: --privileged
     steps:
       - uses: actions/checkout@v5

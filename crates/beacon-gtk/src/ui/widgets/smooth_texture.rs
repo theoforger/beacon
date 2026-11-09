@@ -7,7 +7,7 @@
 //! (mipmapped) filter instead, so a cover is decoded once and looks right at
 //! any size the grid gives it.
 
-use relm4::gtk::{self, gdk, glib, graphene, gsk, prelude::*, subclass::prelude::*};
+use gtk::{self, gdk, glib, graphene, gsk, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::cell::OnceCell;

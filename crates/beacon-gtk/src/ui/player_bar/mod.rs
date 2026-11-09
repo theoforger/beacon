@@ -12,16 +12,18 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 use beacon_core::model::{Chapter, EpisodeId};
 use beacon_core::playback::SleepTimer;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gio};
-use relm4::{Component, ComponentParts, ComponentSender};
+use gtk::glib;
+use gtk::{self, gio};
 
 use crate::player::PlaybackState;
 use crate::ui::covers::Cover;
 use crate::ui::format;
+use crate::ui::messages::{Inbox, Output, ViewSender};
 use crate::ui::play_button;
 
 mod build;
@@ -74,7 +76,11 @@ pub enum PlayerBarOutput {
     OpenDetails,
 }
 
-pub struct PlayerBar {
+/// What the bar's widgets report through.
+type Sender = ViewSender<PlayerBarInput, PlayerBarOutput>;
+
+#[derive(Default)]
+pub struct State {
     episode: Option<EpisodeId>,
     duration: Option<Duration>,
     /// Ignore the seek bar's own changes while the bar sets it.
@@ -169,48 +175,89 @@ impl PlayerBarWidgets {
     }
 }
 
-impl Component for PlayerBar {
-    type Init = ();
-    type Input = PlayerBarInput;
-    type Output = PlayerBarOutput;
-    type CommandOutput = ();
-    type Root = gtk::Stack;
-    type Widgets = PlayerBarWidgets;
+mod imp {
+    use std::cell::{OnceCell, RefCell};
 
-    fn init_root() -> Self::Root {
-        // Each page its own height: the stacked narrow bar is much taller
-        // than "Nothing Playing". Not interpolated: the stack then gave the
-        // player less height than it needs while it grew (GTK warned).
-        gtk::Stack::builder()
-            .transition_type(gtk::StackTransitionType::Crossfade)
-            .vhomogeneous(false)
-            .build()
+    use super::*;
+
+    #[derive(Default)]
+    pub struct PlayerBar {
+        pub widgets: OnceCell<PlayerBarWidgets>,
+        pub state: RefCell<State>,
+        pub inbox: Inbox<PlayerBarInput>,
+        pub output: Output<PlayerBarOutput>,
     }
 
-    fn init(
-        _init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let setting = Rc::new(Cell::new(false));
-        let widgets = build::widgets(root, &sender, &setting);
-        let model = PlayerBar {
-            episode: None,
-            duration: None,
-            setting,
-            shown_second: None,
-            buffered: 0.0,
-        };
-        ComponentParts { model, widgets }
+    #[glib::object_subclass]
+    impl ObjectSubclass for PlayerBar {
+        const NAME: &'static str = "BeaconPlayerBar";
+        type Type = super::PlayerBar;
+        type ParentType = adw::Bin;
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        _sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
+    impl ObjectImpl for PlayerBar {
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+            // Each page its own height: the stacked narrow bar is much
+            // taller than "Nothing Playing". Not interpolated: the stack
+            // then gave the player less height than it needs while it grew
+            // (GTK warned).
+            let root = gtk::Stack::builder()
+                .transition_type(gtk::StackTransitionType::Crossfade)
+                .vhomogeneous(false)
+                .build();
+            let bar = obj.downgrade();
+            let sender = Sender::new(
+                move |message| {
+                    if let Some(bar) = bar.upgrade() {
+                        bar.send(message);
+                    }
+                },
+                self.output.clone(),
+            );
+            let setting = self.state.borrow().setting.clone();
+            let _ = self
+                .widgets
+                .set(build::widgets(root.clone(), &sender, &setting));
+            obj.set_child(Some(&root));
+        }
+    }
+    impl WidgetImpl for PlayerBar {}
+    impl BinImpl for PlayerBar {}
+}
+
+glib::wrapper! {
+    pub struct PlayerBar(ObjectSubclass<imp::PlayerBar>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl Default for PlayerBar {
+    fn default() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl PlayerBar {
+    pub fn connect_output(&self, receive: impl Fn(PlayerBarOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: PlayerBarInput) {
+        let imp = self.imp();
+        imp.inbox.deliver(input, |message| {
+            imp.state.borrow_mut().update(self.widgets(), message);
+        });
+    }
+
+    pub fn widgets(&self) -> &PlayerBarWidgets {
+        self.imp().widgets.get().expect("built when constructed")
+    }
+}
+
+impl State {
+    fn update(&mut self, widgets: &PlayerBarWidgets, message: PlayerBarInput) {
         // The bar setting its own controls is not the listener moving them.
         self.setting.set(true);
         match message {
@@ -327,7 +374,7 @@ impl Component for PlayerBar {
 }
 
 /// Fill the seek bar's trough as far as the player holds.
-fn fill(bar: &PlayerBar, widgets: &PlayerBarWidgets) {
+fn fill(bar: &State, widgets: &PlayerBarWidgets) {
     let total = bar.duration.unwrap_or_default().as_secs_f64();
     widgets.seek.set_fill_level(bar.buffered * total);
     // GTK reallocates the scale but not its trough, whose size is
@@ -341,7 +388,7 @@ fn fill(bar: &PlayerBar, widgets: &PlayerBarWidgets) {
     }
 }
 
-fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Duration) {
+fn set_position(bar: &mut State, widgets: &PlayerBarWidgets, position: Duration) {
     let total = bar.duration.unwrap_or_default();
     let end = total.as_secs_f64().max(position.as_secs_f64()).max(1.0);
     if widgets.seek.adjustment().upper() != end {

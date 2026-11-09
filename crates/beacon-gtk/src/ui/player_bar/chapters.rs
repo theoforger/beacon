@@ -21,10 +21,9 @@ use std::rc::Rc;
 use beacon_core::model::Chapter;
 use beacon_core::playback;
 use gettextrs::gettext;
-use relm4::ComponentSender;
-use relm4::gtk::{self, prelude::*};
+use gtk::{self, prelude::*};
 
-use super::{PlayerBar, PlayerBarOutput};
+use super::{PlayerBarOutput, Sender};
 use crate::ui::chapter_list;
 
 /// The popover's list is at most this tall, scrolling beyond it, and at
@@ -42,7 +41,7 @@ pub(super) struct ChapterMenu {
 }
 
 impl ChapterMenu {
-    pub(super) fn new(sender: &ComponentSender<PlayerBar>) -> Self {
+    pub(super) fn new(sender: &Sender) -> Self {
         let list = gtk::ListBox::builder()
             .selection_mode(gtk::SelectionMode::None)
             .css_classes(["chapter-list"])
@@ -73,7 +72,7 @@ impl ChapterMenu {
                 .and_then(|i| shown.borrow().get(i).map(|c| c.start));
             if let Some(start) = start {
                 closing.popdown();
-                let _ = sender.output(PlayerBarOutput::Seek(start));
+                sender.output(PlayerBarOutput::Seek(start));
             }
         });
         // Open on the chapter playing, so it is in view and has focus.

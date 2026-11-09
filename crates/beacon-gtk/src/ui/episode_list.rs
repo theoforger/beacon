@@ -24,9 +24,9 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use beacon_core::model::{EpisodeId, ShowId};
-use relm4::adw;
-use relm4::gtk::subclass::prelude::*;
-use relm4::gtk::{self, gio, glib, pango, prelude::*};
+
+use gtk::subclass::prelude::*;
+use gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};

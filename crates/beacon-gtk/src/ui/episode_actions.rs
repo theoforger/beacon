@@ -6,7 +6,7 @@
 //! played and Reset Progress, each worded for the episode's state.
 
 use gettextrs::gettext;
-use relm4::gtk::{gio, prelude::*};
+use gtk::{gio, prelude::*};
 
 use crate::ui::models::{EpisodeItem, RowAction};
 

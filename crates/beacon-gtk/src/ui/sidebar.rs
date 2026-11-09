@@ -3,13 +3,14 @@
 //! The sidebar: its own header (Add Podcast, title, Main Menu) and the
 //! library items with count badges.
 
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::gtk::gio;
-use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
+use gtk::{gio, glib};
 
 use crate::navigation::Location;
 use crate::ui::labels;
+use crate::ui::messages::Output;
 
 /// Numbers shown beside sidebar items. Zero hides the badge.
 #[derive(Debug, Default, Clone, Copy)]
@@ -35,49 +36,69 @@ pub enum SidebarOutput {
     AddPodcast,
 }
 
-pub struct Sidebar {
-    badges: Vec<(Location, gtk::Label)>,
-}
+mod imp {
+    use std::cell::{OnceCell, RefCell};
 
-#[relm4::component(pub)]
-impl Component for Sidebar {
-    type Init = ();
-    type Input = SidebarInput;
-    type Output = SidebarOutput;
-    type CommandOutput = ();
+    use super::*;
 
-    view! {
-        adw::ToolbarView {
-            add_top_bar = &adw::HeaderBar {
-                pack_start = &gtk::Button {
-                    set_icon_name: "list-add-symbolic",
-                    set_tooltip_text: Some(&gettext("Add Podcast")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Add Podcast"))],
-                    connect_clicked[sender] => move |_| {
-                        let _ = sender.output(SidebarOutput::AddPodcast);
-                    },
-                },
-                pack_end = &gtk::MenuButton {
-                    set_icon_name: "open-menu-symbolic",
-                    set_menu_model: Some(&primary_menu()),
-                    set_primary: true,
-                    set_tooltip_text: Some(&gettext("Main Menu")),
-                    update_property: &[gtk::accessible::Property::Label(&gettext("Main Menu"))],
-                },
-            },
-
-            #[wrap(Some)]
-            #[name = "library"]
-            set_content = &adw::Sidebar {},
-        }
+    #[derive(Default)]
+    pub struct Sidebar {
+        pub library: OnceCell<adw::Sidebar>,
+        pub badges: RefCell<Vec<(Location, gtk::Label)>>,
+        pub output: Output<SidebarOutput>,
     }
 
-    fn init(
-        _init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let widgets = view_output!();
+    #[glib::object_subclass]
+    impl ObjectSubclass for Sidebar {
+        const NAME: &'static str = "BeaconSidebar";
+        type Type = super::Sidebar;
+        type ParentType = adw::Bin;
+    }
+
+    impl ObjectImpl for Sidebar {
+        fn constructed(&self) {
+            self.parent_constructed();
+            self.obj().build();
+        }
+    }
+    impl WidgetImpl for Sidebar {}
+    impl BinImpl for Sidebar {}
+}
+
+glib::wrapper! {
+    pub struct Sidebar(ObjectSubclass<imp::Sidebar>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl Default for Sidebar {
+    fn default() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl Sidebar {
+    fn build(&self) {
+        let output = self.imp().output.clone();
+        let add = gtk::Button::builder()
+            .icon_name("list-add-symbolic")
+            .tooltip_text(gettext("Add Podcast"))
+            .build();
+        add.update_property(&[gtk::accessible::Property::Label(&gettext("Add Podcast"))]);
+        add.connect_clicked({
+            let output = output.clone();
+            move |_| output.emit(SidebarOutput::AddPodcast)
+        });
+        let menu = gtk::MenuButton::builder()
+            .icon_name("open-menu-symbolic")
+            .menu_model(&primary_menu())
+            .primary(true)
+            .tooltip_text(gettext("Main Menu"))
+            .build();
+        menu.update_property(&[gtk::accessible::Property::Label(&gettext("Main Menu"))]);
+        let header = adw::HeaderBar::new();
+        header.pack_start(&add);
+        header.pack_end(&menu);
 
         let section = adw::SidebarSection::new();
         let mut badges = Vec::new();
@@ -95,30 +116,34 @@ impl Component for Sidebar {
             );
             badges.push((location, badge));
         }
-        widgets.library.append(section);
-
-        widgets.library.connect_activated(move |_, index| {
+        let library = adw::Sidebar::new();
+        library.append(section);
+        library.connect_activated(move |_, index| {
             if let Some(&location) = Location::ALL.get(index as usize) {
-                let _ = sender.output(SidebarOutput::Activated(location));
+                output.emit(SidebarOutput::Activated(location));
             }
         });
 
-        let model = Sidebar { badges };
-        widgets.select(Location::Shows);
-        ComponentParts { model, widgets }
+        let toolbar = adw::ToolbarView::new();
+        toolbar.add_top_bar(&header);
+        toolbar.set_content(Some(&library));
+        self.set_child(Some(&toolbar));
+
+        let imp = self.imp();
+        imp.badges.replace(badges);
+        let _ = imp.library.set(library);
+        self.select(Location::Shows);
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        _sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
-        match message {
-            SidebarInput::Select(location) => widgets.select(location),
+    pub fn connect_output(&self, receive: impl Fn(SidebarOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: SidebarInput) {
+        match input {
+            SidebarInput::Select(location) => self.select(location),
             SidebarInput::SetCounts(counts) => {
-                for (location, badge) in &self.badges {
+                for (location, badge) in self.imp().badges.borrow().iter() {
                     let count = match location {
                         Location::Shows => counts.shows,
                         Location::New => counts.new,
@@ -131,18 +156,16 @@ impl Component for Sidebar {
             }
         }
     }
-}
 
-impl SidebarWidgets {
     fn select(&self, location: Location) {
         let index = Location::ALL.iter().position(|&l| l == location);
-        self.library
+        self.library()
             .set_selected(index.map_or(gtk::INVALID_LIST_POSITION, |i| i as u32));
     }
 
     /// Follows the window's narrow layout.
     pub fn library(&self) -> &adw::Sidebar {
-        &self.library
+        self.imp().library.get().expect("built when constructed")
     }
 }
 

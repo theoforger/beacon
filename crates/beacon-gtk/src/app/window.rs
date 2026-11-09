@@ -6,9 +6,8 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use relm4::adw::prelude::*;
-use relm4::gtk::{self, gdk, gio, glib};
-use relm4::{ComponentController, adw};
+use adw::prelude::*;
+use gtk::{self, gdk, gio, glib};
 
 use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
 use crate::ui::player_bar::PlayerBarInput;
@@ -50,7 +49,7 @@ impl App {
     /// Start in the sidebar; Escape closes the details pane; closing it
     /// returns focus to where it was before the pane opened.
     pub(super) fn manage_focus(&self, widgets: &AppWidgets) {
-        let library = self.sidebar.widgets().library().clone();
+        let library = self.sidebar.library().clone();
         glib::idle_add_local_once(move || {
             library.child_focus(gtk::DirectionType::TabForward);
         });
@@ -66,9 +65,9 @@ impl App {
             }
             glib::Propagation::Stop
         });
-        self.details.widget().add_controller(escape);
+        self.details.add_controller(escape);
 
-        let pane = self.details.widget().clone();
+        let pane = self.details.clone();
         let origin = self.details_origin.clone();
         widgets
             .details_split
@@ -98,7 +97,7 @@ impl App {
     /// it, a second's freeze with long episode lists open.
     pub(super) fn build_frame(&self, widgets: &AppWidgets) {
         self.frame.set_content(Some(&widgets.details_split));
-        self.frame.add_bottom_bar(self.bar.widget());
+        self.frame.add_bottom_bar(&self.bar);
         // The content ends above the slim bar, not under it.
         self.sheet
             .bind_property("bottom-bar-height", &self.frame, "margin-bottom")
@@ -157,8 +156,8 @@ impl App {
         // again when it goes narrow (it stayed closed, found by the user).
         let was_open = Rc::new(Cell::new(false));
         let (bar, player, frame, sheet, reopen) = (
-            self.bar.sender().clone(),
-            self.bar.widget().clone(),
+            self.bar.clone(),
+            self.bar.clone(),
             self.frame.clone(),
             self.sheet.clone(),
             was_open.clone(),
@@ -167,14 +166,14 @@ impl App {
             episode_row::set_narrow(true);
             frame.remove(&player);
             sheet.set_sheet(Some(&player));
-            bar.emit(PlayerBarInput::Sheet(true));
+            bar.send(PlayerBarInput::Sheet(true));
             if reopen.take() {
                 sheet.set_open(true);
             }
         });
         let (bar, player, frame, sheet) = (
-            self.bar.sender().clone(),
-            self.bar.widget().clone(),
+            self.bar.clone(),
+            self.bar.clone(),
             self.frame.clone(),
             self.sheet.clone(),
         );
@@ -184,10 +183,10 @@ impl App {
             sheet.set_open(false);
             sheet.set_sheet(None::<&gtk::Widget>);
             frame.add_bottom_bar(&player);
-            bar.emit(PlayerBarInput::Sheet(false));
+            bar.send(PlayerBarInput::Sheet(false));
         });
         breakpoint.add_setter(
-            self.sidebar.widgets().library(),
+            self.sidebar.library(),
             "mode",
             Some(&adw::SidebarMode::Page.to_value()),
         );

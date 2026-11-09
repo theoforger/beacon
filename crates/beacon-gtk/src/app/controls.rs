@@ -8,10 +8,10 @@ use std::time::{Duration, Instant};
 
 use beacon_core::model::EpisodeId;
 use beacon_core::playback::{self, SleepTimer};
-use relm4::gtk::{gio::prelude::*, glib};
-use relm4::{ComponentController, ComponentSender};
+use gtk::{gio::prelude::*, glib};
 
 use super::library::Parts;
+use super::sender::AppSender;
 use super::{App, AppCommand, AppMsg, AppWidgets};
 use crate::player::PlaybackState;
 use crate::ui::details_pane::{DetailsPaneInput, DetailsPaneOutput};
@@ -34,7 +34,7 @@ impl App {
         &mut self,
         output: PlayerBarOutput,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         let player = self.player.clone();
         match output {
@@ -72,7 +72,7 @@ impl App {
                 if let Some(player) = &player {
                     player.set_rate(rate);
                 }
-                self.bar.emit(PlayerBarInput::Rate(rate));
+                self.bar.send(PlayerBarInput::Rate(rate));
                 self.remember("playback-rate", rate);
             }
             PlayerBarOutput::Volume(volume) => {
@@ -82,7 +82,7 @@ impl App {
                 {
                     player.set_volume(volume);
                 }
-                self.bar.emit(PlayerBarInput::Volume(volume));
+                self.bar.send(PlayerBarInput::Volume(volume));
                 self.remember("volume", volume);
             }
             PlayerBarOutput::SleepTimer(timer) => {
@@ -91,7 +91,7 @@ impl App {
                     since: timer.length().map(|_| Instant::now()),
                     fading: false,
                 };
-                self.bar.emit(PlayerBarInput::SleepTimer(timer));
+                self.bar.send(PlayerBarInput::SleepTimer(timer));
             }
             PlayerBarOutput::OpenDetails => {
                 let Some(now) = &self.now_playing else {
@@ -125,13 +125,13 @@ impl App {
         if let Some(player) = self.player.as_ref().filter(|_| !now.is_unopened()) {
             player.seek(to);
         }
-        self.bar.emit(PlayerBarInput::Position(to));
+        self.bar.send(PlayerBarInput::Position(to));
         self.media.seeked(to);
     }
 
     /// Next Episode, and auto-continue when an episode ends: the queue's
     /// first, else the next in the list `current` was started from.
-    pub(super) fn play_next(&self, current: Option<EpisodeId>, sender: &ComponentSender<Self>) {
+    pub(super) fn play_next(&self, current: Option<EpisodeId>, sender: &AppSender) {
         let (Some(library), Some(lists)) = (self.library.clone(), self.lists()) else {
             return;
         };
@@ -144,7 +144,7 @@ impl App {
     }
 
     /// Fade out and pause once a timed sleep timer runs out.
-    pub(super) fn check_sleep_timer(&mut self, sender: &ComponentSender<Self>) {
+    pub(super) fn check_sleep_timer(&mut self, sender: &AppSender) {
         let due = match (self.sleep.timer.length(), self.sleep.since) {
             (Some(length), Some(since)) => since.elapsed() >= length,
             _ => false,
@@ -158,14 +158,14 @@ impl App {
         self.sleep.fading = true;
         let volume = self.settings.double("volume");
         let started = Instant::now();
-        let input = sender.input_sender().clone();
+        let input = sender.clone();
         glib::timeout_add_local(FADE_STEP, move || {
             let elapsed = started.elapsed();
             if elapsed >= playback::FADE {
                 player.pause();
                 // The next play starts at the volume chosen, not silent.
                 player.set_volume(volume);
-                input.emit(AppMsg::SleepTimerDone);
+                input.input(AppMsg::SleepTimerDone);
                 return glib::ControlFlow::Break;
             }
             player.set_volume(playback::fade_volume(volume, elapsed));
@@ -184,7 +184,7 @@ impl App {
             return;
         }
         self.sleep = Sleep::default();
-        self.bar.emit(PlayerBarInput::SleepTimer(SleepTimer::Off));
+        self.bar.send(PlayerBarInput::SleepTimer(SleepTimer::Off));
     }
 
     /// What the details pane asks for.
@@ -192,7 +192,7 @@ impl App {
         &mut self,
         output: DetailsPaneOutput,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         match output {
             DetailsPaneOutput::Close => widgets.details_split.set_show_sidebar(false),
@@ -221,8 +221,8 @@ impl App {
         id: beacon_core::model::EpisodeId,
         path: std::path::PathBuf,
     ) {
-        self.bar.emit(PlayerBarInput::Cover(id, path.clone()));
+        self.bar.send(PlayerBarInput::Cover(id, path.clone()));
         self.media.set_cover(id, path.clone());
-        self.details.emit(DetailsPaneInput::EpisodeCover(id, path));
+        self.details.send(DetailsPaneInput::EpisodeCover(id, path));
     }
 }

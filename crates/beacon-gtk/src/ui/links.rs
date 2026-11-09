@@ -4,7 +4,7 @@
 //! with Tab and Shift+Tab only (`gtk_label_focus`); descriptions are full of
 //! links, so the arrow keys do it too.
 
-use relm4::gtk::{self, gdk, glib, prelude::*};
+use gtk::{self, gdk, glib, prelude::*};
 
 /// Let Left and Up go to the previous link of `label`, Right and Down to the
 /// next. Past the first or last link the arrow does what it would anyway.

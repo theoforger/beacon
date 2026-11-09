@@ -7,7 +7,7 @@
 
 use beacon_core::model::Chapter;
 use gettextrs::gettext;
-use relm4::gtk::{self, pango, prelude::*};
+use gtk::{self, pango, prelude::*};
 
 use crate::ui::format;
 

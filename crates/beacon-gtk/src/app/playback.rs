@@ -12,10 +12,10 @@ use beacon_core::PlaybackError;
 use beacon_core::model::{Episode, EpisodeId, ShowId};
 use beacon_core::playback;
 use beacon_core::services::library::Library;
-use relm4::gtk::{gio, glib, prelude::*};
-use relm4::{ComponentController, ComponentSender};
+use gtk::{gio, glib, prelude::*};
 
 use super::library::Parts;
+use super::sender::AppSender;
 use super::{App, AppCommand, AppMsg, AppWidgets, toast};
 use crate::player::mpris::Track;
 use crate::player::{PlaybackState, Player, PlayerEvent};
@@ -64,12 +64,12 @@ pub type LastPosition = Rc<Cell<Option<(EpisodeId, Duration)>>>;
 /// when tried.
 pub(super) fn start_player(
     settings: &gio::Settings,
-    sender: &ComponentSender<App>,
+    sender: &AppSender,
 ) -> Result<Rc<Player>, PlaybackError> {
-    let input = sender.input_sender().clone();
+    let input = sender.clone();
     let buffers = glib::user_cache_dir().join("beacon").join("buffer");
     let player = Player::new(&glib::MainContext::default(), &buffers, move |event| {
-        input.emit(AppMsg::Player(event));
+        input.input(AppMsg::Player(event));
     })?;
     player.set_volume(settings.double("volume"));
     player.set_rate(playback::nearest_rate(settings.double("playback-rate")));
@@ -96,12 +96,12 @@ pub(super) fn may_prefetch() -> bool {
 
 /// Tell the app when the connection changes, so what is fetched ahead
 /// follows whether it is metered.
-pub(super) fn watch_network(sender: &ComponentSender<App>) {
+pub(super) fn watch_network(sender: &AppSender) {
     let monitor = gio::NetworkMonitor::default();
-    let input = sender.input_sender().clone();
-    monitor.connect_network_metered_notify(move |_| input.emit(AppMsg::NetworkChanged));
-    let input = sender.input_sender().clone();
-    monitor.connect_network_changed(move |_, _| input.emit(AppMsg::NetworkChanged));
+    let input = sender.clone();
+    monitor.connect_network_metered_notify(move |_| input.input(AppMsg::NetworkChanged));
+    let input = sender.clone();
+    monitor.connect_network_changed(move |_, _| input.input(AppMsg::NetworkChanged));
 }
 
 /// The address to play an episode from: its download if it has one, or its
@@ -157,7 +157,7 @@ impl App {
         &mut self,
         item: &EpisodeItem,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         self.play_episode_from(item, None, widgets, sender);
     }
@@ -170,7 +170,7 @@ impl App {
         item: &EpisodeItem,
         start: Option<Duration>,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         let episode = &item.episode;
         let Some(player) = self.player.clone() else {
@@ -239,7 +239,7 @@ impl App {
         position: Duration,
         state: PlaybackState,
         unopened: Option<Box<EpisodeItem>>,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         let episode = &item.episode;
         let duration = episode.info.duration;
@@ -256,16 +256,16 @@ impl App {
         });
         self.last_position.set(Some((episode.id, position)));
         self.bar
-            .emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+            .send(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
                 id: episode.id,
                 title: episode.info.title.clone(),
                 show_title: item.show_title.clone(),
                 cover: item.cover.clone(),
                 duration,
             }))));
-        self.bar.emit(PlayerBarInput::Position(position));
+        self.bar.send(PlayerBarInput::Position(position));
         if let Some(duration) = duration {
-            self.bar.emit(PlayerBarInput::Duration(duration));
+            self.bar.send(PlayerBarInput::Duration(duration));
         }
         self.media.set_track(Some(Track {
             id: episode.id,
@@ -282,7 +282,7 @@ impl App {
     }
 
     /// Read back the episode last played, to put it in the bar at launch.
-    pub(super) fn restore_last_episode(&self, sender: &ComponentSender<Self>) {
+    pub(super) fn restore_last_episode(&self, sender: &AppSender) {
         let (Some(library), Some(id)) = (self.library.clone(), self.after) else {
             return;
         };
@@ -299,7 +299,7 @@ impl App {
 
     /// The episode last played, back in the bar, paused where it was left,
     /// unless something already plays or it was played to the end.
-    pub(super) fn restore(&mut self, item: EpisodeItem, sender: &ComponentSender<Self>) {
+    pub(super) fn restore(&mut self, item: EpisodeItem, sender: &AppSender) {
         let Some(position) =
             restored_position(&item.episode).filter(|_| self.now_playing.is_none())
         else {
@@ -309,7 +309,7 @@ impl App {
         self.show_in_player(&item, position, PlaybackState::Paused, unopened, sender);
         let id = item.episode.id;
         episode_row::show_playing(Some((id, PlaybackState::Paused)));
-        self.bar.emit(PlayerBarInput::State(PlaybackState::Paused));
+        self.bar.send(PlayerBarInput::State(PlaybackState::Paused));
         self.media.set_state(PlaybackState::Paused);
         self.buffer_restored();
     }
@@ -342,11 +342,7 @@ impl App {
 
     /// Play the restored episode, if that is what the bar holds. Whether it
     /// did.
-    pub(super) fn open_unopened(
-        &mut self,
-        widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
-    ) -> bool {
+    pub(super) fn open_unopened(&mut self, widgets: &AppWidgets, sender: &AppSender) -> bool {
         let Some(item) = self
             .now_playing
             .as_ref()
@@ -367,16 +363,16 @@ impl App {
 
     /// Everything the details pane loads for an episode beyond what its row
     /// knows: its own cover and its chapters, and where playback is.
-    pub(super) fn load_details(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
+    pub(super) fn load_details(&self, id: EpisodeId, sender: &AppSender) {
         self.fetch_episode_cover(id, sender);
         self.details
-            .emit(DetailsPaneInput::Playback(self.playback_state()));
+            .send(DetailsPaneInput::Playback(self.playback_state()));
         self.load_chapters(id, sender);
     }
 
     /// Load an episode's chapters, for the details pane and, if it is the
     /// one playing, the player bar.
-    pub(super) fn load_chapters(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
+    pub(super) fn load_chapters(&self, id: EpisodeId, sender: &AppSender) {
         if let Some(library) = self.library.clone() {
             sender.oneshot_command(async move {
                 let chapters = library.chapters(id).await.unwrap_or_else(|err| {
@@ -390,7 +386,7 @@ impl App {
 
     /// Fetch the episode's own cover for the player bar and the details
     /// pane; the show's stands in until it comes, or if it never does.
-    pub(super) fn fetch_episode_cover(&self, id: EpisodeId, sender: &ComponentSender<Self>) {
+    pub(super) fn fetch_episode_cover(&self, id: EpisodeId, sender: &AppSender) {
         if let Some(library) = self.library.clone() {
             sender.oneshot_command(async move {
                 AppCommand::EpisodeCover(id, library.episode_cover(id).await.ok().flatten())
@@ -402,7 +398,7 @@ impl App {
         &mut self,
         event: PlayerEvent,
         widgets: &AppWidgets,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
     ) {
         match event {
             PlayerEvent::Position(position) => {
@@ -412,10 +408,10 @@ impl App {
                 now.position = position;
                 let due = playback::should_save(now.saved, position);
                 self.last_position.set(Some((now.id, position)));
-                self.bar.emit(PlayerBarInput::Position(position));
+                self.bar.send(PlayerBarInput::Position(position));
                 self.media.set_position(position);
                 self.details
-                    .emit(DetailsPaneInput::Playback(self.playback_state()));
+                    .send(DetailsPaneInput::Playback(self.playback_state()));
                 if due {
                     self.save_position(sender, Parts::NONE);
                 }
@@ -427,7 +423,7 @@ impl App {
                     self.media
                         .update_track(now.id, |track| track.duration = Some(duration));
                 }
-                self.bar.emit(PlayerBarInput::Duration(duration));
+                self.bar.send(PlayerBarInput::Duration(duration));
             }
             PlayerEvent::State(state) => {
                 let Some(now) = &mut self.now_playing else {
@@ -441,10 +437,10 @@ impl App {
                 };
                 now.state = state;
                 episode_row::show_playing(Some((now.id, state)));
-                self.bar.emit(PlayerBarInput::State(state));
+                self.bar.send(PlayerBarInput::State(state));
                 self.media.set_state(state);
                 self.details
-                    .emit(DetailsPaneInput::Playback(self.playback_state()));
+                    .send(DetailsPaneInput::Playback(self.playback_state()));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(sender, Parts::PROGRESS);
@@ -454,7 +450,7 @@ impl App {
                 let Some(now) = &mut self.now_playing else {
                     return;
                 };
-                self.bar.emit(PlayerBarInput::Buffered(share));
+                self.bar.send(PlayerBarInput::Buffered(share));
                 if share >= 0.999 && !now.buffered {
                     now.buffered = true;
                     self.preload_next();
@@ -466,10 +462,10 @@ impl App {
                 };
                 self.last_position.set(None);
                 episode_row::show_playing(None);
-                self.bar.emit(PlayerBarInput::State(PlaybackState::Stopped));
+                self.bar.send(PlayerBarInput::State(PlaybackState::Stopped));
                 self.media.set_state(PlaybackState::Stopped);
                 self.media.set_track(None);
-                self.details.emit(DetailsPaneInput::Playback(None));
+                self.details.send(DetailsPaneInput::Playback(None));
                 // "End of Episode" stops here; otherwise the queue, then the
                 // rest of the list, carries on (as the mockup's `advance`).
                 let carry_on = !self.sleeps_at_end();
@@ -497,7 +493,7 @@ impl App {
 
     /// Write the playing episode's position in the background, reloading
     /// `parts` after.
-    fn save_position(&mut self, sender: &ComponentSender<Self>, parts: Parts) {
+    fn save_position(&mut self, sender: &AppSender, parts: Parts) {
         let Some(now) = &mut self.now_playing else {
             return;
         };

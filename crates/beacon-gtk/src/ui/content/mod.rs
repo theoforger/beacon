@@ -8,18 +8,17 @@
 //! button and Alt+Left. The pane routes data from the window to its views
 //! and their actions back.
 
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 use beacon_core::browse::RecencyGroup;
 use beacon_core::model::{EpisodeChange, EpisodeId, ShowId, ShowPrefs};
-use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::{
-    Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
-};
+use gtk::glib;
 use url::Url;
 
 use crate::navigation::Location;
 use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
 use crate::ui::labels;
+use crate::ui::messages::{Inbox, Output};
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
@@ -28,8 +27,10 @@ use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 use beacon_core::queue::Source;
 
+mod build;
 mod lists;
 mod sections;
+pub use build::ContentWidgets;
 use sections::{bring_forward, new_details_toggle, section_id};
 
 const ROOT_TAG: &str = "root";
@@ -87,120 +88,78 @@ pub enum ContentOutput {
     DeleteAllDownloads(Vec<EpisodeId>),
 }
 
-pub struct Content {
-    shows: Controller<ShowsGrid>,
+mod imp {
+    use std::cell::{Cell, OnceCell};
+
+    use super::*;
+
+    #[derive(Default)]
+    pub struct Content {
+        pub parts: OnceCell<super::Parts>,
+        pub widgets: OnceCell<ContentWidgets>,
+        /// New's sort and filters, as last set by the window.
+        pub new_prefs: Cell<ShowPrefs>,
+        pub inbox: Inbox<ContentInput>,
+        pub output: Output<ContentOutput>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for Content {
+        const NAME: &'static str = "BeaconContent";
+        type Type = super::Content;
+        type ParentType = adw::Bin;
+    }
+
+    impl ObjectImpl for Content {
+        fn constructed(&self) {
+            self.parent_constructed();
+            self.obj().build();
+        }
+    }
+    impl WidgetImpl for Content {}
+    impl BinImpl for Content {}
+}
+
+glib::wrapper! {
+    pub struct Content(ObjectSubclass<imp::Content>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+pub struct Parts {
+    shows: ShowsGrid,
     /// New, Queue, Favorites and Downloaded, with their selection.
     lists: lists::Lists,
-    show_page: Controller<ShowPage>,
-    add_page: Controller<AddPage>,
-    /// New's sort and filters, as last set by the window.
-    new_prefs: ShowPrefs,
+    show_page: ShowPage,
+    add_page: AddPage,
     /// New's filter button, shown only in New.
     new_filter: page_filters::FilterButton,
     refresh_bar: sections::RefreshBar,
 }
 
-#[relm4::component(pub)]
-impl Component for Content {
-    type Init = ();
-    type Input = ContentInput;
-    type Output = ContentOutput;
-    type CommandOutput = ();
-
-    view! {
-        #[name = "navigation"]
-        adw::NavigationView {
-            // Type to search only where the search bar is: the root page.
-            connect_visible_page_notify[search_bar] => move |navigation| {
-                let on_root = navigation.visible_page_tag().as_deref() == Some(ROOT_TAG);
-                let window = on_root.then(|| search_bar.root()).flatten();
-                search_bar.set_key_capture_widget(window.as_ref());
-                if !on_root {
-                    search_bar.set_search_mode(false);
-                }
-            },
-
-            #[name = "root_page"]
-            add = &adw::NavigationPage {
-                set_tag: Some(ROOT_TAG),
-                set_title: &labels::title(Location::Shows),
-
-                #[wrap(Some)]
-                #[name = "root_toolbar"]
-                set_child = &adw::ToolbarView {
-                    #[name = "root_header"]
-                    add_top_bar = &adw::HeaderBar {
-                        // Only in Shows and New, where new episodes appear;
-                        // its holder is hidden in narrow windows, where the
-                        // main menu's Refresh Feeds is one Back away.
-                        #[name = "refresh_holder"]
-                        pack_start = &adw::Bin {
-                            #[name = "refresh"]
-                            #[wrap(Some)]
-                            set_child = &gtk::Button {
-                                set_icon_name: "view-refresh-symbolic",
-                                set_action_name: Some("win.refresh"),
-                                set_tooltip_text: Some(&gettext("Refresh Feeds")),
-                                update_property: &[gtk::accessible::Property::Label(&gettext("Refresh Feeds"))],
-                            },
-                        },
-
-                        #[name = "details_toggle"]
-                        pack_end = &new_details_toggle() -> gtk::ToggleButton {},
-
-                        // Sort and filter, only in New, as on podcast pages.
-                        pack_end: model.new_filter.widget(),
-
-                        #[name = "search_toggle"]
-                        pack_end = &gtk::ToggleButton {
-                            set_icon_name: "system-search-symbolic",
-                            set_tooltip_text: Some(&gettext("Search")),
-                            update_property: &[gtk::accessible::Property::Label(&gettext("Search"))],
-                        },
-                    },
-
-                    #[name = "search_bar"]
-                    add_top_bar = &gtk::SearchBar {
-                        #[wrap(Some)]
-                        set_child = &adw::Clamp {
-                            set_maximum_size: 400,
-                            // Results arrive with M7.
-                            #[name = "search_entry"]
-                            gtk::SearchEntry {
-                                set_hexpand: true,
-                                set_placeholder_text: Some(&gettext("Search")),
-                            },
-                        },
-                    },
-
-                    #[wrap(Some)]
-                    set_content = &gtk::Overlay {
-                        #[wrap(Some)]
-                        #[name = "stack"]
-                        set_child = &gtk::Stack {
-                            set_transition_type: gtk::StackTransitionType::Crossfade,
-                        },
-                        add_overlay: model.refresh_bar.widget(),
-                    },
-                },
-            },
-        }
+impl Default for Content {
+    fn default() -> Self {
+        glib::Object::new()
     }
+}
 
-    fn init(
-        _init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let output = sender.output_sender().clone();
-        let input = sender.input_sender().clone();
-        let shows = ShowsGrid::builder().launch(()).connect_receiver({
-            let output = output.clone();
-            move |_, message| match message {
-                ShowsGridOutput::OpenShow(id) => {
-                    let _ = output.send(ContentOutput::OpenShow(id));
+impl Content {
+    fn build(&self) {
+        let output = self.imp().output.clone();
+        let input = {
+            let content = self.downgrade();
+            move |message: ContentInput| {
+                if let Some(content) = content.upgrade() {
+                    content.send(message);
                 }
-                ShowsGridOutput::AddPodcast => input.emit(ContentInput::OpenAdd),
+            }
+        };
+        let shows = ShowsGrid::default();
+        shows.connect_output({
+            let (output, input) = (output.clone(), input.clone());
+            move |message| match message {
+                ShowsGridOutput::OpenShow(id) => output.emit(ContentOutput::OpenShow(id)),
+                ShowsGridOutput::AddPodcast => input(ContentInput::OpenAdd),
             }
         });
         let lists = lists::Lists::new(&output);
@@ -208,48 +167,47 @@ impl Component for Content {
         // The podcast page packs its details toggle itself, at the far end
         // of its header like the root page's, before its filter button.
         let show_toggle = new_details_toggle();
-        let show_page = ShowPage::builder().launch(show_toggle.clone()).forward(
-            &output,
-            |message| match message {
-                ShowPageOutput::Action(item, action) => {
-                    let source = Source::Show(item.episode.show_id);
-                    ContentOutput::Action(item, action, Some(source))
-                }
-                ShowPageOutput::PrefsChanged(id, prefs) => {
-                    ContentOutput::ShowPrefsChanged(id, prefs)
-                }
-                ShowPageOutput::MarkAll(id, played) => ContentOutput::MarkAll(id, played),
-                ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
-                ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
-                ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
-            },
-        );
-        let add_page = AddPage::builder()
-            .launch(())
-            .forward(&output, |message| match message {
-                AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
-                AddPageOutput::Back => ContentOutput::GoBack,
-            });
-
-        let model = Content {
-            shows,
-            lists,
-            show_page,
-            add_page,
-            new_prefs: ShowPrefs::default(),
-            new_filter: page_filters::FilterButton::new({
-                let s = sender.clone();
-                move |choice| s.input(ContentInput::ChooseNew(choice))
-            }),
-            refresh_bar: sections::RefreshBar::new(),
-        };
-        model.new_filter.widget().set_visible(false);
-        let widgets = view_output!();
+        let show_page = ShowPage::new(&show_toggle);
+        show_page.connect_output({
+            let output = output.clone();
+            move |message| {
+                output.emit(match message {
+                    ShowPageOutput::Action(item, action) => {
+                        let source = Source::Show(item.episode.show_id);
+                        ContentOutput::Action(item, action, Some(source))
+                    }
+                    ShowPageOutput::PrefsChanged(id, prefs) => {
+                        ContentOutput::ShowPrefsChanged(id, prefs)
+                    }
+                    ShowPageOutput::MarkAll(id, played) => ContentOutput::MarkAll(id, played),
+                    ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
+                    ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
+                    ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
+                });
+            }
+        });
+        let add_page = AddPage::default();
+        add_page.connect_output({
+            let output = output.clone();
+            move |message| {
+                output.emit(match message {
+                    AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
+                    AddPageOutput::Back => ContentOutput::GoBack,
+                });
+            }
+        });
+        let new_filter = page_filters::FilterButton::new({
+            let input = input.clone();
+            move |choice| input(ContentInput::ChooseNew(choice))
+        });
+        new_filter.widget().set_visible(false);
+        let refresh_bar = sections::RefreshBar::new();
+        let widgets = build::widgets(new_filter.widget(), &refresh_bar);
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
         let add_toggle = new_details_toggle();
-        model.add_page.widgets().header().pack_end(&add_toggle);
+        add_page.header().pack_end(&add_toggle);
         for toggle in [add_toggle, show_toggle] {
             widgets
                 .details_toggle
@@ -272,45 +230,64 @@ impl Component for Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
-        widgets.root_header.pack_end(&model.lists.select);
-        widgets.root_header.pack_start(&model.lists.clear);
+        widgets.root_header.pack_end(&lists.select);
+        widgets.root_header.pack_start(&lists.clear);
         sections::attach_new_selection(
             &widgets.root_toolbar,
             &widgets.root_header,
-            &model.lists.select,
-            &model.lists.selection,
+            &lists.select,
+            &lists.selection,
             &widgets.search_bar,
             &widgets.navigation,
-            Box::new(move |ids, change| {
-                let _ = output.send(ContentOutput::Change(ids, change));
-            }),
+            Box::new(move |ids, change| output.emit(ContentOutput::Change(ids, change))),
         );
 
         for location in Location::ALL {
-            let page: gtk::Widget = model
-                .lists
+            let page: gtk::Widget = lists
                 .page(location)
-                .unwrap_or_else(|| model.shows.widget().clone().upcast());
+                .unwrap_or_else(|| shows.clone().upcast());
             widgets.stack.add_named(&page, Some(section_id(location)));
         }
+        self.set_child(Some(&widgets.navigation));
 
-        ComponentParts { model, widgets }
+        let imp = self.imp();
+        let _ = imp.widgets.set(widgets);
+        let _ = imp.parts.set(Parts {
+            shows,
+            lists,
+            show_page,
+            add_page,
+            new_filter,
+            refresh_bar,
+        });
     }
 
-    fn update_with_view(
-        &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        sender: ComponentSender<Self>,
-        _root: &Self::Root,
-    ) {
+    pub fn connect_output(&self, receive: impl Fn(ContentOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: ContentInput) {
+        self.imp()
+            .inbox
+            .deliver(input, |message| self.update(message));
+    }
+
+    pub fn widgets(&self) -> &ContentWidgets {
+        self.imp().widgets.get().expect("built when constructed")
+    }
+
+    fn update(&self, message: ContentInput) {
+        let imp = self.imp();
+        let parts = imp.parts.get().expect("built when constructed");
+        let widgets = self.widgets();
         let navigation = &widgets.navigation;
         match message {
             ContentInput::ShowSection(location) => {
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
-                self.lists.show(location);
-                self.new_filter
+                parts.lists.show(location);
+                parts
+                    .new_filter
                     .widget()
                     .set_visible(location == Location::New);
                 widgets.root_page.set_title(&labels::title(location));
@@ -321,16 +298,16 @@ impl Component for Content {
                 }
             }
             ContentInput::OpenAdd => {
-                self.add_page.widgets().clear();
-                bring_forward(navigation, self.add_page.widget(), ADD_TAG);
+                parts.add_page.clear();
+                bring_forward(navigation, parts.add_page.upcast_ref(), ADD_TAG);
             }
             ContentInput::OpenShow(data) => {
-                self.show_page.emit(ShowPageInput::Set(data));
-                bring_forward(navigation, self.show_page.widget(), SHOW_TAG);
+                parts.show_page.send(ShowPageInput::Set(data));
+                bring_forward(navigation, parts.show_page.upcast_ref(), SHOW_TAG);
             }
             ContentInput::UpdateShow(data) => {
                 if navigation.find_page(SHOW_TAG).is_some() {
-                    self.show_page.emit(ShowPageInput::Set(data));
+                    parts.show_page.send(ShowPageInput::Set(data));
                 }
             }
             ContentInput::CloseShow => {
@@ -338,69 +315,32 @@ impl Component for Content {
                     navigation.replace(std::slice::from_ref(&widgets.root_page));
                 }
             }
-            ContentInput::SetShows(cards) => self.shows.emit(ShowsGridInput::SetCards(cards)),
+            ContentInput::SetShows(cards) => parts.shows.send(ShowsGridInput::SetCards(cards)),
             ContentInput::SetNew {
                 items,
                 prefs,
                 has_shows,
             } => {
-                self.new_prefs = prefs;
-                self.new_filter.set_prefs(&prefs);
-                self.lists.set_new(NewViewInput::Set {
+                imp.new_prefs.set(prefs);
+                parts.new_filter.set_prefs(&prefs);
+                parts.lists.set_new(NewViewInput::Set {
                     items,
                     prefs,
                     has_shows,
                 });
             }
-            ContentInput::SubscribeDone => self.add_page.emit(AddPageInput::Done),
-            ContentInput::Refreshing(running) => self.refresh_bar.set_running(running),
-            ContentInput::SetQueue(data) => self.lists.set_queue(data),
-            ContentInput::SetFavorites(items) => self.lists.set_favorites(items),
-            ContentInput::SetDownloaded(items) => self.lists.set_downloaded(items),
+            ContentInput::SubscribeDone => parts.add_page.send(AddPageInput::Done),
+            ContentInput::Refreshing(running) => parts.refresh_bar.set_running(running),
+            ContentInput::SetQueue(data) => parts.lists.set_queue(data),
+            ContentInput::SetFavorites(items) => parts.lists.set_favorites(items),
+            ContentInput::SetDownloaded(items) => parts.lists.set_downloaded(items),
             ContentInput::ChooseNew(choice) => {
-                let prefs = choice.apply(self.new_prefs);
-                if prefs != self.new_prefs {
-                    self.new_prefs = prefs;
-                    let _ = sender.output(ContentOutput::NewPrefsChanged(prefs));
+                let prefs = choice.apply(imp.new_prefs.get());
+                if prefs != imp.new_prefs.get() {
+                    imp.new_prefs.set(prefs);
+                    imp.output.emit(ContentOutput::NewPrefsChanged(prefs));
                 }
             }
         }
-    }
-}
-
-impl ContentWidgets {
-    /// The root page's details toggle. The toggles on deeper pages follow it.
-    pub fn details_toggle(&self) -> &gtk::ToggleButton {
-        &self.details_toggle
-    }
-
-    /// What holds Refresh Feeds, hidden in narrow windows so the header
-    /// fits 360px even with minimise, maximise and close beside it.
-    pub fn refresh_holder(&self) -> &adw::Bin {
-        &self.refresh_holder
-    }
-
-    /// Type to search: typing anywhere in `window` opens the search bar
-    /// while the root page shows.
-    pub fn capture_typing(&self, window: &impl IsA<gtk::Widget>) {
-        self.search_bar.set_key_capture_widget(Some(window));
-    }
-
-    /// Leave the deeper page, as its Back button does.
-    /// Leave the deeper page showing, if there is one.
-    pub fn go_back(&self) -> bool {
-        self.navigation.pop()
-    }
-
-    /// Ctrl+F: open the search bar, or close it if it is open. Only the root
-    /// page has one.
-    pub fn toggle_search(&self) {
-        if self.navigation.visible_page_tag().as_deref() != Some(ROOT_TAG)
-            || !self.root_header.is_visible()
-        {
-            return;
-        }
-        self.search_toggle
-            .set_active(!self.search_toggle.is_active());
     }
 }

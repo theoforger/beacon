@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs, SortOrder};
 use gettextrs::gettext;
-use relm4::gtk::{self, gio, glib, prelude::*};
+use gtk::{self, gio, glib, prelude::*};
 
 pub const SORT: &str = "sort";
 pub const PLAYED: &str = "played";

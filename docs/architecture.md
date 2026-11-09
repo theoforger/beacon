@@ -39,11 +39,11 @@ beacon/
 
 ## Components and services
 
-`App` owns the window and switches sections; deeper pages live in the content pane's `AdwNavigationView`. `Sidebar`, `ContentPages`, `DetailsPane` and `PlayerBar` are relm4 components. Services run as relm4 workers or commands: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService`, `OpmlService` and `SyncService` (nextcloud-gpodder, M6; `docs/specs/sync.md`). Views never talk to the network or database directly; they send messages and render state. Use `FactoryVecDeque` only for short lists such as the queue and chapters.
+`App` owns the window and switches sections; deeper pages live in the content pane's `AdwNavigationView`. `Sidebar`, `Content`, `DetailsPane`, `PlayerBar` and the section views are GObject subclasses of stock widgets, written with gtk4-rs and libadwaita-rs directly (no relm4 since 2026-11-09): each takes a typed input enum through `send`, handled one at a time through a queue (`ui/messages.rs`), and reports a typed output enum to a callback its owner connects. The window (`app/object.rs`) holds `App` and handles its messages and background results in order from one channel (`app/sender.rs`). Services run on the app's tokio runtime, their results sent back to the window: `Store` (SQLite), `FeedService`, `PlayerService` (wraps GstPlay and publishes state), `DownloadService`, `OpmlService` and `SyncService` (nextcloud-gpodder, M6; `docs/specs/sync.md`). Views never talk to the network or database directly; they send messages and render state.
 
 ## Widget map
 
-Map every mockup element to a stock libadwaita widget first. A custom widget needs an entry in `docs/decisions.md`. All widgets below exist in the GNOME 50 runtime (libadwaita 1.9) and are bound by libadwaita-rs 0.9.
+Map every mockup element to a stock libadwaita widget first. A custom widget needs an entry in `docs/decisions.md`. All widgets below exist in the GNOME 51 runtime (libadwaita 1.10) and are bound by libadwaita-rs 0.9.
 
 | Mockup element | Widget | Notes |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 ### M0
 
 - `main.rs`: logging, gettext, GResource registration, `AdwApplication`, `app.quit` (Ctrl+Q), `window.close` (Ctrl+W).
-- `app.rs`: the `App` component. An `AdwApplicationWindow` holding an `AdwNavigationSplitView` (sidebar and content, each an `AdwToolbarView` with its own `AdwHeaderBar`). An `AdwBreakpoint` at 760sp collapses the split view. The window size is saved in GSettings.
+- `app/`: `App`, held by the window, an `AdwApplicationWindow` subclass (`app/object.rs`), holding an `AdwNavigationSplitView` (sidebar and content, each an `AdwToolbarView` with its own `AdwHeaderBar`). An `AdwBreakpoint` at 760sp collapses the split view. The window size is saved in GSettings.
 - `ui/dialogs/about.rs`: `AdwAboutDialog`.
 - `data/shortcuts-dialog.ui`: loaded automatically by `AdwApplication`, which also provides `app.shortcuts` (Ctrl+?).
 - `data/style.css`: loaded automatically from the resource base path `/com/theoforger/Beacon/`.
@@ -97,7 +97,7 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 ### M3
 
 - Core: `browse.rs` (recency groups, season groups, sorting), the "new" rule on `EpisodeState`, `EpisodeFilter`, `SortOrder`, `ShowPrefs`, `LibraryCounts`; `store/state.rs` (played, seen, favourites, queue, page preferences, unsubscribe) and `store/views.rs` (counts, new counts, recent episodes); migration 002; `text.rs`; `Library::open` and `refresh_all`.
-- `app/`: `mod.rs` holds the window, its actions (`win.refresh` added, Ctrl+R and F5) and an `AdwToastOverlay`; `library.rs` reloads every view from the store after each change, applies row actions, runs subscribe and refresh as relm4 commands, and confirms unsubscribing with an `AdwAlertDialog`; `window.rs` holds the narrow breakpoint and window size.
+- `app/`: `mod.rs` holds the window, its actions (`win.refresh` added, Ctrl+R and F5) and an `AdwToastOverlay`; `library.rs` reloads every view from the store after each change, applies row actions, runs subscribe and refresh in the background (`app/sender.rs`), and confirms unsubscribing with an `AdwAlertDialog`; `window.rs` holds the narrow breakpoint and window size.
 - `ui/models.rs`: view models (`EpisodeItem`, `ShowCard`, `ShowPageData`) and their loaders; views never read the store.
 - `ui/content.rs` hosts `ShowsGrid` (a `GtkGridView`), `NewView` (a heading and a card of episodes per recency group) and the deeper pages `ShowPage` (the hero, then a card per season under a `GtkExpander` heading, or one card) and `AddPage`. `ui/episode_list.rs` is each page's one recycling list (a one-column `GtkGridView`), holding the header, headings and episodes so that only the rows on screen exist, and changing only the entries that changed (2026-11-08; until then a `GtkListBox` per group, filled at idle priority).
 - `ui/page_filters.rs`: the filter button (sort, played, downloaded, Reset Sort and Filters, the accent dot), which owns its `filter.*` actions; used by podcast pages and New.

@@ -23,7 +23,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Toolchain checked: Rust 1.99 stable, `flatpak`, and the GNOME 50 Platform are installed
 - [x] Toolchain completed (user-level, no sudo): `org.gnome.Sdk//50`, `org.freedesktop.Sdk.Extension.rust-stable//25.08`, flatpak-builder as `org.flatpak.Builder`, Meson through `uvx`, `cargo-deny` through `cargo install`
 - [x] GNOME 50 runtime confirmed: GTK 4.22, libadwaita 1.9 (`AdwSidebar`, `AdwToggleGroup`, `AdwShortcutsDialog` all present), GStreamer 1.26 with GstPlay, SQLite 3.50
-- [x] Cargo workspace: `beacon-core` (no GTK) and `beacon-gtk` (binary `beacon`); relm4 0.11 with `libadwaita` and `gnome_50`; `Cargo.lock` kept
+- [x] Cargo workspace: `beacon-core` (no GTK) and `beacon-gtk` (binary `beacon`); relm4 0.11 with `libadwaita` and `gnome_50` (replaced by gtk4-rs and libadwaita-rs on 2026-11-09); `Cargo.lock` kept
 - [x] Skeleton window: `AdwNavigationSplitView` with separate sidebar and content header bars, an `AdwBreakpoint` at 760sp, an `AdwStatusPage`, and a main menu with Keyboard Shortcuts and About
 - [x] App ID `com.theoforger.Beacon` used in the desktop file, metainfo, GSettings schema and path, gresource prefix, icons, manifest and `GApplication`
 - [x] Data files: desktop file, metainfo (passes `appstreamcli validate`), GSettings schema (window state), GResource, `style.css`, `shortcuts-dialog.ui`, placeholder app icon and symbolic icon
@@ -361,5 +361,5 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ## Watch: GNOME 51
 
-- [ ] relm4 ships a `gnome_51` feature (checked weekly by `.github/workflows/relm4-gnome-51.yml`)
-- [ ] Migrate: runtime and Sdk to 51, rust-stable to `//26.08`, relm4 feature, CI images, docs
+- [x] Unblocked: relm4, which had no `gnome_51` feature, dropped for gtk4-rs and libadwaita-rs directly (2026-11-09)
+- [x] Migrate: runtime and Sdk to 51, rust-stable to `//26.08` (follows the Sdk), bindings' version features (gtk `v4_24`, adw `v1_10`, gstreamer `v1_28`), CI images (Fedora 45, `gnome-51`), docs

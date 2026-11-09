@@ -8,7 +8,7 @@ use beacon_core::browse::{RecencyGroup, WeekdayName};
 use beacon_core::model::{Episode, Season};
 use chrono::{DateTime, Local, Utc};
 use gettextrs::gettext;
-use relm4::gtk::glib;
+use gtk::glib;
 
 /// "S3 E2 • Oct 27 • 52 min", leaving out what is unknown. Without the
 /// show's name, which a row's cover shows where it matters (asked by the

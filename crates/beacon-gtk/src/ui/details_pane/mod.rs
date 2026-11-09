@@ -15,17 +15,19 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 use beacon_core::model::{Chapter, EpisodeId, ShowId};
 use beacon_core::{playback, text};
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::{Component, ComponentParts, ComponentSender, adw, gtk};
+use gtk::glib;
 
 use crate::player::PlaybackState;
 use crate::ui::chapter_list;
 use crate::ui::covers::Cover;
 use crate::ui::episode_actions;
 use crate::ui::format;
+use crate::ui::messages::{Inbox, Output, ViewSender};
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::play_button;
 
@@ -66,7 +68,11 @@ pub enum DetailsPaneOutput {
     PlayFrom(Box<EpisodeItem>, Duration),
 }
 
-pub struct DetailsPane {
+/// What the pane's widgets report through.
+type Sender = ViewSender<DetailsPaneInput, DetailsPaneOutput>;
+
+#[derive(Default)]
+pub struct State {
     episode: Option<EpisodeItem>,
     /// The shown episode's own cover, when it has one and it has arrived.
     own_cover: Option<(EpisodeId, PathBuf)>,
@@ -111,56 +117,99 @@ impl DetailsPaneWidgets {
     }
 }
 
-impl Component for DetailsPane {
-    type Init = ();
-    type Input = DetailsPaneInput;
-    type Output = DetailsPaneOutput;
-    type CommandOutput = ();
-    type Root = adw::ToolbarView;
-    type Widgets = DetailsPaneWidgets;
+mod imp {
+    use std::cell::{OnceCell, RefCell};
 
-    fn init_root() -> Self::Root {
-        adw::ToolbarView::new()
+    use super::*;
+
+    #[derive(Default)]
+    pub struct DetailsPane {
+        pub widgets: OnceCell<DetailsPaneWidgets>,
+        pub state: RefCell<State>,
+        pub inbox: Inbox<DetailsPaneInput>,
+        pub output: Output<DetailsPaneOutput>,
     }
 
-    fn init(
-        _init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let widgets = build::widgets(&root, &sender);
-        let model = DetailsPane {
-            episode: None,
-            own_cover: None,
-            chapters: Vec::new(),
-            current: None,
-            playing: None,
-        };
-        ComponentParts { model, widgets }
+    #[glib::object_subclass]
+    impl ObjectSubclass for DetailsPane {
+        const NAME: &'static str = "BeaconDetailsPane";
+        type Type = super::DetailsPane;
+        type ParentType = adw::Bin;
     }
 
-    fn update_with_view(
+    impl ObjectImpl for DetailsPane {
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+            let root = adw::ToolbarView::new();
+            let pane = obj.downgrade();
+            let sender = Sender::new(
+                move |message| {
+                    if let Some(pane) = pane.upgrade() {
+                        pane.send(message);
+                    }
+                },
+                self.output.clone(),
+            );
+            let _ = self.widgets.set(build::widgets(&root, &sender));
+            obj.set_child(Some(&root));
+        }
+    }
+    impl WidgetImpl for DetailsPane {}
+    impl BinImpl for DetailsPane {}
+}
+
+glib::wrapper! {
+    pub struct DetailsPane(ObjectSubclass<imp::DetailsPane>)
+        @extends adw::Bin, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl Default for DetailsPane {
+    fn default() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl DetailsPane {
+    pub fn connect_output(&self, receive: impl Fn(DetailsPaneOutput) + 'static) {
+        self.imp().output.connect(receive);
+    }
+
+    pub fn send(&self, input: DetailsPaneInput) {
+        let imp = self.imp();
+        imp.inbox.deliver(input, |message| {
+            let widgets = self.widgets();
+            imp.state.borrow_mut().update(widgets, message, &imp.output);
+        });
+    }
+
+    pub fn widgets(&self) -> &DetailsPaneWidgets {
+        self.imp().widgets.get().expect("built when constructed")
+    }
+}
+
+impl State {
+    fn update(
         &mut self,
-        widgets: &mut Self::Widgets,
-        message: Self::Input,
-        sender: ComponentSender<Self>,
-        _root: &Self::Root,
+        widgets: &DetailsPaneWidgets,
+        message: DetailsPaneInput,
+        output: &Output<DetailsPaneOutput>,
     ) {
         match message {
             DetailsPaneInput::Pressed(action) => {
                 if let Some(item) = &self.episode {
-                    let _ =
-                        sender.output(DetailsPaneOutput::Action(Box::new(item.clone()), action));
+                    output.emit(DetailsPaneOutput::Action(Box::new(item.clone()), action));
                 }
             }
             DetailsPaneInput::ShowClicked => {
                 if let Some(item) = &self.episode {
-                    let _ = sender.output(DetailsPaneOutput::OpenShow(item.episode.show_id));
+                    output.emit(DetailsPaneOutput::OpenShow(item.episode.show_id));
                 }
             }
             DetailsPaneInput::ChapterChosen(index) => {
                 if let (Some(item), Some(chapter)) = (&self.episode, self.chapters.get(index)) {
-                    let _ = sender.output(DetailsPaneOutput::PlayFrom(
+                    output.emit(DetailsPaneOutput::PlayFrom(
                         Box::new(item.clone()),
                         chapter.start,
                     ));
@@ -206,7 +255,7 @@ impl Component for DetailsPane {
     }
 }
 
-impl DetailsPane {
+impl State {
     fn shown(&self) -> Option<EpisodeId> {
         self.episode.as_ref().map(|item| item.episode.id)
     }

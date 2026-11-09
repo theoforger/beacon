@@ -14,10 +14,10 @@
 use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
+use adw::{prelude::BinExt, subclass::prelude::*};
 use beacon_core::model::EpisodeId;
 use gettextrs::gettext;
-use relm4::adw::{self, prelude::BinExt, subclass::prelude::*};
-use relm4::gtk::{self, gio, glib, pango, prelude::*};
+use gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::player::PlaybackState;
 use crate::ui::covers::Cover;

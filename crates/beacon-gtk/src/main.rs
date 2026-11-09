@@ -7,13 +7,12 @@ mod player;
 mod ui;
 
 use gettextrs::{LocaleCategory, gettext};
-use relm4::RelmApp;
-use relm4::adw;
-use relm4::adw::prelude::*;
-use relm4::gtk::{gio, glib};
+
+use adw::prelude::*;
+use gtk::{gio, glib};
 use tracing_subscriber::EnvFilter;
 
-use crate::app::App;
+use crate::app::Window;
 use crate::config::{APP_ID, GETTEXT_PACKAGE, LOCALEDIR};
 
 fn main() {
@@ -31,7 +30,12 @@ fn main() {
     let app = adw::Application::builder().application_id(APP_ID).build();
     setup_app_actions(&app);
 
-    RelmApp::from_app(app).run::<App>(());
+    // One window: activating again brings it forward.
+    app.connect_activate(|app| match app.active_window() {
+        Some(window) => window.present(),
+        None => Window::new(app).present(),
+    });
+    app.run();
 }
 
 fn setup_gettext() {

@@ -6,6 +6,7 @@
 //! applies the result when it arrives. Each part remembers its latest
 //! request, so a slow result never overwrites a newer one.
 
+use adw::prelude::*;
 use beacon_core::StoreError;
 use beacon_core::browse::RecencyGroup;
 use beacon_core::model::{EpisodeId, LibraryCounts, ShowId, ShowPrefs};
@@ -13,9 +14,8 @@ use beacon_core::queue::Source;
 use beacon_core::store::Store;
 use chrono::{DateTime, Utc};
 use gettextrs::gettext;
-use relm4::adw::prelude::*;
-use relm4::{ComponentController, ComponentSender};
 
+use super::sender::AppSender;
 use super::{App, AppCommand, AppWidgets, toast};
 use crate::ui::content::ContentInput;
 use crate::ui::details_pane::DetailsPaneInput;
@@ -213,7 +213,7 @@ impl App {
     /// Run `change` on the store in the background, then reload `parts`.
     pub(super) fn job(
         &mut self,
-        sender: &ComponentSender<Self>,
+        sender: &AppSender,
         parts: Parts,
         open_page: bool,
         change: impl FnOnce(&mut Store) -> Result<(), StoreError> + Send + 'static,
@@ -252,7 +252,7 @@ impl App {
     }
 
     /// Reload `parts` without changing anything.
-    pub(super) fn reload(&mut self, sender: &ComponentSender<Self>, parts: Parts) {
+    pub(super) fn reload(&mut self, sender: &AppSender, parts: Parts) {
         self.job(sender, parts, false, |_| Ok(()));
     }
 
@@ -271,10 +271,10 @@ impl App {
         if let Some(cards) = loaded.cards.filter(|_| current(self.requests.shows)) {
             self.has_shows = !cards.is_empty();
             self.titles = cards.iter().map(|c| (c.id, c.title.clone())).collect();
-            self.content.emit(ContentInput::SetShows(cards));
+            self.content.send(ContentInput::SetShows(cards));
         }
         if let Some((items, prefs)) = loaded.new.filter(|_| current(self.requests.new)) {
-            self.content.emit(ContentInput::SetNew {
+            self.content.send(ContentInput::SetNew {
                 items,
                 prefs,
                 has_shows: self.has_shows,
@@ -289,20 +289,20 @@ impl App {
                 );
             }
             if loaded.open_page {
-                self.content.emit(ContentInput::OpenShow(Box::new(page)));
+                self.content.send(ContentInput::OpenShow(Box::new(page)));
                 widgets.split_view.set_show_content(true);
             } else {
-                self.content.emit(ContentInput::UpdateShow(Box::new(page)));
+                self.content.send(ContentInput::UpdateShow(Box::new(page)));
             }
         }
         if let Some(details) = loaded.details.filter(|_| current(self.requests.details)) {
             match details {
-                Some(item) => self.details.emit(DetailsPaneInput::Show(Box::new(item))),
-                None => self.details.emit(DetailsPaneInput::Clear),
+                Some(item) => self.details.send(DetailsPaneInput::Show(Box::new(item))),
+                None => self.details.send(DetailsPaneInput::Clear),
             }
         }
         if let Some(counts) = loaded.counts.filter(|_| current(self.requests.counts)) {
-            self.sidebar.emit(SidebarInput::SetCounts(Counts {
+            self.sidebar.send(SidebarInput::SetCounts(Counts {
                 shows: counts.shows_with_new,
                 new: counts.new_episodes,
                 queue: counts.queue,
@@ -312,19 +312,19 @@ impl App {
             .favorites
             .filter(|_| current(self.requests.favorites))
         {
-            self.content.emit(ContentInput::SetFavorites(items));
+            self.content.send(ContentInput::SetFavorites(items));
         }
         if let Some(items) = loaded
             .downloaded
             .filter(|_| current(self.requests.downloaded))
         {
-            self.content.emit(ContentInput::SetDownloaded(items));
+            self.content.send(ContentInput::SetDownloaded(items));
         }
         if let Some(queue) = loaded.queue.filter(|_| current(self.requests.queue)) {
-            self.bar.emit(PlayerBarInput::HasNext(queue.next.is_some()));
+            self.bar.send(PlayerBarInput::HasNext(queue.next.is_some()));
             self.up_next = queue.next.as_ref().map(|item| item.episode.clone());
             self.preload_next();
-            self.content.emit(ContentInput::SetQueue(Box::new(queue)));
+            self.content.send(ContentInput::SetQueue(Box::new(queue)));
         }
     }
 }

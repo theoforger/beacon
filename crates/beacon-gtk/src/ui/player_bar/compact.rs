@@ -6,10 +6,9 @@
 //! whole player, headed by a large cover and the episode's title and show.
 
 use gettextrs::gettext;
-use relm4::ComponentSender;
-use relm4::gtk::{self, pango, prelude::*};
+use gtk::{self, pango, prelude::*};
 
-use super::{PlayerBar, PlayerBarOutput};
+use super::{PlayerBarOutput, Sender};
 use crate::ui::covers::Cover;
 use crate::ui::play_button;
 
@@ -37,7 +36,7 @@ pub struct SheetHeader {
     pub show: gtk::Label,
 }
 
-pub fn mini_bar(sender: &ComponentSender<PlayerBar>) -> MiniBar {
+pub fn mini_bar(sender: &Sender) -> MiniBar {
     let root = gtk::Stack::builder()
         .transition_type(gtk::StackTransitionType::Crossfade)
         .build();
@@ -81,7 +80,7 @@ pub fn mini_bar(sender: &ComponentSender<PlayerBar>) -> MiniBar {
     play.update_property(&[gtk::accessible::Property::Label(&label)]);
     let s = sender.clone();
     play.connect_clicked(move |_| {
-        let _ = s.output(PlayerBarOutput::PlayPause);
+        s.output(PlayerBarOutput::PlayPause);
     });
     let row = gtk::Box::builder()
         .spacing(12)
@@ -113,7 +112,7 @@ pub fn mini_bar(sender: &ComponentSender<PlayerBar>) -> MiniBar {
     }
 }
 
-pub fn sheet_header(sender: &ComponentSender<PlayerBar>) -> SheetHeader {
+pub fn sheet_header(sender: &Sender) -> SheetHeader {
     let cover = Cover::new(SHEET_COVER);
     let cover_button = gtk::Button::builder()
         .child(cover.widget())
@@ -126,7 +125,7 @@ pub fn sheet_header(sender: &ComponentSender<PlayerBar>) -> SheetHeader {
     ))]);
     let s = sender.clone();
     cover_button.connect_clicked(move |_| {
-        let _ = s.output(PlayerBarOutput::OpenDetails);
+        s.output(PlayerBarOutput::OpenDetails);
     });
     let title = gtk::Label::builder()
         .justify(gtk::Justification::Center)
