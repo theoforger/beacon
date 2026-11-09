@@ -132,6 +132,7 @@ fn widgets_lay_out_as_designed() {
     );
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
+    clear_sits_where_refresh_does();
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
@@ -347,6 +348,37 @@ fn the_player_bar_lists_chapters() {
         (filled - 0.5).abs() < 0.05,
         "half held fills {filled} of the trough"
     );
+    window.destroy();
+}
+
+/// Clear, in Queue and Downloaded, sits where Refresh Feeds sits in Shows
+/// and New, at the very start of the header (found off by the user).
+fn clear_sits_where_refresh_does() {
+    use crate::navigation::Location;
+    use crate::ui::content::{Content, ContentInput};
+
+    let content = Content::default();
+    let window = window(&content);
+    let (refresh, clear) = content.start_buttons();
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    let x = |button: &gtk::Button| {
+        button
+            .compute_point(&content, &gtk::graphene::Point::new(0.0, 0.0))
+            .expect("the button is in the pane")
+            .x()
+    };
+    content.send(ContentInput::ShowSection(Location::Shows));
+    settle();
+    let refresh_x = x(&refresh);
+    for section in [Location::Queue, Location::Downloaded] {
+        content.send(ContentInput::ShowSection(section));
+        settle();
+        assert!(clear.is_mapped(), "{section:?} shows Clear");
+        assert_eq!(x(&clear), refresh_x, "Clear in {section:?}");
+    }
     window.destroy();
 }
 

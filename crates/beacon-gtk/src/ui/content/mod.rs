@@ -231,7 +231,7 @@ impl Content {
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
         widgets.root_header.pack_end(&lists.select);
-        widgets.root_header.pack_start(&lists.clear);
+        widgets.start.append(&lists.clear);
         sections::attach_new_selection(
             &widgets.root_toolbar,
             &widgets.root_header,
@@ -270,6 +270,13 @@ impl Content {
         self.imp()
             .inbox
             .deliver(input, |message| self.update(message));
+    }
+
+    /// Refresh Feeds and Clear, which share the header's start, for tests.
+    #[cfg(test)]
+    pub fn start_buttons(&self) -> (gtk::Button, gtk::Button) {
+        let parts = self.imp().parts.get().expect("built when constructed");
+        (self.widgets().refresh.clone(), parts.lists.clear.clone())
     }
 
     pub fn widgets(&self) -> &ContentWidgets {

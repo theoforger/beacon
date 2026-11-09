@@ -17,6 +17,8 @@ pub struct ContentWidgets {
     pub(super) root_toolbar: adw::ToolbarView,
     pub(super) root_header: adw::HeaderBar,
     pub(super) refresh_holder: adw::Bin,
+    /// The header's start: Refresh Feeds, or the sections' Clear.
+    pub(super) start: gtk::Box,
     pub(super) refresh: gtk::Button,
     pub(super) details_toggle: gtk::ToggleButton,
     pub(super) search_toggle: gtk::ToggleButton,
@@ -49,7 +51,13 @@ pub(super) fn widgets(
     search_toggle.update_property(&[gtk::accessible::Property::Label(&gettext("Search"))]);
 
     let root_header = adw::HeaderBar::new();
-    root_header.pack_start(&refresh_holder);
+    // One box without spacing, so whichever of Refresh Feeds and Clear a
+    // section shows sits at the very start: Refresh's holder stays even
+    // where the button is hidden, and the header would space Clear after
+    // it (found by the user).
+    let start = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    start.append(&refresh_holder);
+    root_header.pack_start(&start);
     root_header.pack_end(&details_toggle);
     // Sort and filter, only in New, as on podcast pages.
     root_header.pack_end(new_filter);
@@ -104,6 +112,7 @@ pub(super) fn widgets(
         root_toolbar,
         root_header,
         refresh_holder,
+        start,
         refresh,
         details_toggle,
         search_toggle,
