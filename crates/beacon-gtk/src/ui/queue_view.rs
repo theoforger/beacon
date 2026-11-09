@@ -130,30 +130,37 @@ impl QueueView {
 /// heading, 24px between groups, 32px at the end. Nothing when nothing
 /// plays and nothing is queued.
 fn entries(data: &QueueData) -> Vec<Entry> {
-    let mut groups: Vec<(String, Vec<EpisodeItem>)> = Vec::new();
+    // Each group's title and episodes, and whether they can be reordered:
+    // only the queue's.
+    let mut groups: Vec<(String, Vec<EpisodeItem>, bool)> = Vec::new();
     if let Some(now) = &data.now_playing {
-        groups.push((gettext("Now Playing"), vec![now.clone()]));
+        groups.push((gettext("Now Playing"), vec![now.clone()], false));
     }
     if !data.queued.is_empty() {
-        groups.push((queued_title(&data.queued), data.queued.clone()));
+        groups.push((queued_title(&data.queued), data.queued.clone(), true));
     }
     if let (false, Some(name)) = (data.from_source.is_empty(), &data.source_name) {
         groups.push((
             gettext("Next from {list}").replace("{list}", name),
             data.from_source.clone(),
+            false,
         ));
     }
     if groups.is_empty() || (data.now_playing.is_none() && data.queued.is_empty()) {
         return Vec::new();
     }
     let mut entries = Vec::new();
-    for (i, (title, items)) in groups.iter().enumerate() {
+    for (i, (title, items, movable)) in groups.iter().enumerate() {
         entries.push(Entry::Heading {
             title: title.clone(),
             fold: None,
             top: if i == 0 { 32 } else { 24 },
         });
-        entries.extend(Entry::card(items));
+        entries.extend(if *movable {
+            Entry::queue_card(items)
+        } else {
+            Entry::card(items)
+        });
     }
     entries.push(Entry::Space(32));
     entries
@@ -213,6 +220,25 @@ mod tests {
                 "Next from New"
             ]
         );
+    }
+
+    #[test]
+    fn only_the_queue_can_be_reordered() {
+        let data = QueueData {
+            now_playing: Some(episode(1, 30)),
+            queued: vec![episode(2, 45), episode(3, 80)],
+            from_source: vec![episode(4, 10)],
+            source_name: Some("New".into()),
+            next: None,
+        };
+        let movable: Vec<_> = entries(&data)
+            .iter()
+            .filter_map(|e| match e {
+                Entry::Episode { item, movable, .. } => Some((item.episode.id.0, *movable)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(movable, [(1, false), (2, true), (3, true), (4, false)]);
     }
 
     #[test]

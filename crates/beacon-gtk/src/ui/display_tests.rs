@@ -136,6 +136,7 @@ fn widgets_lay_out_as_designed() {
     the_player_bar_lists_chapters();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
+    queued_rows_can_be_reordered();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
@@ -727,6 +728,95 @@ fn favorite_rows_show_a_star() {
     row.bind(&item);
     settle();
     assert_eq!(stars(&row), 0);
+    window.destroy();
+}
+
+/// In the Queue view, only the queued rows have a drag handle and Move Up
+/// and Move Down, unavailable at the queue's ends; a drop asks to move the
+/// dropped episode to the row's place.
+fn queued_rows_can_be_reordered() {
+    use crate::ui::models::RowAction;
+    use crate::ui::queue_data::QueueData;
+    use crate::ui::queue_view::{QueueView, QueueViewInput, QueueViewOutput};
+
+    let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let record = asked.clone();
+    let view = QueueView::new(Selection::default());
+    view.connect_output(move |QueueViewOutput::Action(item, action)| {
+        record.borrow_mut().push((item.episode.id.0, action));
+    });
+    let window = window(&view);
+    view.send(QueueViewInput::Set(Box::new(QueueData {
+        now_playing: Some(episode(1, None)),
+        queued: vec![episode(2, None), episode(3, None), episode(4, None)],
+        from_source: vec![episode(5, None)],
+        source_name: Some("New".into()),
+        next: None,
+    })));
+    let until = std::time::Instant::now() + Duration::from_millis(200);
+    run_until(|| std::time::Instant::now() > until);
+
+    let mut rows = Vec::new();
+    let mut stack = vec![view.clone().upcast::<gtk::Widget>()];
+    while let Some(widget) = stack.pop() {
+        if let Some(row) = widget.downcast_ref::<EpisodeRow>() {
+            if row.is_mapped() {
+                rows.push(row.clone());
+            }
+            continue;
+        }
+        let mut child = widget.first_child();
+        while let Some(c) = child {
+            child = c.next_sibling();
+            stack.push(c);
+        }
+    }
+    let row = |id: i64| {
+        rows.iter()
+            .find(|row| row.accessible_name().starts_with(&format!("Episode {id},")))
+            .unwrap_or_else(|| panic!("episode {id} has a row"))
+    };
+    let handle = |row: &EpisodeRow| {
+        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if widget
+                .downcast_ref::<gtk::Image>()
+                .is_some_and(|i| i.icon_name().as_deref() == Some("list-drag-handle-symbolic"))
+                && widget.is_drawable()
+            {
+                return true;
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        false
+    };
+    for (id, queued) in [(1, false), (2, true), (3, true), (4, true), (5, false)] {
+        assert_eq!(handle(row(id)), queued, "episode {id}'s handle");
+    }
+
+    // The first can't go up nor the last down; the rest ask.
+    for (id, action) in [
+        (2, "row.move-up"),
+        (2, "row.move-down"),
+        (4, "row.move-up"),
+        (4, "row.move-down"),
+    ] {
+        let _ = row(id).activate_action(action, None);
+    }
+    let _ = row(1).activate_action("row.move-down", None);
+    let _ = row(3).activate_action("row.move-here", Some(&2i64.to_variant()));
+    assert_eq!(
+        *asked.borrow(),
+        [
+            (2, RowAction::MoveDown),
+            (4, RowAction::MoveUp),
+            (3, RowAction::MoveHere(EpisodeId(2))),
+        ]
+    );
     window.destroy();
 }
 

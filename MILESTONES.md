@@ -220,7 +220,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Queue view: Now Playing; Next in Queue with count and total time; Next from the source list (`ui/queue_view.rs`, `ui/queue_data.rs`, `beacon_core::queue`)
 - [x] Auto-continue: the manual queue first, then the rest of the source list; not after a sleep timer set to End of Episode
 - [x] Once the playing episode finishes buffering, load the next one in the background (asked by the user 2026-11-08; `player/mod.rs`, not on metered connections)
-- [ ] Drag handles, plus Move Up and Move Down in the row menu; the playing episode shows no In Queue marker
+- [x] Drag handles, plus Move Up and Move Down in the row menu; the playing episode shows no In Queue marker (`ui/widgets/episode_row/reorder.rs`, `beacon_core::queue::step`)
 - [x] Favorites and Downloaded views with empty status pages (`ui/episodes_view.rs`)
 - [x] Selection mode in Queue, Favorites and Downloaded; Clear in the Queue and Downloaded headers (asked by the user 2026-11-08; `ui/content/lists.rs`, `app/lists.rs`)
 - [ ] `DownloadService`: manual downloads only, with resume; Download / Delete Download

@@ -71,7 +71,7 @@ impl EpisodeRow {
         self.add_controller(long_press);
     }
 
-    fn episode_id(&self) -> Option<EpisodeId> {
+    pub(super) fn episode_id(&self) -> Option<EpisodeId> {
         let parts = self.imp().parts.get()?;
         parts.episode.borrow().as_ref().map(|item| item.episode.id)
     }
@@ -95,5 +95,6 @@ impl EpisodeRow {
         }
         parts.menu.set_visible(!active);
         self.fit_narrow();
+        self.show_handle();
     }
 }

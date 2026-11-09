@@ -46,11 +46,13 @@ pub enum Entry {
         fold: Option<FoldKey>,
         top: i32,
     },
-    /// An episode; `first` and `last` round its group's card.
+    /// An episode; `first` and `last` round its group's card. A `movable`
+    /// one, queued, has a drag handle and Move Up and Move Down.
     Episode {
         item: Box<EpisodeItem>,
         first: bool,
         last: bool,
+        movable: bool,
     },
     /// A line of text in place of the episodes.
     Message(String),
@@ -82,6 +84,15 @@ impl Entry {
 
     /// The episodes of `items` as one card's entries.
     pub fn card<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<Entry> {
+        Self::card_of(items, false)
+    }
+
+    /// The queue's episodes as one card's entries, which can be reordered.
+    pub fn queue_card<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<Entry> {
+        Self::card_of(items, true)
+    }
+
+    fn card_of<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>, movable: bool) -> Vec<Entry> {
         let items: Vec<_> = items.into_iter().collect();
         let count = items.len();
         items
@@ -91,6 +102,7 @@ impl Entry {
                 item: Box::new(item.clone()),
                 first: i == 0,
                 last: i + 1 == count,
+                movable,
             })
             .collect()
     }
@@ -292,6 +304,7 @@ fn factory(
                 item: episode,
                 first,
                 last,
+                movable,
             } => {
                 let row = item
                     .child()
@@ -303,6 +316,7 @@ fn factory(
                     });
                 row.bind(episode);
                 row.set_edges(*first, *last);
+                row.set_movable(*movable, *first, *last);
                 // The list item is what has focus, so it carries the name.
                 item.set_accessible_label(&row.accessible_name());
             }
@@ -410,6 +424,7 @@ mod tests {
             }),
             first: false,
             last: false,
+            movable: false,
         }
     }
 

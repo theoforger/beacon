@@ -33,6 +33,12 @@ pub enum RowAction {
     /// Start the episode from the beginning next time, leaving whether it
     /// is played alone.
     ResetProgress,
+    /// Move Up and Move Down, on a queued row of the Queue view.
+    MoveUp,
+    MoveDown,
+    /// The queued episode given was dragged onto this row: it takes this
+    /// row's place.
+    MoveHere(EpisodeId),
 }
 
 /// A tile on the Shows grid.

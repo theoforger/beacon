@@ -147,11 +147,15 @@ async fn the_queue_reorders_and_carries_on_into_the_list() {
             store.enqueue(*id).unwrap();
         }
         // Move Down on the first, Move Up on the last, then a drag to the top.
-        store.move_queued(ids[0], 1).unwrap();
+        store.step_queued(ids[0], false).unwrap();
         assert_eq!(store.queue().unwrap(), [ids[1], ids[0], ids[2]]);
-        store.move_queued(ids[2], 1).unwrap();
+        store.step_queued(ids[2], true).unwrap();
         assert_eq!(store.queue().unwrap(), [ids[1], ids[2], ids[0]]);
-        store.move_queued(ids[0], 0).unwrap();
+        store.drop_queued(ids[0], ids[1]).unwrap();
+        assert_eq!(store.queue().unwrap(), [ids[0], ids[1], ids[2]]);
+        // Nothing past the ends.
+        store.step_queued(ids[0], true).unwrap();
+        store.step_queued(ids[2], false).unwrap();
         assert_eq!(store.queue().unwrap(), [ids[0], ids[1], ids[2]]);
 
         // Playing the first takes it off; what follows is the rest of the

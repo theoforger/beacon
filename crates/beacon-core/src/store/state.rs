@@ -138,6 +138,24 @@ impl Store {
         Ok(())
     }
 
+    /// Move Up (`up`) or Move Down: a queued episode swaps places with its
+    /// neighbour. First (up), last (down) or not queued: no change.
+    pub fn step_queued(&self, id: EpisodeId, up: bool) -> Result<(), StoreError> {
+        match crate::queue::step(&self.queue()?, id, up) {
+            Some(index) => self.move_queued(id, index),
+            None => Ok(()),
+        }
+    }
+
+    /// A queued episode dragged onto `target`'s row takes its place.
+    /// `target` not queued: no change.
+    pub fn drop_queued(&self, id: EpisodeId, target: EpisodeId) -> Result<(), StoreError> {
+        match crate::queue::drop_index(&self.queue()?, target) {
+            Some(index) => self.move_queued(id, index),
+            None => Ok(()),
+        }
+    }
+
     /// Empty the queue (its Clear).
     pub fn clear_queue(&self) -> Result<(), StoreError> {
         self.conn.execute("DELETE FROM queue", [])?;

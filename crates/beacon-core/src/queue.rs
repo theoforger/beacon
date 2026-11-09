@@ -95,6 +95,24 @@ pub fn moved(queue: &[EpisodeId], id: EpisodeId, index: usize) -> Vec<EpisodeId>
     order
 }
 
+/// Where Move Up (`up`) or Move Down takes `id` in `queue`: `None` when it
+/// is not queued, or already first (up) or last (down).
+pub fn step(queue: &[EpisodeId], id: EpisodeId, up: bool) -> Option<usize> {
+    let at = queue.iter().position(|q| *q == id)?;
+    if up {
+        at.checked_sub(1)
+    } else {
+        Some(at + 1).filter(|to| *to < queue.len())
+    }
+}
+
+/// Where a queued episode dropped on `target`'s row goes: `target`'s place,
+/// which `target` gives up by moving one towards where the dropped episode
+/// came from. `None` when `target` is not queued.
+pub fn drop_index(queue: &[EpisodeId], target: EpisodeId) -> Option<usize> {
+    queue.iter().position(|q| *q == target)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +173,30 @@ mod tests {
         assert_eq!(moved(&queue, EpisodeId(1), 9), ids(&[2, 3, 4, 1]));
         assert_eq!(moved(&queue, EpisodeId(2), 2), ids(&[1, 3, 2, 4]));
         assert_eq!(moved(&queue, EpisodeId(8), 0), queue, "not queued");
+    }
+
+    #[test]
+    fn moving_up_and_down_stops_at_the_ends() {
+        let queue = ids(&[1, 2, 3]);
+        assert_eq!(step(&queue, EpisodeId(2), true), Some(0));
+        assert_eq!(step(&queue, EpisodeId(2), false), Some(2));
+        assert_eq!(step(&queue, EpisodeId(1), true), None, "already first");
+        assert_eq!(step(&queue, EpisodeId(3), false), None, "already last");
+        assert_eq!(step(&queue, EpisodeId(8), true), None, "not queued");
+    }
+
+    #[test]
+    fn a_dropped_episode_takes_the_place_of_the_row_it_lands_on() {
+        let queue = ids(&[1, 2, 3, 4]);
+        let drop = |id, target| {
+            let at = drop_index(&queue, EpisodeId(target)).unwrap();
+            moved(&queue, EpisodeId(id), at)
+        };
+        // Dragged down, the row landed on moves up to make room.
+        assert_eq!(drop(1, 3), ids(&[2, 3, 1, 4]));
+        // Dragged up, it moves down.
+        assert_eq!(drop(4, 2), ids(&[1, 4, 2, 3]));
+        assert_eq!(drop(2, 2), queue, "dropped on itself");
+        assert_eq!(drop_index(&queue, EpisodeId(9)), None);
     }
 }

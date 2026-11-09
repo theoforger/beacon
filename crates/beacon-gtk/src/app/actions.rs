@@ -145,6 +145,18 @@ impl App {
             }
             // The playing episode goes back to its start, which is then
             // saved as it plays; any other has its saved position cleared.
+            RowAction::MoveUp | RowAction::MoveDown => {
+                let up = action == RowAction::MoveUp;
+                self.job(Parts::EPISODE, false, move |store| {
+                    store.step_queued(id, up)
+                });
+            }
+            // `id` is the row dropped on, whose place the dragged one takes.
+            RowAction::MoveHere(dragged) => {
+                self.job(Parts::EPISODE, false, move |store| {
+                    store.drop_queued(dragged, id)
+                });
+            }
             RowAction::ResetProgress => {
                 if self.now_playing.as_ref().is_some_and(|now| now.id == id) {
                     self.seek(std::time::Duration::ZERO);

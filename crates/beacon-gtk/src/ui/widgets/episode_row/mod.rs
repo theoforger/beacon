@@ -28,6 +28,7 @@ use crate::ui::play_button;
 use crate::ui::selection::Selection;
 
 mod menu;
+mod reorder;
 mod selecting;
 use menu::menu_for;
 
@@ -149,6 +150,14 @@ pub struct Parts {
     /// Whether the row shows its show, by cover (and in its spoken name);
     /// not on the show's own page.
     show_identity: bool,
+    /// Whether the row is queued in the Queue view, with a drag handle and
+    /// Move Up and Move Down (see `reorder.rs`).
+    movable: Rc<Cell<bool>>,
+    /// The drag handle, made when the row is first movable.
+    handle: OnceCell<gtk::Image>,
+    /// Move Up and Move Down, unavailable at the queue's ends.
+    move_up: gio::SimpleAction,
+    move_down: gio::SimpleAction,
 }
 
 impl EpisodeRow {
@@ -255,9 +264,11 @@ impl EpisodeRow {
         // A popover menu builds a widget per item, too much for every row of
         // a long feed; build it on first open, as GNOME Podcasts does.
         let shown = episode.clone();
+        let movable = Rc::new(Cell::new(false));
+        let moves = movable.clone();
         menu.set_create_popup_func(move |button| {
             if let Some(item) = shown.borrow().as_ref() {
-                button.set_menu_model(Some(&menu_for(item, selectable)));
+                button.set_menu_model(Some(&menu_for(item, selectable, moves.get())));
             }
         });
         let run = {
@@ -271,15 +282,26 @@ impl EpisodeRow {
             }
         };
         let actions = gio::SimpleActionGroup::new();
-        for (name, action) in [
-            ("play", RowAction::Play),
-            ("details", RowAction::ShowDetails),
-        ] {
+        let entry = |name, action| {
             let entry = gio::SimpleAction::new(name, None);
             let run = run.clone();
             entry.connect_activate(move |_, _| run(action));
             actions.add_action(&entry);
-        }
+            entry
+        };
+        entry("play", RowAction::Play);
+        entry("details", RowAction::ShowDetails);
+        let move_up = entry("move-up", RowAction::MoveUp);
+        let move_down = entry("move-down", RowAction::MoveDown);
+        // A queued episode dropped on this row, by its id.
+        let move_here = gio::SimpleAction::new("move-here", Some(glib::VariantTy::INT64));
+        let dropped = run.clone();
+        move_here.connect_activate(move |_, id| {
+            if let Some(id) = id.and_then(glib::Variant::get::<i64>) {
+                dropped(RowAction::MoveHere(EpisodeId(id)));
+            }
+        });
+        actions.add_action(&move_here);
         episode_actions::add_to(&actions, run);
         // The menu's Select: select this episode, starting selection mode.
         let select_action = gio::SimpleAction::new("select", None);
@@ -311,6 +333,10 @@ impl EpisodeRow {
             episode,
             name: RefCell::default(),
             show_identity,
+            movable,
+            handle: OnceCell::new(),
+            move_up,
+            move_down,
         };
         let _ = root.imp().parts.set(parts);
         if selectable {
