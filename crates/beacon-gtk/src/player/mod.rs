@@ -15,7 +15,6 @@ use std::time::Duration;
 
 use beacon_core::PlaybackError;
 use gstreamer as gst;
-#[cfg(test)]
 use gstreamer::prelude::*;
 use gstreamer_play as gst_play;
 use gtk::glib;
@@ -109,10 +108,7 @@ impl Player {
     /// Report how much of the playing episode the player holds, when it
     /// changes, for as long as the player lasts.
     fn report_buffered(&self, context: &glib::MainContext) {
-        let plays = self
-            .slots
-            .each_ref()
-            .map(|slot| glib::object::ObjectExt::downgrade(&slot.play));
+        let plays = self.slots.each_ref().map(|slot| slot.play.downgrade());
         let (active, emit) = (self.active.clone(), self.on_event.clone());
         let last = Cell::new(-1.0);
         let source = glib::timeout_source_new(

@@ -9,8 +9,7 @@ use std::rc::Rc;
 use adw::prelude::*;
 use gtk::{self, gdk, gio, glib};
 
-use super::{App, AppWidgets, NARROW_BREAKPOINT_SP};
-use crate::ui::player_bar::PlayerBarInput;
+use super::{App, NARROW_BREAKPOINT_SP};
 use crate::ui::widgets::episode_row;
 
 /// The details pane's maximum width in the narrow layout: more than any
@@ -22,21 +21,25 @@ impl App {
     /// Alt+Left or the Back key: close the details page in the narrow
     /// layout, else leave a deeper page, else return from the content to
     /// the sidebar in the narrow layout, as Escape does there.
-    pub(super) fn go_back(&self, widgets: &AppWidgets) {
-        if widgets.details_split.is_collapsed() && widgets.details_split.shows_sidebar() {
-            widgets.details_split.set_show_sidebar(false);
+    pub(super) fn go_back(&self) {
+        if self.widgets.details_split.is_collapsed() && self.widgets.details_split.shows_sidebar() {
+            self.widgets.details_split.set_show_sidebar(false);
         } else if !self.content.widgets().go_back()
-            && widgets.split_view.is_collapsed()
-            && widgets.split_view.shows_content()
+            && self.widgets.split_view.is_collapsed()
+            && self.widgets.split_view.shows_content()
         {
-            widgets.split_view.set_show_content(false);
+            self.widgets.split_view.set_show_content(false);
         }
     }
 
     /// Remember where focus was before a row opens the details pane, and
     /// move it into the pane once its content is in place.
-    pub(super) fn focus_details(&self, widgets: &AppWidgets) {
-        let focus = widgets.details_split.root().and_then(|root| root.focus());
+    pub(super) fn focus_details(&self) {
+        let focus = self
+            .widgets
+            .details_split
+            .root()
+            .and_then(|root| root.focus());
         self.details_origin
             .replace(focus.map(|widget| widget.downgrade()));
         // Its first action, Play: the description's links come after.
@@ -48,14 +51,14 @@ impl App {
 
     /// Start in the sidebar; Escape closes the details pane; closing it
     /// returns focus to where it was before the pane opened.
-    pub(super) fn manage_focus(&self, widgets: &AppWidgets) {
+    pub(super) fn manage_focus(&self) {
         let library = self.sidebar.library().clone();
         glib::idle_add_local_once(move || {
             library.child_focus(gtk::DirectionType::TabForward);
         });
 
         let escape = gtk::EventControllerKey::new();
-        let split = widgets.details_split.downgrade();
+        let split = self.widgets.details_split.downgrade();
         escape.connect_key_pressed(move |_, key, _, _| {
             if key != gdk::Key::Escape {
                 return glib::Propagation::Proceed;
@@ -69,7 +72,7 @@ impl App {
 
         let pane = self.details.clone();
         let origin = self.details_origin.clone();
-        widgets
+        self.widgets
             .details_split
             .connect_show_sidebar_notify(move |split| {
                 if split.shows_sidebar() {
@@ -95,8 +98,8 @@ impl App {
     /// it, and the narrow breakpoint moves only the player bar: moving the
     /// main view (as an `AdwMultiLayoutView` did) restyled every widget in
     /// it, a second's freeze with long episode lists open.
-    pub(super) fn build_frame(&self, widgets: &AppWidgets) {
-        self.frame.set_content(Some(&widgets.details_split));
+    pub(super) fn build_frame(&self) {
+        self.frame.set_content(Some(&self.widgets.details_split));
         self.frame.add_bottom_bar(&self.bar);
         // The content ends above the slim bar, not under it.
         self.sheet
@@ -105,32 +108,40 @@ impl App {
             .build();
         self.sheet.set_content(Some(&self.frame));
         self.sheet.set_bottom_bar(Some(self.bar.widgets().mini()));
-        widgets.toasts.set_child(Some(&self.sheet));
+        self.widgets.toasts.set_child(Some(&self.sheet));
     }
 
     /// Narrow windows: the sidebar becomes a page with the content pushed on
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.
-    pub(super) fn narrow_breakpoint(&self, widgets: &AppWidgets) -> adw::Breakpoint {
+    pub(super) fn narrow_breakpoint(&self) -> adw::Breakpoint {
         let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
             adw::BreakpointConditionLengthType::MaxWidth,
             NARROW_BREAKPOINT_SP,
             adw::LengthUnit::Sp,
         ));
-        breakpoint.add_setter(&widgets.split_view, "collapsed", Some(&true.to_value()));
-        breakpoint.add_setter(&widgets.details_split, "collapsed", Some(&true.to_value()));
         breakpoint.add_setter(
-            &widgets.details_split,
+            &self.widgets.split_view,
+            "collapsed",
+            Some(&true.to_value()),
+        );
+        breakpoint.add_setter(
+            &self.widgets.details_split,
+            "collapsed",
+            Some(&true.to_value()),
+        );
+        breakpoint.add_setter(
+            &self.widgets.details_split,
             "show-sidebar",
             Some(&false.to_value()),
         );
         breakpoint.add_setter(
-            &widgets.details_split,
+            &self.widgets.details_split,
             "max-sidebar-width",
             Some(&FULL_WIDTH.to_value()),
         );
         breakpoint.add_setter(
-            &widgets.details_split,
+            &self.widgets.details_split,
             "sidebar-width-fraction",
             Some(&1.0f64.to_value()),
         );
@@ -166,7 +177,7 @@ impl App {
             episode_row::set_narrow(true);
             frame.remove(&player);
             sheet.set_sheet(Some(&player));
-            bar.send(PlayerBarInput::Sheet(true));
+            bar.set_sheet(true);
             if reopen.take() {
                 sheet.set_open(true);
             }
@@ -183,7 +194,7 @@ impl App {
             sheet.set_open(false);
             sheet.set_sheet(None::<&gtk::Widget>);
             frame.add_bottom_bar(&player);
-            bar.send(PlayerBarInput::Sheet(false));
+            bar.set_sheet(false);
         });
         breakpoint.add_setter(
             self.sidebar.library(),

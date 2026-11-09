@@ -755,7 +755,7 @@ fn the_narrow_layout_fits_the_narrowest_window() {
     // The player spans the window: in the narrow layout, the slim bar and
     // the sheet with the whole player, speed, sleep timer and volume kept.
     let bar = PlayerBar::default();
-    bar.widgets().set_sheet(true);
+    bar.set_sheet(true);
     for (part, needed) in [
         ("slim bar", minimum_width(bar.widgets().mini())),
         ("player sheet", minimum_width(&bar)),

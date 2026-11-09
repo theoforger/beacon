@@ -363,3 +363,4 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [x] Unblocked: relm4, which had no `gnome_51` feature, dropped for gtk4-rs and libadwaita-rs directly (2026-11-09)
 - [x] Migrate: runtime and Sdk to 51, rust-stable to `//26.08` (follows the Sdk), bindings' version features (gtk `v4_24`, adw `v1_10`, gstreamer `v1_28`), CI images (Fedora 45, `gnome-51`), docs
+- [ ] libadwaita-rs binds libadwaita 1.10's `bind_property_to_css_class` (then replace the hand-written class toggles) and `AdwSidebar` prefix and suffix; gtk4-rs binds GTK 4.24's `GtkSvgWidget` (see `docs/decisions.md`)

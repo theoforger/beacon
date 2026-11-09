@@ -14,7 +14,7 @@ use beacon_core::playback::{self, SeekBy};
 use gtk::glib;
 
 use super::sender::AppSender;
-use super::{App, AppMsg, AppWidgets};
+use super::{App, AppMsg};
 use crate::player::PlaybackState;
 use crate::player::mpris::{MediaControl, Mpris, Track};
 use crate::ui::player_bar::PlayerBarOutput;
@@ -86,21 +86,15 @@ impl Media {
 }
 
 impl App {
-    pub(super) fn media_control(
-        &mut self,
-        control: MediaControl,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-        root: &adw::ApplicationWindow,
-    ) {
+    pub(super) fn media_control(&mut self, control: MediaControl, root: &adw::ApplicationWindow) {
         let player = self.player.clone();
         let now = self
             .now_playing
             .as_ref()
             .map(|now| (now.id, now.position, now.duration));
         match control {
-            MediaControl::PlayPause => self.bar_output(PlayerBarOutput::PlayPause, widgets, sender),
-            MediaControl::Next => self.bar_output(PlayerBarOutput::Next, widgets, sender),
+            MediaControl::PlayPause => self.bar_output(PlayerBarOutput::PlayPause),
+            MediaControl::Next => self.bar_output(PlayerBarOutput::Next),
             // Stopping keeps the place, as pausing does: an episode is
             // resumed, not started over.
             MediaControl::Pause | MediaControl::Stop => {
@@ -109,7 +103,7 @@ impl App {
                 }
             }
             MediaControl::Play => {
-                if self.open_unopened(widgets, sender) {
+                if self.open_unopened() {
                     return;
                 }
                 self.release_hold();
@@ -123,7 +117,7 @@ impl App {
                 };
                 match playback::seek_by(position, offset, duration) {
                     SeekBy::To(to) => self.seek(to),
-                    SeekBy::PastEnd => self.bar_output(PlayerBarOutput::Next, widgets, sender),
+                    SeekBy::PastEnd => self.bar_output(PlayerBarOutput::Next),
                 }
             }
             MediaControl::SetPosition(id, position) => {

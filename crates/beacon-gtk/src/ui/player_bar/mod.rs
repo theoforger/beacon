@@ -59,8 +59,6 @@ pub enum PlayerBarInput {
     Volume(f64),
     SleepTimer(SleepTimer),
     HasNext(bool),
-    /// The narrow layout, where the bar is the bottom sheet's content.
-    Sheet(bool),
 }
 
 #[derive(Debug)]
@@ -136,10 +134,9 @@ impl PlayerBarWidgets {
         &self.mini.root
     }
 
-    /// Lay the player out for the narrow layout's bottom sheet, stacked under
-    /// a large cover with speed, sleep timer and volume kept, or as the wide
-    /// layout's bar.
-    pub fn set_sheet(&self, sheet: bool) {
+    /// Stacked under a large cover with speed, sleep timer and volume kept,
+    /// in the narrow layout's bottom sheet; or the wide layout's bar.
+    pub(super) fn set_sheet(&self, sheet: bool) {
         if sheet == self.column.parent().is_some() {
             return;
         }
@@ -249,6 +246,12 @@ impl PlayerBar {
         imp.inbox.deliver(input, |message| {
             imp.state.borrow_mut().update(self.widgets(), message);
         });
+    }
+
+    /// Lay the player out for the narrow layout's bottom sheet, or as the
+    /// wide layout's bar.
+    pub fn set_sheet(&self, sheet: bool) {
+        self.widgets().set_sheet(sheet);
     }
 
     pub fn widgets(&self) -> &PlayerBarWidgets {
@@ -367,7 +370,6 @@ impl State {
                 }
             }
             PlayerBarInput::HasNext(has_next) => widgets.next.set_sensitive(has_next),
-            PlayerBarInput::Sheet(sheet) => widgets.set_sheet(sheet),
         }
         self.setting.set(false);
     }

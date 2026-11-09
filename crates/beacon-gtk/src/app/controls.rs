@@ -11,8 +11,7 @@ use beacon_core::playback::{self, SleepTimer};
 use gtk::{gio::prelude::*, glib};
 
 use super::library::Parts;
-use super::sender::AppSender;
-use super::{App, AppCommand, AppMsg, AppWidgets};
+use super::{App, AppCommand, AppMsg};
 use crate::player::PlaybackState;
 use crate::ui::details_pane::{DetailsPaneInput, DetailsPaneOutput};
 use crate::ui::player_bar::{PlayerBarInput, PlayerBarOutput};
@@ -30,16 +29,11 @@ pub struct Sleep {
 }
 
 impl App {
-    pub(super) fn bar_output(
-        &mut self,
-        output: PlayerBarOutput,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn bar_output(&mut self, output: PlayerBarOutput) {
         let player = self.player.clone();
         match output {
             PlayerBarOutput::PlayPause => {
-                if self.open_unopened(widgets, sender) {
+                if self.open_unopened() {
                     return;
                 }
                 self.release_hold();
@@ -65,7 +59,7 @@ impl App {
             PlayerBarOutput::Seek(to) => self.seek(to),
             PlayerBarOutput::Next => {
                 let current = self.now_playing.as_ref().map(|now| now.id).or(self.after);
-                self.play_next(current, sender);
+                self.play_next(current);
             }
             PlayerBarOutput::Rate(rate) => {
                 let rate = playback::nearest_rate(rate);
@@ -101,16 +95,13 @@ impl App {
                 // From the narrow layout's sheet: the details replace it.
                 self.sheet.set_open(false);
                 self.details_episode = Some((id, show));
-                self.focus_details(widgets);
-                widgets.details_split.set_show_sidebar(true);
-                self.reload(
-                    sender,
-                    Parts {
-                        details: true,
-                        ..Parts::NONE
-                    },
-                );
-                self.load_details(id, sender);
+                self.focus_details();
+                self.widgets.details_split.set_show_sidebar(true);
+                self.reload(Parts {
+                    details: true,
+                    ..Parts::NONE
+                });
+                self.load_details(id);
             }
         }
     }
@@ -131,12 +122,12 @@ impl App {
 
     /// Next Episode, and auto-continue when an episode ends: the queue's
     /// first, else the next in the list `current` was started from.
-    pub(super) fn play_next(&self, current: Option<EpisodeId>, sender: &AppSender) {
+    pub(super) fn play_next(&self, current: Option<EpisodeId>) {
         let (Some(library), Some(lists)) = (self.library.clone(), self.lists()) else {
             return;
         };
         let source = self.source;
-        sender.spawn_oneshot_command(move || {
+        self.sender.spawn_blocking(move || {
             let next =
                 library.with_store(|store| queue_data::next_item(store, current, source, lists));
             AppCommand::PlayNext(next.ok().flatten().map(Box::new))
@@ -144,7 +135,7 @@ impl App {
     }
 
     /// Fade out and pause once a timed sleep timer runs out.
-    pub(super) fn check_sleep_timer(&mut self, sender: &AppSender) {
+    pub(super) fn check_sleep_timer(&mut self) {
         let due = match (self.sleep.timer.length(), self.sleep.since) {
             (Some(length), Some(since)) => since.elapsed() >= length,
             _ => false,
@@ -158,7 +149,7 @@ impl App {
         self.sleep.fading = true;
         let volume = self.settings.double("volume");
         let started = Instant::now();
-        let input = sender.clone();
+        let input = self.sender.clone();
         glib::timeout_add_local(FADE_STEP, move || {
             let elapsed = started.elapsed();
             if elapsed >= playback::FADE {
@@ -188,29 +179,24 @@ impl App {
     }
 
     /// What the details pane asks for.
-    pub(super) fn details_output(
-        &mut self,
-        output: DetailsPaneOutput,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn details_output(&mut self, output: DetailsPaneOutput) {
         match output {
-            DetailsPaneOutput::Close => widgets.details_split.set_show_sidebar(false),
+            DetailsPaneOutput::Close => self.widgets.details_split.set_show_sidebar(false),
             DetailsPaneOutput::Action(item, action) => {
                 let source = self.details_source;
-                self.row_action(*item, action, source, widgets, sender);
+                self.row_action(*item, action, source);
             }
             DetailsPaneOutput::OpenShow(show) => {
                 // The full-page details of the narrow layout would hide it.
-                if widgets.details_split.is_collapsed() {
-                    widgets.details_split.set_show_sidebar(false);
+                if self.widgets.details_split.is_collapsed() {
+                    self.widgets.details_split.set_show_sidebar(false);
                 }
-                widgets.split_view.set_show_content(true);
-                self.open_show(show, sender);
+                self.widgets.split_view.set_show_content(true);
+                self.open_show(show);
             }
             DetailsPaneOutput::PlayFrom(item, start) => {
                 self.take_source(item.episode.id, self.details_source);
-                self.play_episode_from(&item, Some(start), widgets, sender);
+                self.play_episode_from(&item, Some(start));
             }
         }
     }

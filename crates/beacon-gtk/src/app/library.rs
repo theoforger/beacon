@@ -15,8 +15,7 @@ use beacon_core::store::Store;
 use chrono::{DateTime, Utc};
 use gettextrs::gettext;
 
-use super::sender::AppSender;
-use super::{App, AppCommand, AppWidgets, toast};
+use super::{App, AppCommand, toast};
 use crate::ui::content::ContentInput;
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
@@ -213,7 +212,6 @@ impl App {
     /// Run `change` on the store in the background, then reload `parts`.
     pub(super) fn job(
         &mut self,
-        sender: &AppSender,
         parts: Parts,
         open_page: bool,
         change: impl FnOnce(&mut Store) -> Result<(), StoreError> + Send + 'static,
@@ -238,7 +236,7 @@ impl App {
                 *slot = generation;
             }
         }
-        sender.spawn_oneshot_command(move || {
+        self.sender.spawn_blocking(move || {
             let result = library.with_store(|store| {
                 change(store)?;
                 load(store, parts, &context)
@@ -252,16 +250,16 @@ impl App {
     }
 
     /// Reload `parts` without changing anything.
-    pub(super) fn reload(&mut self, sender: &AppSender, parts: Parts) {
-        self.job(sender, parts, false, |_| Ok(()));
+    pub(super) fn reload(&mut self, parts: Parts) {
+        self.job(parts, false, |_| Ok(()));
     }
 
-    pub(super) fn loaded(&mut self, result: Result<Loaded, StoreError>, widgets: &AppWidgets) {
+    pub(super) fn loaded(&mut self, result: Result<Loaded, StoreError>) {
         let loaded = match result {
             Ok(loaded) => loaded,
             Err(err) => {
                 tracing::error!("could not read the library: {err}");
-                toast(&widgets.toasts, &errors::store(&err));
+                toast(&self.widgets.toasts, &errors::store(&err));
                 return;
             }
         };
@@ -284,13 +282,13 @@ impl App {
             if self.subscribed_toast == Some(page.show.id) {
                 self.subscribed_toast = None;
                 toast(
-                    &widgets.toasts,
+                    &self.widgets.toasts,
                     &gettext("Subscribed to {show}").replace("{show}", &page.show.info.title),
                 );
             }
             if loaded.open_page {
                 self.content.send(ContentInput::OpenShow(Box::new(page)));
-                widgets.split_view.set_show_content(true);
+                self.widgets.split_view.set_show_content(true);
             } else {
                 self.content.send(ContentInput::UpdateShow(Box::new(page)));
             }

@@ -16,7 +16,7 @@ use gtk::{gio, glib, prelude::*};
 
 use super::library::Parts;
 use super::sender::AppSender;
-use super::{App, AppCommand, AppMsg, AppWidgets, toast};
+use super::{App, AppCommand, AppMsg, toast};
 use crate::player::mpris::Track;
 use crate::player::{PlaybackState, Player, PlayerEvent};
 use crate::ui::details_pane::DetailsPaneInput;
@@ -153,32 +153,21 @@ impl App {
 
     /// The row's Play button: start this episode where it was left, or
     /// pause or resume it if it is the one playing.
-    pub(super) fn play_episode(
-        &mut self,
-        item: &EpisodeItem,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
-        self.play_episode_from(item, None, widgets, sender);
+    pub(super) fn play_episode(&mut self, item: &EpisodeItem) {
+        self.play_episode_from(item, None);
     }
 
     /// Play `item` from `start` (a chapter), or from where it was left; if
     /// it is the one playing, seek there, or without `start` pause or
     /// resume it.
-    pub(super) fn play_episode_from(
-        &mut self,
-        item: &EpisodeItem,
-        start: Option<Duration>,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn play_episode_from(&mut self, item: &EpisodeItem, start: Option<Duration>) {
         let episode = &item.episode;
         let Some(player) = self.player.clone() else {
             let err = self
                 .player_error
                 .clone()
                 .unwrap_or(PlaybackError::Unavailable(String::new()));
-            toast(&widgets.toasts, &errors::playback(&err));
+            toast(&self.widgets.toasts, &errors::playback(&err));
             return;
         };
         // The restored episode opens where it was left, or was moved to.
@@ -210,22 +199,25 @@ impl App {
             return;
         }
         let Some(uri) = source(episode) else {
-            toast(&widgets.toasts, &errors::playback(&PlaybackError::NoAudio));
+            toast(
+                &self.widgets.toasts,
+                &errors::playback(&PlaybackError::NoAudio),
+            );
             return;
         };
         let duration = episode.info.duration;
         let start = start.unwrap_or_else(|| playback::resume_position(&episode.state, duration));
         player.load(&uri, start);
         // The episode it replaces keeps where it got to.
-        self.save_position(sender, Parts::PROGRESS);
-        self.show_in_player(item, start, PlaybackState::Buffering, None, sender);
+        self.save_position(Parts::PROGRESS);
+        self.show_in_player(item, start, PlaybackState::Buffering, None);
         self.after = Some(episode.id);
         let _ = self.settings.set_int64("last-episode", episode.id.0);
         // Playing takes an episode off the queue: the queue is what comes
         // next, as in a music app. It also clears the blue dot, as viewing
         // its details does (the mockup's `playEp`).
         let id = episode.id;
-        self.job(sender, Parts::EPISODE, false, move |store| {
+        self.job(Parts::EPISODE, false, move |store| {
             store.dequeue(id)?;
             store.mark_seen(id)
         });
@@ -239,7 +231,6 @@ impl App {
         position: Duration,
         state: PlaybackState,
         unopened: Option<Box<EpisodeItem>>,
-        sender: &AppSender,
     ) {
         let episode = &item.episode;
         let duration = episode.info.duration;
@@ -277,16 +268,16 @@ impl App {
         self.media.set_position(position);
         // The narrow layout's slim bar now opens the player.
         self.sheet.set_can_open(true);
-        self.fetch_episode_cover(episode.id, sender);
-        self.load_chapters(episode.id, sender);
+        self.fetch_episode_cover(episode.id);
+        self.load_chapters(episode.id);
     }
 
     /// Read back the episode last played, to put it in the bar at launch.
-    pub(super) fn restore_last_episode(&self, sender: &AppSender) {
+    pub(super) fn restore_last_episode(&self) {
         let (Some(library), Some(id)) = (self.library.clone(), self.after) else {
             return;
         };
-        sender.spawn_oneshot_command(move || {
+        self.sender.spawn_blocking(move || {
             let item = library
                 .with_store(|store| crate::ui::models::episode_item(store, id))
                 .unwrap_or_else(|err| {
@@ -299,14 +290,14 @@ impl App {
 
     /// The episode last played, back in the bar, paused where it was left,
     /// unless something already plays or it was played to the end.
-    pub(super) fn restore(&mut self, item: EpisodeItem, sender: &AppSender) {
+    pub(super) fn restore(&mut self, item: EpisodeItem) {
         let Some(position) =
             restored_position(&item.episode).filter(|_| self.now_playing.is_none())
         else {
             return;
         };
         let unopened = Some(Box::new(item.clone()));
-        self.show_in_player(&item, position, PlaybackState::Paused, unopened, sender);
+        self.show_in_player(&item, position, PlaybackState::Paused, unopened);
         let id = item.episode.id;
         episode_row::show_playing(Some((id, PlaybackState::Paused)));
         self.bar.send(PlayerBarInput::State(PlaybackState::Paused));
@@ -342,7 +333,7 @@ impl App {
 
     /// Play the restored episode, if that is what the bar holds. Whether it
     /// did.
-    pub(super) fn open_unopened(&mut self, widgets: &AppWidgets, sender: &AppSender) -> bool {
+    pub(super) fn open_unopened(&mut self) -> bool {
         let Some(item) = self
             .now_playing
             .as_ref()
@@ -350,7 +341,7 @@ impl App {
         else {
             return false;
         };
-        self.play_episode(&item, widgets, sender);
+        self.play_episode(&item);
         true
     }
 
@@ -363,18 +354,18 @@ impl App {
 
     /// Everything the details pane loads for an episode beyond what its row
     /// knows: its own cover and its chapters, and where playback is.
-    pub(super) fn load_details(&self, id: EpisodeId, sender: &AppSender) {
-        self.fetch_episode_cover(id, sender);
+    pub(super) fn load_details(&self, id: EpisodeId) {
+        self.fetch_episode_cover(id);
         self.details
             .send(DetailsPaneInput::Playback(self.playback_state()));
-        self.load_chapters(id, sender);
+        self.load_chapters(id);
     }
 
     /// Load an episode's chapters, for the details pane and, if it is the
     /// one playing, the player bar.
-    pub(super) fn load_chapters(&self, id: EpisodeId, sender: &AppSender) {
+    pub(super) fn load_chapters(&self, id: EpisodeId) {
         if let Some(library) = self.library.clone() {
-            sender.oneshot_command(async move {
+            self.sender.spawn(async move {
                 let chapters = library.chapters(id).await.unwrap_or_else(|err| {
                     tracing::warn!("could not load the chapters of {id:?}: {err}");
                     Vec::new()
@@ -386,20 +377,15 @@ impl App {
 
     /// Fetch the episode's own cover for the player bar and the details
     /// pane; the show's stands in until it comes, or if it never does.
-    pub(super) fn fetch_episode_cover(&self, id: EpisodeId, sender: &AppSender) {
+    pub(super) fn fetch_episode_cover(&self, id: EpisodeId) {
         if let Some(library) = self.library.clone() {
-            sender.oneshot_command(async move {
+            self.sender.spawn(async move {
                 AppCommand::EpisodeCover(id, library.episode_cover(id).await.ok().flatten())
             });
         }
     }
 
-    pub(super) fn player_event(
-        &mut self,
-        event: PlayerEvent,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn player_event(&mut self, event: PlayerEvent) {
         match event {
             PlayerEvent::Position(position) => {
                 let Some(now) = &mut self.now_playing else {
@@ -413,9 +399,9 @@ impl App {
                 self.details
                     .send(DetailsPaneInput::Playback(self.playback_state()));
                 if due {
-                    self.save_position(sender, Parts::NONE);
+                    self.save_position(Parts::NONE);
                 }
-                self.check_sleep_timer(sender);
+                self.check_sleep_timer();
             }
             PlayerEvent::Duration(duration) => {
                 if let Some(now) = &mut self.now_playing {
@@ -443,7 +429,7 @@ impl App {
                     .send(DetailsPaneInput::Playback(self.playback_state()));
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
-                    self.save_position(sender, Parts::PROGRESS);
+                    self.save_position(Parts::PROGRESS);
                 }
             }
             PlayerEvent::Buffered(share) => {
@@ -473,11 +459,11 @@ impl App {
                 let Some(when) = self.library.as_ref().map(|l| l.now()) else {
                     return;
                 };
-                self.job(sender, Parts::EPISODE, false, move |store| {
+                self.job(Parts::EPISODE, false, move |store| {
                     store.finish(now.id, when)
                 });
                 if carry_on {
-                    self.play_next(Some(now.id), sender);
+                    self.play_next(Some(now.id));
                 }
             }
             PlayerEvent::Error(err) => {
@@ -486,22 +472,20 @@ impl App {
                 if self.now_playing.as_ref().is_some_and(|now| now.held) {
                     return;
                 }
-                toast(&widgets.toasts, &errors::playback(&err));
+                toast(&self.widgets.toasts, &errors::playback(&err));
             }
         }
     }
 
     /// Write the playing episode's position in the background, reloading
     /// `parts` after.
-    fn save_position(&mut self, sender: &AppSender, parts: Parts) {
+    fn save_position(&mut self, parts: Parts) {
         let Some(now) = &mut self.now_playing else {
             return;
         };
         now.saved = now.position;
         let (id, position) = (now.id, now.position);
-        self.job(sender, parts, false, move |store| {
-            store.set_position(id, position)
-        });
+        self.job(parts, false, move |store| store.set_position(id, position));
     }
 
     /// Remember a playback setting (`volume`, `playback-rate`) for next

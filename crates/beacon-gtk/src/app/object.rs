@@ -7,19 +7,17 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
+use super::App;
 use super::sender::{AppSender, Event};
-use super::{App, AppWidgets};
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::cell::RefCell;
 
     use super::*;
 
     #[derive(Default)]
     pub struct Window {
         pub app: RefCell<Option<App>>,
-        pub widgets: OnceCell<AppWidgets>,
-        pub sender: OnceCell<AppSender>,
     }
 
     #[glib::object_subclass]
@@ -49,11 +47,9 @@ impl Window {
             .property("application", application)
             .build();
         let (sender, events) = AppSender::new();
-        let (app, widgets) = App::init(window.upcast_ref(), &sender);
+        let app = App::init(window.upcast_ref(), &sender);
         let imp = window.imp();
         imp.app.replace(Some(app));
-        let _ = imp.widgets.set(widgets);
-        let _ = imp.sender.set(sender);
 
         let this = window.downgrade();
         glib::spawn_future_local(async move {
@@ -69,16 +65,13 @@ impl Window {
 
     fn handle(&self, event: Event) {
         let imp = self.imp();
-        let (Some(widgets), Some(sender)) = (imp.widgets.get(), imp.sender.get()) else {
-            return;
-        };
         let mut app = imp.app.borrow_mut();
         let Some(app) = app.as_mut() else {
             return;
         };
         match event {
-            Event::Message(message) => app.update(message, widgets, sender, self.upcast_ref()),
-            Event::Command(command) => app.update_cmd(command, widgets, sender),
+            Event::Message(message) => app.update(message, self.upcast_ref()),
+            Event::Command(command) => app.update_cmd(command),
         }
     }
 }

@@ -28,7 +28,7 @@ use crate::ui::{errors, labels};
 impl App {
     /// Build the window's contents into `root`, its views and actions
     /// reporting to `sender`.
-    pub(super) fn init(root: &adw::ApplicationWindow, sender: &AppSender) -> (Self, AppWidgets) {
+    pub(super) fn init(root: &adw::ApplicationWindow, sender: &AppSender) -> Self {
         let sidebar = Sidebar::default();
         let s = sender.clone();
         sidebar.connect_output(move |output| {
@@ -57,7 +57,10 @@ impl App {
             tracing::error!("could not open the library: {err}");
         }
 
+        let widgets = widgets(root, &sidebar, &content, &details);
         let mut model = App {
+            widgets,
+            sender: sender.clone(),
             settings: gio::Settings::new(APP_ID),
             library: library.ok().map(Arc::new),
             last_show: None,
@@ -90,21 +93,20 @@ impl App {
             bar,
             sleep: controls::Sleep::default(),
         };
-        let widgets = widgets(root, &model);
 
         // The details toggle and the pane stay in step whichever side changes.
         model
             .content
             .widgets()
             .details_toggle()
-            .bind_property("active", &widgets.details_split, "show-sidebar")
+            .bind_property("active", &model.widgets.details_split, "show-sidebar")
             .bidirectional()
             .sync_create()
             .build();
 
-        model.build_frame(&widgets);
-        root.add_breakpoint(model.narrow_breakpoint(&widgets));
-        model.manage_focus(&widgets);
+        model.build_frame();
+        root.add_breakpoint(model.narrow_breakpoint());
+        model.manage_focus();
         model.content.widgets().capture_typing(root);
 
         model
@@ -140,19 +142,19 @@ impl App {
 
         model.refresh.set_enabled(model.library.is_some());
         match open_error {
-            Some(message) => toast(&widgets.toasts, &message),
+            Some(message) => toast(&model.widgets.toasts, &message),
             None => {
-                model.reload(sender, library::Parts::ALL);
-                model.restore_last_episode(sender);
+                model.reload(library::Parts::ALL);
+                model.restore_last_episode();
                 // New episodes since last time, as GNOME Podcasts looks for
                 // them (`refresh-on-startup`).
                 if model.settings.boolean("refresh-on-startup") {
-                    model.start_refresh(sender, true);
+                    model.start_refresh(true);
                 }
             }
         }
 
-        (model, widgets)
+        model
     }
 }
 
@@ -188,7 +190,12 @@ fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::Simple
 
 /// The main view: sidebar, content and details. `build_frame` sets it into
 /// the window's frame, under the toasts.
-fn widgets(root: &adw::ApplicationWindow, app: &App) -> AppWidgets {
+fn widgets(
+    root: &adw::ApplicationWindow,
+    sidebar: &Sidebar,
+    content: &Content,
+    details: &DetailsPane,
+) -> AppWidgets {
     root.set_title(Some(&gettext("Beacon")));
     root.set_width_request(360);
     root.set_height_request(294);
@@ -198,14 +205,14 @@ fn widgets(root: &adw::ApplicationWindow, app: &App) -> AppWidgets {
     let content_page = adw::NavigationPage::builder()
         .title(labels::title(Location::ALL[0]))
         .tag("content")
-        .child(&app.content)
+        .child(content)
         .build();
     let split_view = adw::NavigationSplitView::builder()
         .sidebar(
             &adw::NavigationPage::builder()
                 .title(gettext("Beacon"))
                 .tag("sidebar")
-                .child(&app.sidebar)
+                .child(sidebar)
                 .build(),
         )
         .content(&content_page)
@@ -216,7 +223,7 @@ fn widgets(root: &adw::ApplicationWindow, app: &App) -> AppWidgets {
         .max_sidebar_width(DETAILS_WIDTH)
         .sidebar_width_fraction(0.3)
         .content(&split_view)
-        .sidebar(&app.details)
+        .sidebar(details)
         .build();
     AppWidgets {
         toasts,

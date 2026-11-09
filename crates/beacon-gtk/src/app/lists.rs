@@ -10,36 +10,30 @@ use beacon_core::model::EpisodeId;
 use gettextrs::{gettext, ngettext};
 
 use super::library::Parts;
-use super::sender::AppSender;
-use super::{App, AppCommand, AppMsg, AppWidgets, toast};
+use super::{App, AppCommand, AppMsg, toast};
 use crate::ui::errors;
 
 impl App {
     /// Empty the queue, with Undo putting `queued` back in its order.
-    pub(super) fn clear_queue(
-        &mut self,
-        queued: Vec<EpisodeId>,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn clear_queue(&mut self, queued: Vec<EpisodeId>) {
         if queued.is_empty() {
             return;
         }
-        self.job(sender, Parts::EPISODE, false, |store| store.clear_queue());
+        self.job(Parts::EPISODE, false, |store| store.clear_queue());
         let toast = adw::Toast::builder()
             .title(gettext("Queue cleared"))
             .button_label(gettext("_Undo"))
             .build();
-        let sender = sender.clone();
+        let input = self.sender.clone();
         toast.connect_button_clicked(move |_| {
-            sender.input(AppMsg::Requeue(queued.clone()));
+            input.input(AppMsg::Requeue(queued.clone()));
         });
-        widgets.toasts.add_toast(toast);
+        self.widgets.toasts.add_toast(toast);
     }
 
     /// Undo of Clear Queue: the episodes join the queue again, in order.
-    pub(super) fn requeue(&mut self, ids: Vec<EpisodeId>, sender: &AppSender) {
-        self.job(sender, Parts::EPISODE, false, move |store| {
+    pub(super) fn requeue(&mut self, ids: Vec<EpisodeId>) {
+        self.job(Parts::EPISODE, false, move |store| {
             ids.iter().try_for_each(|id| store.enqueue(*id))
         });
     }
@@ -48,7 +42,6 @@ impl App {
     pub(super) fn confirm_delete_downloads(
         &self,
         ids: Vec<EpisodeId>,
-        sender: &AppSender,
         root: &adw::ApplicationWindow,
     ) {
         if ids.is_empty() {
@@ -71,31 +64,25 @@ impl App {
         // No default: the HIG keeps Return off destructive buttons, and
         // Escape cancels.
         dialog.set_close_response("cancel");
-        let sender = sender.clone();
+        let input = self.sender.clone();
         dialog.connect_response(Some("delete"), move |_, _| {
-            sender.input(AppMsg::DeleteDownloads(ids.clone()));
+            input.input(AppMsg::DeleteDownloads(ids.clone()));
         });
         dialog.present(Some(root));
     }
 
-    pub(super) fn delete_downloads(&self, ids: Vec<EpisodeId>, sender: &AppSender) {
+    pub(super) fn delete_downloads(&self, ids: Vec<EpisodeId>) {
         let Some(library) = self.library.clone() else {
             return;
         };
-        sender.spawn_oneshot_command(move || {
-            AppCommand::DownloadsDeleted(library.delete_downloads(&ids))
-        });
+        self.sender
+            .spawn_blocking(move || AppCommand::DownloadsDeleted(library.delete_downloads(&ids)));
     }
 
-    pub(super) fn downloads_deleted(
-        &mut self,
-        result: Result<usize, beacon_core::StoreError>,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn downloads_deleted(&mut self, result: Result<usize, beacon_core::StoreError>) {
         match result {
             Ok(count) => toast(
-                &widgets.toasts,
+                &self.widgets.toasts,
                 &ngettext(
                     "Deleted {n} download",
                     "Deleted {n} downloads",
@@ -105,9 +92,9 @@ impl App {
             ),
             Err(err) => {
                 tracing::warn!("could not delete downloads: {err}");
-                toast(&widgets.toasts, &errors::store(&err));
+                toast(&self.widgets.toasts, &errors::store(&err));
             }
         }
-        self.reload(sender, Parts::EPISODE);
+        self.reload(Parts::EPISODE);
     }
 }

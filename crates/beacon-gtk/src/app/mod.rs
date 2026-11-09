@@ -107,6 +107,9 @@ pub struct AppWidgets {
 }
 
 pub struct App {
+    widgets: AppWidgets,
+    /// Where views, the player and background work report to the window.
+    sender: AppSender,
     settings: gio::Settings,
     library: Option<Arc<Library>>,
     /// The podcast page last opened, refreshed with the rest when data
@@ -159,43 +162,40 @@ pub struct App {
 
 impl App {
     /// Handle a message from a view, the player or the desktop.
-    pub(super) fn update(
-        &mut self,
-        message: AppMsg,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-        root: &adw::ApplicationWindow,
-    ) {
+    pub(super) fn update(&mut self, message: AppMsg, root: &adw::ApplicationWindow) {
         tracing::debug!(?message, "app message");
         match message {
             AppMsg::Navigate(location) => {
-                widgets.content_page.set_title(&labels::title(location));
+                self.widgets
+                    .content_page
+                    .set_title(&labels::title(location));
                 self.content.send(ContentInput::ShowSection(location));
                 self.sidebar.send(SidebarInput::Select(location));
                 // In the narrow layout, choosing anything pushes the content.
-                widgets.split_view.set_show_content(true);
+                self.widgets.split_view.set_show_content(true);
             }
             AppMsg::AddPodcast => {
                 self.content.send(ContentInput::OpenAdd);
-                widgets.split_view.set_show_content(true);
+                self.widgets.split_view.set_show_content(true);
             }
-            AppMsg::Details(output) => self.details_output(output, widgets, sender),
-            AppMsg::GoBack => self.go_back(widgets),
+            AppMsg::Details(output) => self.details_output(output),
+            AppMsg::GoBack => self.go_back(),
             AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
             // The HIG's Utility Panes: "If utility pane visibility can be
             // toggled, assign the F9 key as a shortcut." The header toggle
             // follows, bound to the pane.
-            AppMsg::ToggleDetails => widgets
+            AppMsg::ToggleDetails => self
+                .widgets
                 .details_split
-                .set_show_sidebar(!widgets.details_split.shows_sidebar()),
-            AppMsg::Refresh => self.start_refresh(sender, false),
-            AppMsg::Content(output) => self.handle_content(output, widgets, sender, root),
-            AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id, widgets, sender),
-            AppMsg::Requeue(ids) => self.requeue(ids, sender),
-            AppMsg::DeleteDownloads(ids) => self.delete_downloads(ids, sender),
-            AppMsg::Player(event) => self.player_event(event, widgets, sender),
-            AppMsg::Bar(output) => self.bar_output(output, widgets, sender),
-            AppMsg::Media(control) => self.media_control(control, widgets, sender, root),
+                .set_show_sidebar(!self.widgets.details_split.shows_sidebar()),
+            AppMsg::Refresh => self.start_refresh(false),
+            AppMsg::Content(output) => self.handle_content(output, root),
+            AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id),
+            AppMsg::Requeue(ids) => self.requeue(ids),
+            AppMsg::DeleteDownloads(ids) => self.delete_downloads(ids),
+            AppMsg::Player(event) => self.player_event(event),
+            AppMsg::Bar(output) => self.bar_output(output),
+            AppMsg::Media(control) => self.media_control(control, root),
             AppMsg::SleepTimerDone => self.end_sleep_timer(),
             AppMsg::NetworkChanged => {
                 self.buffer_restored();
@@ -205,27 +205,22 @@ impl App {
     }
 
     /// Apply the result of work done off the main thread.
-    pub(super) fn update_cmd(
-        &mut self,
-        message: AppCommand,
-        widgets: &AppWidgets,
-        sender: &AppSender,
-    ) {
+    pub(super) fn update_cmd(&mut self, message: AppCommand) {
         match message {
-            AppCommand::Loaded(result) => self.loaded(*result, widgets),
+            AppCommand::Loaded(result) => self.loaded(*result),
             AppCommand::Subscribed(url, result) => {
-                self.subscribed(&url, result, widgets, sender);
+                self.subscribed(&url, result);
             }
             AppCommand::Refreshed(summary, at_startup) => {
-                self.refreshed(&summary, at_startup, widgets, sender);
+                self.refreshed(&summary, at_startup);
             }
             AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
             AppCommand::EpisodeCover(_, None)
             | AppCommand::PlayNext(None)
             | AppCommand::Restore(None) => {}
-            AppCommand::Restore(Some(item)) => self.restore(*item, sender),
-            AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, sender),
-            AppCommand::DownloadsDeleted(result) => self.downloads_deleted(result, widgets, sender),
+            AppCommand::Restore(Some(item)) => self.restore(*item),
+            AppCommand::PlayNext(Some(item)) => self.play_episode(&item),
+            AppCommand::DownloadsDeleted(result) => self.downloads_deleted(result),
             AppCommand::Chapters(id, chapters) => {
                 self.bar
                     .send(PlayerBarInput::Chapters(id, chapters.clone()));

@@ -45,7 +45,7 @@ impl AppSender {
     }
 
     /// Run `work` on the runtime and hand its result to the window.
-    pub fn oneshot_command(&self, work: impl Future<Output = AppCommand> + Send + 'static) {
+    pub fn spawn(&self, work: impl Future<Output = AppCommand> + Send + 'static) {
         let send = self.0.clone();
         runtime().spawn(async move {
             let _ = send.send(Event::Command(work.await)).await;
@@ -54,7 +54,7 @@ impl AppSender {
 
     /// Run blocking `work` (the database) off the main thread and hand its
     /// result to the window.
-    pub fn spawn_oneshot_command(&self, work: impl FnOnce() -> AppCommand + Send + 'static) {
+    pub fn spawn_blocking(&self, work: impl FnOnce() -> AppCommand + Send + 'static) {
         let send = self.0.clone();
         runtime().spawn_blocking(move || {
             let _ = send.send_blocking(Event::Command(work()));
