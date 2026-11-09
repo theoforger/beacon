@@ -49,6 +49,8 @@ pub enum PlayerBarInput {
     State(PlaybackState),
     Position(Duration),
     Duration(Duration),
+    /// How far into the episode the player holds, as a share of it.
+    Buffered(f64),
     /// An episode's chapters, shown if it is the one playing.
     Chapters(EpisodeId, Vec<Chapter>),
     Rate(f64),
@@ -80,6 +82,9 @@ pub struct PlayerBar {
     /// The second the times show, so they change once a second rather than
     /// with each of the player's four position updates.
     shown_second: Option<(u64, u64)>,
+    /// How much of the episode the player holds, shown as the seek bar's
+    /// fill (asked by the user 2026-11-09).
+    buffered: f64,
 }
 
 pub struct PlayerBarWidgets {
@@ -194,6 +199,7 @@ impl Component for PlayerBar {
             duration: None,
             setting,
             shown_second: None,
+            buffered: 0.0,
         };
         ComponentParts { model, widgets }
     }
@@ -241,6 +247,7 @@ impl Component for PlayerBar {
                 // Until the episode's own arrive.
                 widgets.chapters.set(&[], Some(&widgets.seek));
                 widgets.root.set_visible_child_name("player");
+                self.buffered = 0.0;
                 set_position(self, widgets, Duration::ZERO);
             }
             PlayerBarInput::Cover(id, path) => {
@@ -262,6 +269,10 @@ impl Component for PlayerBar {
             PlayerBarInput::Position(position) => set_position(self, widgets, position),
             PlayerBarInput::Duration(duration) if Some(duration) == self.duration => {}
             PlayerBarInput::Duration(duration) => self.duration = Some(duration),
+            PlayerBarInput::Buffered(share) => {
+                self.buffered = share;
+                fill(self, widgets);
+            }
             PlayerBarInput::Chapters(id, chapters) => {
                 if self.episode == Some(id) {
                     widgets.chapters.set(&chapters, Some(&widgets.seek));
@@ -315,12 +326,28 @@ impl Component for PlayerBar {
     }
 }
 
+/// Fill the seek bar's trough as far as the player holds.
+fn fill(bar: &PlayerBar, widgets: &PlayerBarWidgets) {
+    let total = bar.duration.unwrap_or_default().as_secs_f64();
+    widgets.seek.set_fill_level(bar.buffered * total);
+    // GTK reallocates the scale but not its trough, whose size is
+    // unchanged, so the fill would keep its old width.
+    let mut child = widgets.seek.first_child();
+    while let Some(c) = child {
+        if c.css_name() == "trough" {
+            c.queue_allocate();
+        }
+        child = c.next_sibling();
+    }
+}
+
 fn set_position(bar: &mut PlayerBar, widgets: &PlayerBarWidgets, position: Duration) {
     let total = bar.duration.unwrap_or_default();
     let end = total.as_secs_f64().max(position.as_secs_f64()).max(1.0);
     if widgets.seek.adjustment().upper() != end {
         widgets.seek.set_range(0.0, end);
         widgets.chapters.tick(&widgets.seek);
+        fill(bar, widgets);
     }
     widgets.seek.set_value(position.as_secs_f64());
     widgets.chapters.mark(position);

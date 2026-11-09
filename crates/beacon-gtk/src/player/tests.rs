@@ -181,3 +181,25 @@ fn a_preloaded_episode_starts_where_it_was_preloaded() {
     assert_eq!(player.active_slot(), 1);
     player.stop();
 }
+
+#[test]
+fn an_episode_opened_paused_buffers_without_playing() {
+    let context = glib::MainContext::new();
+    let _guard = context.acquire().unwrap();
+    let (player, events) = player(&context);
+    player.open_paused(&fixture_uri(), Duration::from_secs(10));
+    // A local file is held whole as soon as it is open.
+    run_until(&context, &events, |e| {
+        assert!(
+            !matches!(e, PlayerEvent::State(PlaybackState::Playing)),
+            "it should wait to be played"
+        );
+        matches!(e, PlayerEvent::Buffered(share) if *share >= 0.999)
+    });
+    // Played, it starts where it was opened.
+    player.play();
+    run_until(&context, &events, |e| {
+        matches!(e, PlayerEvent::State(PlaybackState::Playing))
+    });
+    assert!(player.position().unwrap() >= Duration::from_secs(10));
+}

@@ -42,6 +42,7 @@ impl App {
                 if self.open_unopened(widgets, sender) {
                     return;
                 }
+                self.release_hold();
                 if let (Some(player), Some(now)) = (&player, &self.now_playing) {
                     match now.state {
                         PlaybackState::Playing | PlaybackState::Buffering => player.pause(),

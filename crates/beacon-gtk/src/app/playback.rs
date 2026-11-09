@@ -35,9 +35,12 @@ pub struct NowPlaying {
     /// The position last written to the store.
     pub saved: Duration,
     pub state: PlaybackState,
-    /// Whether it has finished buffering once: the next one is preloaded
-    /// only then, so the two do not compete for the connection.
+    /// Whether the player holds all of it: the next one is preloaded only
+    /// then, so the two do not compete for the connection.
     pub buffered: bool,
+    /// Opened paused at launch to buffer, and not yet played: the player's
+    /// buffering shows as paused, and its errors wait until it is played.
+    pub held: bool,
     /// The episode last played, put back in the bar at launch, paused
     /// where it was left (asked by the user 2026-11-09); the player opens
     /// it only when it is played, so a launch costs no data and an
@@ -64,7 +67,8 @@ pub(super) fn start_player(
     sender: &ComponentSender<App>,
 ) -> Result<Rc<Player>, PlaybackError> {
     let input = sender.input_sender().clone();
-    let player = Player::new(&glib::MainContext::default(), move |event| {
+    let buffers = glib::user_cache_dir().join("beacon").join("buffer");
+    let player = Player::new(&glib::MainContext::default(), &buffers, move |event| {
         input.emit(AppMsg::Player(event));
     })?;
     player.set_volume(settings.double("volume"));
@@ -81,6 +85,23 @@ pub(super) fn save_on_close(library: Option<&Arc<Library>>, last: &LastPosition)
     if let Err(err) = library.with_store(|store| store.set_position(id, position)) {
         tracing::warn!("could not save where playback got to: {err}");
     }
+}
+
+/// Whether streaming ahead of time is wanted: on a connection that is up
+/// and not metered, where it would spend data on what may not be played.
+pub(super) fn may_prefetch() -> bool {
+    let monitor = gio::NetworkMonitor::default();
+    monitor.is_network_available() && !monitor.is_network_metered()
+}
+
+/// Tell the app when the connection changes, so what is fetched ahead
+/// follows whether it is metered.
+pub(super) fn watch_network(sender: &ComponentSender<App>) {
+    let monitor = gio::NetworkMonitor::default();
+    let input = sender.input_sender().clone();
+    monitor.connect_network_metered_notify(move |_| input.emit(AppMsg::NetworkChanged));
+    let input = sender.input_sender().clone();
+    monitor.connect_network_changed(move |_, _| input.emit(AppMsg::NetworkChanged));
 }
 
 /// The address to play an episode from: its download if it has one, or its
@@ -116,13 +137,13 @@ impl App {
             return;
         };
         let buffered = self.now_playing.as_ref().is_some_and(|now| now.buffered);
-        let metered = gio::NetworkMonitor::default().is_network_metered();
+        let may = may_prefetch();
         let uri = self
             .up_next
             .as_ref()
-            .filter(|next| buffered && !metered && Some(next.id) != self.playing_id())
+            .filter(|next| buffered && may && Some(next.id) != self.playing_id())
             .and_then(source);
-        tracing::debug!(buffered, metered, uri = ?uri, "preload");
+        tracing::debug!(buffered, may, uri = ?uri, "preload");
         player.preload(uri.as_deref());
     }
 
@@ -173,6 +194,7 @@ impl App {
             .filter(|now| now.id == episode.id && !now.is_unopened())
             .map(|now| now.state)
         {
+            self.release_hold();
             let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
             if let Some(start) = start {
                 self.seek(start);
@@ -229,6 +251,7 @@ impl App {
             saved: position,
             state,
             buffered: false,
+            held: false,
             unopened,
         });
         self.last_position.set(Some((episode.id, position)));
@@ -288,6 +311,33 @@ impl App {
         episode_row::show_playing(Some((id, PlaybackState::Paused)));
         self.bar.emit(PlayerBarInput::State(PlaybackState::Paused));
         self.media.set_state(PlaybackState::Paused);
+        self.buffer_restored();
+    }
+
+    /// Start buffering the restored episode, paused where it was left, so
+    /// Play starts it at once (asked by the user 2026-11-09): straight
+    /// away if it is downloaded, else once the connection is not metered.
+    pub(super) fn buffer_restored(&mut self) {
+        let (Some(player), Some(now)) = (&self.player, &mut self.now_playing) else {
+            return;
+        };
+        let Some(uri) = now.unopened.as_ref().and_then(|item| source(&item.episode)) else {
+            return;
+        };
+        if !uri.starts_with("file:") && !may_prefetch() {
+            return;
+        }
+        tracing::debug!(uri, "buffering the restored episode");
+        player.open_paused(&uri, now.position);
+        now.unopened = None;
+        now.held = true;
+    }
+
+    /// The player is asked to play: what it does now is shown as it is.
+    pub(super) fn release_hold(&mut self) {
+        if let Some(now) = &mut self.now_playing {
+            now.held = false;
+        }
     }
 
     /// Play the restored episode, if that is what the bar holds. Whether it
@@ -383,9 +433,13 @@ impl App {
                 let Some(now) = &mut self.now_playing else {
                     return;
                 };
+                now.held &= state != PlaybackState::Playing;
+                // Buffering at launch is not playing: it shows as paused.
+                let state = match state {
+                    PlaybackState::Buffering if now.held => PlaybackState::Paused,
+                    state => state,
+                };
                 now.state = state;
-                let first_buffered = state == PlaybackState::Playing && !now.buffered;
-                now.buffered |= first_buffered;
                 episode_row::show_playing(Some((now.id, state)));
                 self.bar.emit(PlayerBarInput::State(state));
                 self.media.set_state(state);
@@ -395,7 +449,14 @@ impl App {
                     // Progress bars show where it stopped.
                     self.save_position(sender, Parts::PROGRESS);
                 }
-                if first_buffered {
+            }
+            PlayerEvent::Buffered(share) => {
+                let Some(now) = &mut self.now_playing else {
+                    return;
+                };
+                self.bar.emit(PlayerBarInput::Buffered(share));
+                if share >= 0.999 && !now.buffered {
+                    now.buffered = true;
                     self.preload_next();
                 }
             }
@@ -425,6 +486,10 @@ impl App {
             }
             PlayerEvent::Error(err) => {
                 tracing::warn!("{err}");
+                // Buffering at launch failed; Play tries again, and says so.
+                if self.now_playing.as_ref().is_some_and(|now| now.held) {
+                    return;
+                }
                 toast(&widgets.toasts, &errors::playback(&err));
             }
         }

@@ -140,6 +140,11 @@ pub(super) fn widgets(
         // Room enough to seek with, and with the times beside it narrow
         // enough for a 360px window; it grows with wider ones.
         .width_request(160)
+        // How much the player holds, as a lighter stretch of the trough
+        // ahead of the knob; seeking past it is still allowed.
+        .show_fill_level(true)
+        .restrict_to_fill_level(false)
+        .fill_level(0.0)
         .build();
     seek.update_property(&[gtk::accessible::Property::Label(&gettext("Seek"))]);
     seek.connect_value_changed({

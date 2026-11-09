@@ -341,6 +341,15 @@ fn the_player_bar_lists_chapters() {
     rows[2].activate();
     settle();
     assert_eq!(*asked.borrow(), [Duration::from_secs(40 * 60)]);
+
+    // How much the player holds fills the trough that far.
+    bar.emit(PlayerBarInput::Buffered(0.5));
+    settle();
+    let filled = fill(&seek);
+    assert!(
+        (filled - 0.5).abs() < 0.05,
+        "half held fills {filled} of the trough"
+    );
     window.destroy();
 }
 
@@ -715,6 +724,28 @@ fn ticks(seek: &gtk::Scale) -> Vec<f64> {
         .collect();
     ticks.sort_by(f64::total_cmp);
     ticks
+}
+
+/// How far the seek bar's fill reaches, as a share of its trough.
+fn fill(seek: &gtk::Scale) -> f64 {
+    fn find(widget: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
+        let mut child = widget.first_child();
+        while let Some(c) = child {
+            if c.css_name() == name {
+                return Some(c);
+            }
+            if let Some(found) = find(&c, name) {
+                return Some(found);
+            }
+            child = c.next_sibling();
+        }
+        None
+    }
+    let trough = find(seek.upcast_ref(), "trough").expect("a trough");
+    let Some(fill) = find(&trough, "fill") else {
+        return 0.0;
+    };
+    f64::from(fill.width()) / f64::from(trough.width())
 }
 
 /// The narrowest window, 360px wide: the parts that span it must fit.

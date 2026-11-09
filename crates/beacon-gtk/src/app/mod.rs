@@ -82,6 +82,8 @@ pub enum AppMsg {
     SleepTimerDone,
     /// What media keys or the desktop's media controls ask for.
     Media(MediaControl),
+    /// The connection came or went, or became metered or not.
+    NetworkChanged,
 }
 
 #[derive(Debug)]
@@ -322,6 +324,7 @@ impl Component for App {
             Ok(player) => {
                 model.player = Some(player);
                 model.media.start(&sender);
+                playback::watch_network(&sender);
             }
             Err(err) => {
                 tracing::warn!("{err}");
@@ -395,6 +398,10 @@ impl Component for App {
             AppMsg::Bar(output) => self.bar_output(output, widgets, &sender),
             AppMsg::Media(control) => self.media_control(control, widgets, &sender, root),
             AppMsg::SleepTimerDone => self.end_sleep_timer(),
+            AppMsg::NetworkChanged => {
+                self.buffer_restored();
+                self.preload_next();
+            }
         }
     }
 

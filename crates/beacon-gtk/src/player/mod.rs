@@ -4,9 +4,11 @@
 //! as typed events on the main loop; the rules (where to resume, how far to
 //! skip, when to save) live in `beacon_core::playback`.
 
+mod buffering;
 pub mod mpris;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -20,6 +22,9 @@ use relm4::gtk::glib;
 
 /// How often the player reports the position while playing.
 const POSITION_INTERVAL_MS: u32 = 250;
+
+/// How often the player reports how much it holds.
+const BUFFERED_INTERVAL: Duration = Duration::from_millis(500);
 
 /// What the player is doing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +41,8 @@ pub enum PlayerEvent {
     State(PlaybackState),
     Position(Duration),
     Duration(Duration),
+    /// How far into the episode the player holds, as a share of it.
+    Buffered(f64),
     /// The episode played to its end.
     Finished,
     Error(PlaybackError),
@@ -85,13 +92,47 @@ fn seek_pending(play: &gst_play::Play, start: &Mutex<Option<gst::ClockTime>>) {
 
 impl Player {
     /// A player whose events arrive on `context`, playing to the default
-    /// audio output.
+    /// audio output, buffering streams to files in `buffer_dir`.
     pub fn new(
         context: &glib::MainContext,
+        buffer_dir: &Path,
         on_event: impl Fn(PlayerEvent) + Send + Sync + 'static,
     ) -> Result<Self, PlaybackError> {
         gst::init().map_err(|err| PlaybackError::Unavailable(err.to_string()))?;
-        Ok(Self::build(context, Arc::new(on_event)))
+        let player = Self::build(context, Arc::new(on_event));
+        for slot in &player.slots {
+            buffering::download_to(&slot.play, buffer_dir);
+        }
+        Ok(player)
+    }
+
+    /// Report how much of the playing episode the player holds, when it
+    /// changes, for as long as the player lasts.
+    fn report_buffered(&self, context: &glib::MainContext) {
+        let plays = self
+            .slots
+            .each_ref()
+            .map(|slot| glib::object::ObjectExt::downgrade(&slot.play));
+        let (active, emit) = (self.active.clone(), self.on_event.clone());
+        let last = Cell::new(-1.0);
+        let source = glib::timeout_source_new(
+            BUFFERED_INTERVAL,
+            Some("beacon-buffered"),
+            glib::Priority::DEFAULT_IDLE,
+            move || {
+                let Some(play) = plays[active.load(Ordering::SeqCst) % 2].upgrade() else {
+                    return glib::ControlFlow::Break;
+                };
+                if let Some(share) = buffering::buffered(&play)
+                    && (share - last.get()).abs() >= 0.001
+                {
+                    last.set(share);
+                    emit(PlayerEvent::Buffered(share));
+                }
+                glib::ControlFlow::Continue
+            },
+        );
+        source.attach(Some(context));
     }
 
     /// A player that plays to sinks from `sink` instead of the audio output
@@ -113,12 +154,14 @@ impl Player {
         let active = Arc::new(AtomicUsize::new(0));
         let start: Arc<Mutex<Option<gst::ClockTime>>> = Arc::default();
         let slots = [0, 1].map(|index| slot(context, index, &active, &start, &on_event));
-        Self {
+        let player = Self {
             slots,
             active,
             start,
             on_event,
-        }
+        };
+        player.report_buffered(context);
+        player
     }
 
     fn playing(&self) -> &Slot {
@@ -132,6 +175,15 @@ impl Player {
     /// Open `uri` and start playing it from `start`; at once if it was
     /// preloaded.
     pub fn load(&self, uri: &str, start: Duration) {
+        self.open_at(uri, start, true);
+    }
+
+    /// Open `uri` at `start`, paused, so it buffers before it is played.
+    pub fn open_paused(&self, uri: &str, start: Duration) {
+        self.open_at(uri, start, false);
+    }
+
+    fn open_at(&self, uri: &str, start: Duration, play: bool) {
         if let Ok(mut pending) = self.start.lock() {
             *pending = (!start.is_zero()).then(|| clock_time(start));
         }
@@ -149,7 +201,9 @@ impl Player {
             {
                 seek_pending(&slot.play, &self.start);
             }
-            slot.play.play();
+            if play {
+                slot.play.play();
+            }
             // Reported while it waited, so not passed on then.
             if let Some(duration) = slot.play.duration().filter(|d| !d.is_zero()) {
                 (self.on_event)(PlayerEvent::Duration(duration.into()));
@@ -159,7 +213,11 @@ impl Player {
         let slot = self.playing();
         open(&slot.play, uri);
         slot.uri.replace(Some(uri.to_owned()));
-        slot.play.play();
+        if play {
+            slot.play.play();
+        } else {
+            slot.play.pause();
+        }
     }
 
     /// Open `uri` paused in the background, so it starts at once when

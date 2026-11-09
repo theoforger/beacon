@@ -12,6 +12,7 @@
 #
 # Config, data and cache live in a temporary folder, so the user's library is
 # never touched. Set BEACON_STATE_DIR to keep them across several shots.
+# Set BEACON_LOG to a file to keep the app's output (with RUST_LOG).
 # Set BEACON_SCALE=2 for a HiDPI screen: SIZE stays the window's size in
 # logical pixels, and the capture is SIZE times the scale.
 #
@@ -58,7 +59,7 @@ export ADW_DEBUG_COLOR_SCHEME="prefer-$scheme"
 dbus-run-session -- xvfb-run -a -s "-screen 0 ${screen}x24" sh -c "
     gsettings set com.theoforger.Beacon window-width $width
     gsettings set com.theoforger.Beacon window-height $height
-    '$root/target/debug/beacon' >/dev/null 2>&1 &
+    '$root/target/debug/beacon' >'${BEACON_LOG:-/dev/null}' 2>&1 &
     pid=\$!
     sleep 3
     $steps

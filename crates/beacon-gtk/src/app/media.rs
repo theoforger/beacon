@@ -111,6 +111,7 @@ impl App {
                 if self.open_unopened(widgets, sender) {
                     return;
                 }
+                self.release_hold();
                 if let (Some(player), Some(_)) = (&player, now) {
                     player.play();
                 }
