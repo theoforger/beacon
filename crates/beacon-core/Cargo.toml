@@ -15,8 +15,7 @@ futures-util = "0.3.34"
 linkify = "0.11.0"
 reqwest = { version = "0.13.5", features = ["stream"] }
 rss = { version = "2.1.2", default-features = false }
-rusqlite = { version = "0.40", features = ["chrono", "url"] }
-rusqlite_migration = "2.6.0"
+rusqlite = { version = "0.41", features = ["chrono", "url"] }
 scraper = "0.29.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"

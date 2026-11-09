@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 08:04-0500\n"
+"POT-Creation-Date: 2026-11-09 08:42-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,49 +18,49 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: crates/beacon-gtk/src/app/actions.rs:75
+#: crates/beacon-gtk/src/app/actions.rs:74
 msgid "Feed address copied"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:194
+#: crates/beacon-gtk/src/app/actions.rs:192
 #, rust-format
 msgid "Unsubscribe From {show}?"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:196
+#: crates/beacon-gtk/src/app/actions.rs:194
 msgid ""
 "Its episodes, your progress in them and your favorites from it are removed "
 "from your library"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:199
-#: crates/beacon-gtk/src/app/lists.rs:68
+#: crates/beacon-gtk/src/app/actions.rs:197
+#: crates/beacon-gtk/src/app/lists.rs:67
 #: crates/beacon-gtk/src/ui/selection_bar.rs:157
 msgid "_Cancel"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:200
+#: crates/beacon-gtk/src/app/actions.rs:198
 #: crates/beacon-gtk/src/ui/show_hero.rs:112
 msgid "_Unsubscribe"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:231
+#: crates/beacon-gtk/src/app/actions.rs:229
 #, rust-format
 msgid "Unsubscribed from {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:303
+#: crates/beacon-gtk/src/app/actions.rs:299
 #, rust-format
 msgid "Could not refresh {n} podcast"
 msgid_plural "Could not refresh {n} podcasts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/actions.rs:312
+#: crates/beacon-gtk/src/app/actions.rs:308
 msgid "No new episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/actions.rs:314
+#: crates/beacon-gtk/src/app/actions.rs:310
 #, rust-format
 msgid "{n} new episode"
 msgid_plural "{n} new episodes"
@@ -72,38 +72,38 @@ msgstr[1] ""
 msgid "Subscribed to {show}"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:30
+#: crates/beacon-gtk/src/app/lists.rs:29
 msgid "Queue cleared"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:31
+#: crates/beacon-gtk/src/app/lists.rs:30
 msgid "_Undo"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:58
+#: crates/beacon-gtk/src/app/lists.rs:57
 msgid "Delete All Downloads?"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:61
+#: crates/beacon-gtk/src/app/lists.rs:60
 #, rust-format
 msgid "The downloaded episode will be removed from this device"
 msgid_plural "The {n} downloaded episodes will be removed from this device"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/lists.rs:69
+#: crates/beacon-gtk/src/app/lists.rs:68
 msgid "_Delete"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:100
+#: crates/beacon-gtk/src/app/lists.rs:98
 #, rust-format
 msgid "Deleted {n} download"
 msgid_plural "Deleted {n} downloads"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/setup.rs:192
-#: crates/beacon-gtk/src/app/setup.rs:206 crates/beacon-gtk/src/main.rs:28
+#: crates/beacon-gtk/src/app/setup.rs:198
+#: crates/beacon-gtk/src/app/setup.rs:212 crates/beacon-gtk/src/main.rs:28
 #: crates/beacon-gtk/src/player/mpris.rs:89
 #: crates/beacon-gtk/src/ui/dialogs/about.rs:10
 #: data/com.theoforger.Beacon.desktop.in:4
@@ -359,23 +359,27 @@ msgstr ""
 msgid "This address is not a podcast feed"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/errors.rs:31
+#: crates/beacon-gtk/src/ui/errors.rs:30
 msgid "Could not read or save your library"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/errors.rs:33
+#: crates/beacon-gtk/src/ui/errors.rs:31
+msgid "Your library was saved by a newer version of Beacon"
+msgstr ""
+
+#: crates/beacon-gtk/src/ui/errors.rs:32
 msgid "Could not open your library folder"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/errors.rs:39
+#: crates/beacon-gtk/src/ui/errors.rs:38
 msgid "Audio playback is not available"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/errors.rs:40
+#: crates/beacon-gtk/src/ui/errors.rs:39
 msgid "This episode has no audio to play"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/errors.rs:41
+#: crates/beacon-gtk/src/ui/errors.rs:40
 msgid "Could not play this episode"
 msgstr ""
 

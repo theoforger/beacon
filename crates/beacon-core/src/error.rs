@@ -18,8 +18,8 @@ pub enum FeedError {
 pub enum StoreError {
     #[error("database error: {0}")]
     Sqlite(#[from] rusqlite::Error),
-    #[error("database migration failed: {0}")]
-    Migration(#[from] rusqlite_migration::Error),
+    #[error("the library has {applied} schema changes; this version knows {known}")]
+    TooNew { applied: u32, known: u32 },
     #[error("could not create the library folder: {0}")]
     Io(#[from] std::io::Error),
 }

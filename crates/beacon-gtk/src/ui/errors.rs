@@ -27,9 +27,8 @@ pub fn feed(error: &FeedError) -> String {
 
 pub fn store(error: &StoreError) -> String {
     match error {
-        StoreError::Sqlite(_) | StoreError::Migration(_) => {
-            gettext("Could not read or save your library")
-        }
+        StoreError::Sqlite(_) => gettext("Could not read or save your library"),
+        StoreError::TooNew { .. } => gettext("Your library was saved by a newer version of Beacon"),
         StoreError::Io(_) => gettext("Could not open your library folder"),
     }
 }

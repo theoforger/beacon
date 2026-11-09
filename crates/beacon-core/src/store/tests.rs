@@ -32,9 +32,35 @@ fn store_with_show() -> (Store, ShowId) {
     (store, id)
 }
 
+fn version(conn: &Connection) -> u32 {
+    conn.pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap()
+}
+
 #[test]
-fn migrations_are_valid() {
-    MIGRATIONS.validate().unwrap();
+fn a_library_gets_the_changes_it_has_not_had() {
+    let mut conn = Connection::open_in_memory().unwrap();
+    // As a library made before the second change.
+    conn.execute_batch(MIGRATIONS[0]).unwrap();
+    conn.pragma_update(None, "user_version", 1).unwrap();
+    migrate(&mut conn).unwrap();
+    assert_eq!(version(&conn), 3);
+    // Applying again changes nothing.
+    migrate(&mut conn).unwrap();
+    assert_eq!(version(&conn), 3);
+}
+
+#[test]
+fn a_library_from_a_newer_beacon_is_left_alone() {
+    let mut conn = Connection::open_in_memory().unwrap();
+    conn.pragma_update(None, "user_version", 9).unwrap();
+    assert!(matches!(
+        migrate(&mut conn),
+        Err(StoreError::TooNew {
+            applied: 9,
+            known: 3
+        })
+    ));
 }
 
 #[test]

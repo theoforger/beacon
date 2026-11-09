@@ -3,12 +3,10 @@
 //! SQLite storage. All writes for one feed sync happen in one transaction.
 
 use std::path::Path;
-use std::sync::LazyLock;
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, OptionalExtension, params};
-use rusqlite_migration::{M, Migrations};
 use url::Url;
 
 mod rows;
@@ -19,13 +17,30 @@ use self::rows::{EPISODE_COLUMNS, SHOW_COLUMNS, episode_from_row, episode_params
 use crate::error::StoreError;
 use crate::model::{Chapter, Episode, EpisodeId, ParsedEpisode, Show, ShowId, ShowInfo};
 
-static MIGRATIONS: LazyLock<Migrations<'static>> = LazyLock::new(|| {
-    Migrations::new(vec![
-        M::up(include_str!("migrations/001_initial.sql")),
-        M::up(include_str!("migrations/002_show_prefs.sql")),
-        M::up(include_str!("migrations/003_download_filter.sql")),
-    ])
-});
+/// The schema's changes, in order. A library's `user_version` counts the
+/// ones applied, as rusqlite_migration (used until 2026-11-09) kept it, so
+/// libraries it made carry on.
+const MIGRATIONS: [&str; 3] = [
+    include_str!("migrations/001_initial.sql"),
+    include_str!("migrations/002_show_prefs.sql"),
+    include_str!("migrations/003_download_filter.sql"),
+];
+
+/// Apply the changes `conn` has not had, each in its own transaction.
+fn migrate(conn: &mut Connection) -> Result<(), StoreError> {
+    let applied: u32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    let known = MIGRATIONS.len() as u32;
+    if applied > known {
+        return Err(StoreError::TooNew { applied, known });
+    }
+    for (number, sql) in (1..).zip(MIGRATIONS).skip(applied as usize) {
+        let tx = conn.transaction()?;
+        tx.execute_batch(sql)?;
+        tx.pragma_update(None, "user_version", number)?;
+        tx.commit()?;
+    }
+    Ok(())
+}
 
 /// What a sync changed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -51,7 +66,7 @@ impl Store {
 
     fn init(mut conn: Connection) -> Result<Self, StoreError> {
         conn.pragma_update(None, "foreign_keys", true)?;
-        MIGRATIONS.to_latest(&mut conn)?;
+        migrate(&mut conn)?;
         Ok(Self { conn })
     }
 
