@@ -38,6 +38,18 @@ pub struct NowPlaying {
     /// Whether it has finished buffering once: the next one is preloaded
     /// only then, so the two do not compete for the connection.
     pub buffered: bool,
+    /// The episode last played, put back in the bar at launch, paused
+    /// where it was left (asked by the user 2026-11-09); the player opens
+    /// it only when it is played, so a launch costs no data and an
+    /// offline one shows no error.
+    pub unopened: Option<Box<EpisodeItem>>,
+}
+
+impl NowPlaying {
+    /// The restored episode, not yet opened in the player.
+    pub fn is_unopened(&self) -> bool {
+        self.unopened.is_some()
+    }
 }
 
 /// Where playback last got to, shared with the window's close handler so it
@@ -80,6 +92,18 @@ fn source(episode: &Episode) -> Option<String> {
         return glib::filename_to_uri(path, None).ok().map(String::from);
     }
     episode.info.enclosure.as_ref().map(|e| e.url.to_string())
+}
+
+/// Where the episode last played comes back in the bar at launch: where it
+/// was left. Not if it was played to the end, or has no audio.
+fn restored_position(episode: &Episode) -> Option<Duration> {
+    if episode.state.played || source(episode).is_none() {
+        return None;
+    }
+    Some(playback::resume_position(
+        &episode.state,
+        episode.info.duration,
+    ))
 }
 
 impl App {
@@ -136,10 +160,17 @@ impl App {
             toast(&widgets.toasts, &errors::playback(&err));
             return;
         };
+        // The restored episode opens where it was left, or was moved to.
+        let unopened = self
+            .now_playing
+            .as_ref()
+            .filter(|now| now.id == episode.id && now.is_unopened())
+            .map(|now| now.position);
+        let start = start.or(unopened);
         if let Some(state) = self
             .now_playing
             .as_ref()
-            .filter(|now| now.id == episode.id)
+            .filter(|now| now.id == episode.id && !now.is_unopened())
             .map(|now| now.state)
         {
             let playing = matches!(state, PlaybackState::Playing | PlaybackState::Buffering);
@@ -165,39 +196,9 @@ impl App {
         player.load(&uri, start);
         // The episode it replaces keeps where it got to.
         self.save_position(sender, Parts::PROGRESS);
-        self.now_playing = Some(NowPlaying {
-            id: episode.id,
-            show_id: episode.show_id,
-            duration,
-            position: start,
-            saved: start,
-            state: PlaybackState::Buffering,
-            buffered: false,
-        });
-        self.last_position.set(Some((episode.id, start)));
+        self.show_in_player(item, start, PlaybackState::Buffering, None, sender);
         self.after = Some(episode.id);
         let _ = self.settings.set_int64("last-episode", episode.id.0);
-        self.bar
-            .emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
-                id: episode.id,
-                title: episode.info.title.clone(),
-                show_title: item.show_title.clone(),
-                cover: item.cover.clone(),
-                duration,
-            }))));
-        self.bar.emit(PlayerBarInput::Position(start));
-        self.media.set_track(Some(Track {
-            id: episode.id,
-            title: episode.info.title.clone(),
-            show: item.show_title.clone(),
-            cover: item.cover.clone(),
-            duration,
-        }));
-        self.media.set_position(start);
-        // The narrow layout's slim bar now opens the player.
-        self.sheet.set_can_open(true);
-        self.fetch_episode_cover(episode.id, sender);
-        self.load_chapters(episode.id, sender);
         // Playing takes an episode off the queue: the queue is what comes
         // next, as in a music app. It also clears the blue dot, as viewing
         // its details does (the mockup's `playEp`).
@@ -206,6 +207,105 @@ impl App {
             store.dequeue(id)?;
             store.mark_seen(id)
         });
+    }
+
+    /// Put `item` in the player bar, the desktop's media controls and the
+    /// rows, at `position`.
+    fn show_in_player(
+        &mut self,
+        item: &EpisodeItem,
+        position: Duration,
+        state: PlaybackState,
+        unopened: Option<Box<EpisodeItem>>,
+        sender: &ComponentSender<Self>,
+    ) {
+        let episode = &item.episode;
+        let duration = episode.info.duration;
+        self.now_playing = Some(NowPlaying {
+            id: episode.id,
+            show_id: episode.show_id,
+            duration,
+            position,
+            saved: position,
+            state,
+            buffered: false,
+            unopened,
+        });
+        self.last_position.set(Some((episode.id, position)));
+        self.bar
+            .emit(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+                id: episode.id,
+                title: episode.info.title.clone(),
+                show_title: item.show_title.clone(),
+                cover: item.cover.clone(),
+                duration,
+            }))));
+        self.bar.emit(PlayerBarInput::Position(position));
+        if let Some(duration) = duration {
+            self.bar.emit(PlayerBarInput::Duration(duration));
+        }
+        self.media.set_track(Some(Track {
+            id: episode.id,
+            title: episode.info.title.clone(),
+            show: item.show_title.clone(),
+            cover: item.cover.clone(),
+            duration,
+        }));
+        self.media.set_position(position);
+        // The narrow layout's slim bar now opens the player.
+        self.sheet.set_can_open(true);
+        self.fetch_episode_cover(episode.id, sender);
+        self.load_chapters(episode.id, sender);
+    }
+
+    /// Read back the episode last played, to put it in the bar at launch.
+    pub(super) fn restore_last_episode(&self, sender: &ComponentSender<Self>) {
+        let (Some(library), Some(id)) = (self.library.clone(), self.after) else {
+            return;
+        };
+        sender.spawn_oneshot_command(move || {
+            let item = library
+                .with_store(|store| crate::ui::models::episode_item(store, id))
+                .unwrap_or_else(|err| {
+                    tracing::warn!("could not read the last episode played: {err}");
+                    None
+                });
+            AppCommand::Restore(item.map(Box::new))
+        });
+    }
+
+    /// The episode last played, back in the bar, paused where it was left,
+    /// unless something already plays or it was played to the end.
+    pub(super) fn restore(&mut self, item: EpisodeItem, sender: &ComponentSender<Self>) {
+        let Some(position) =
+            restored_position(&item.episode).filter(|_| self.now_playing.is_none())
+        else {
+            return;
+        };
+        let unopened = Some(Box::new(item.clone()));
+        self.show_in_player(&item, position, PlaybackState::Paused, unopened, sender);
+        let id = item.episode.id;
+        episode_row::show_playing(Some((id, PlaybackState::Paused)));
+        self.bar.emit(PlayerBarInput::State(PlaybackState::Paused));
+        self.media.set_state(PlaybackState::Paused);
+    }
+
+    /// Play the restored episode, if that is what the bar holds. Whether it
+    /// did.
+    pub(super) fn open_unopened(
+        &mut self,
+        widgets: &AppWidgets,
+        sender: &ComponentSender<Self>,
+    ) -> bool {
+        let Some(item) = self
+            .now_playing
+            .as_ref()
+            .and_then(|now| now.unopened.clone())
+        else {
+            return false;
+        };
+        self.play_episode(&item, widgets, sender);
+        true
     }
 
     /// The episode in the player, what the player is doing, and where it is.
@@ -349,5 +449,29 @@ impl App {
         if let Err(err) = self.settings.set_double(key, value) {
             tracing::warn!("could not remember {key}: {err}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ui::episode_actions::item;
+
+    #[test]
+    fn the_last_episode_comes_back_where_it_was_left() {
+        let mut episode = item().episode;
+        episode.info.duration = Some(Duration::from_secs(3000));
+        episode.state.position = Duration::from_secs(754);
+        episode.info.enclosure = Some(beacon_core::model::Enclosure {
+            url: "https://example.com/1.mp3".parse().unwrap(),
+            mime_type: None,
+            length: None,
+        });
+        assert_eq!(restored_position(&episode), Some(Duration::from_secs(754)));
+        episode.state.played = true;
+        assert_eq!(restored_position(&episode), None, "played to the end");
+        episode.state.played = false;
+        episode.info.enclosure = None;
+        assert_eq!(restored_position(&episode), None, "nothing to play");
     }
 }

@@ -108,6 +108,9 @@ impl App {
                 }
             }
             MediaControl::Play => {
+                if self.open_unopened(widgets, sender) {
+                    return;
+                }
                 if let (Some(player), Some(_)) = (&player, now) {
                     player.play();
                 }

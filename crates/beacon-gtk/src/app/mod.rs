@@ -98,6 +98,8 @@ pub enum AppCommand {
     /// bar.
     Chapters(EpisodeId, Vec<beacon_core::model::Chapter>),
     DownloadsDeleted(Result<usize, StoreError>),
+    /// The episode last played, read back at launch.
+    Restore(Option<Box<EpisodeItem>>),
 }
 
 pub struct App {
@@ -343,6 +345,7 @@ impl Component for App {
             Some(message) => toast(&widgets.toasts, &message),
             None => {
                 model.reload(&sender, library::Parts::ALL);
+                model.restore_last_episode(&sender);
                 // New episodes since last time, as GNOME Podcasts looks for
                 // them (`refresh-on-startup`).
                 if model.settings.boolean("refresh-on-startup") {
@@ -411,7 +414,10 @@ impl Component for App {
                 self.refreshed(&summary, at_startup, widgets, &sender);
             }
             AppCommand::EpisodeCover(id, Some(path)) => self.episode_cover_arrived(id, path),
-            AppCommand::EpisodeCover(_, None) | AppCommand::PlayNext(None) => {}
+            AppCommand::EpisodeCover(_, None)
+            | AppCommand::PlayNext(None)
+            | AppCommand::Restore(None) => {}
+            AppCommand::Restore(Some(item)) => self.restore(*item, &sender),
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item, widgets, &sender),
             AppCommand::DownloadsDeleted(result) => {
                 self.downloads_deleted(result, widgets, &sender)

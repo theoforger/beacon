@@ -39,6 +39,9 @@ impl App {
         let player = self.player.clone();
         match output {
             PlayerBarOutput::PlayPause => {
+                if self.open_unopened(widgets, sender) {
+                    return;
+                }
                 if let (Some(player), Some(now)) = (&player, &self.now_playing) {
                     match now.state {
                         PlaybackState::Playing | PlaybackState::Buffering => player.pause(),
@@ -116,7 +119,9 @@ impl App {
             return;
         };
         now.position = to;
-        if let Some(player) = &self.player {
+        // The restored episode, not yet opened, starts from there.
+        self.last_position.set(Some((now.id, to)));
+        if let Some(player) = self.player.as_ref().filter(|_| !now.is_unopened()) {
             player.seek(to);
         }
         self.bar.emit(PlayerBarInput::Position(to));

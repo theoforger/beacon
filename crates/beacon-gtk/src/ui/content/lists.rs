@@ -70,7 +70,7 @@ impl Lists {
         let downloaded = list(Location::Downloaded, Source::Downloaded);
 
         let clear = gtk::Button::builder()
-            .icon_name("edit-clear-all-symbolic")
+            .icon_name("user-trash-symbolic")
             .visible(false)
             .build();
         let showing = Rc::new(Cell::new(Location::Shows));
