@@ -139,6 +139,7 @@ fn widgets_lay_out_as_designed() {
     narrow_headers_fit_three_window_buttons();
     clear_sits_where_refresh_does();
     the_player_bar_lists_chapters();
+    the_slim_bar_shows_loading();
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
     queued_rows_can_be_reordered();
@@ -357,6 +358,42 @@ fn the_player_bar_lists_chapters() {
     assert!(
         (filled - 0.5).abs() < 0.05,
         "half held fills {filled} of the trough"
+    );
+    window.destroy();
+}
+
+/// While its episode loads, the narrow layout's slim bar shows the
+/// spinner over its Play, as the wide bar does (found off by the user).
+fn the_slim_bar_shows_loading() {
+    use crate::player::PlaybackState;
+    use crate::ui::player_bar::{NowPlayingCard, PlayerBarInput};
+
+    let bar = PlayerBar::default();
+    bar.set_sheet(true);
+    let window = window(bar.widgets().mini());
+    bar.send(PlayerBarInput::Episode(Some(Box::new(NowPlayingCard {
+        id: EpisodeId(7),
+        title: "Letters home".into(),
+        show_title: "Paper Trails".into(),
+        cover: None,
+        duration: None,
+    }))));
+    bar.send(PlayerBarInput::State(PlaybackState::Buffering));
+    let until = std::time::Instant::now() + Duration::from_millis(300);
+    run_until(|| std::time::Instant::now() > until);
+    let play = bar.widgets().mini_play().clone();
+    assert!(play.is_mapped(), "the slim bar shows Play");
+    let spinner = play
+        .parent()
+        .and_then(|overlay| overlay.last_child())
+        .filter(|child| child != &play)
+        .expect("a spinner lies over the slim bar's Play");
+    assert!(spinner.is_mapped(), "the spinner shows");
+    assert!(
+        spinner.width() >= 16 && spinner.height() >= 16,
+        "the spinner is {}x{}",
+        spinner.width(),
+        spinner.height()
     );
     window.destroy();
 }

@@ -34,7 +34,10 @@ pub struct NowPlaying {
     pub position: Duration,
     /// The position last written to the store.
     pub saved: Duration,
+    /// What the app shows the player doing.
     pub state: PlaybackState,
+    /// What the player last said it was doing, which a hold can hide.
+    pub reported: PlaybackState,
     /// Whether the player holds all of it: the next one is preloaded only
     /// then, so the two do not compete for the connection.
     pub buffered: bool,
@@ -52,6 +55,29 @@ impl NowPlaying {
     /// The restored episode, not yet opened in the player.
     pub fn is_unopened(&self) -> bool {
         self.unopened.is_some()
+    }
+
+    /// The player says it is `state`: what to show. Buffering at launch is
+    /// not playing, so while held it shows as paused.
+    pub fn report(&mut self, state: PlaybackState) -> PlaybackState {
+        self.reported = state;
+        self.held &= state != PlaybackState::Playing;
+        self.state = match state {
+            PlaybackState::Buffering if self.held => PlaybackState::Paused,
+            state => state,
+        };
+        self.state
+    }
+
+    /// The episode is played: end the hold, and return what the hold hid
+    /// if it differs from what shows. A player still buffering reports
+    /// nothing new when played, so its loading would otherwise not show.
+    pub fn release(&mut self) -> Option<PlaybackState> {
+        let held = std::mem::take(&mut self.held);
+        (held && self.reported != self.state).then(|| {
+            self.state = self.reported;
+            self.state
+        })
     }
 }
 
@@ -241,6 +267,7 @@ impl App {
             position,
             saved: position,
             state,
+            reported: state,
             buffered: false,
             held: false,
             unopened,
@@ -325,9 +352,10 @@ impl App {
     }
 
     /// The player is asked to play: what it does now is shown as it is.
+    /// Call it before asking the player to play, having read the state.
     pub(super) fn release_hold(&mut self) {
-        if let Some(now) = &mut self.now_playing {
-            now.held = false;
+        if let Some(state) = self.now_playing.as_mut().and_then(NowPlaying::release) {
+            self.show_state(state);
         }
     }
 
@@ -415,18 +443,8 @@ impl App {
                 let Some(now) = &mut self.now_playing else {
                     return;
                 };
-                now.held &= state != PlaybackState::Playing;
-                // Buffering at launch is not playing: it shows as paused.
-                let state = match state {
-                    PlaybackState::Buffering if now.held => PlaybackState::Paused,
-                    state => state,
-                };
-                now.state = state;
-                episode_row::show_playing(Some((now.id, state)));
-                self.bar.send(PlayerBarInput::State(state));
-                self.media.set_state(state);
-                self.details
-                    .send(DetailsPaneInput::Playback(self.playback_state()));
+                let state = now.report(state);
+                self.show_state(state);
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(Parts::PROGRESS);
@@ -477,6 +495,19 @@ impl App {
         }
     }
 
+    /// Show the playing episode as `state` in its row, the player bar, the
+    /// desktop's media controls and the details pane.
+    fn show_state(&self, state: PlaybackState) {
+        let Some(now) = &self.now_playing else {
+            return;
+        };
+        episode_row::show_playing(Some((now.id, state)));
+        self.bar.send(PlayerBarInput::State(state));
+        self.media.set_state(state);
+        self.details
+            .send(DetailsPaneInput::Playback(self.playback_state()));
+    }
+
     /// Write the playing episode's position in the background, reloading
     /// `parts` after.
     fn save_position(&mut self, parts: Parts) {
@@ -518,5 +549,34 @@ mod tests {
         episode.state.played = false;
         episode.info.enclosure = None;
         assert_eq!(restored_position(&episode), None, "nothing to play");
+    }
+
+    #[test]
+    fn playing_a_held_episode_shows_it_loading() {
+        let mut now = NowPlaying {
+            id: EpisodeId(1),
+            show_id: ShowId(1),
+            duration: None,
+            position: Duration::ZERO,
+            saved: Duration::ZERO,
+            state: PlaybackState::Paused,
+            reported: PlaybackState::Paused,
+            buffered: false,
+            held: true,
+            unopened: None,
+        };
+        // Buffering at launch shows as paused.
+        assert_eq!(now.report(PlaybackState::Buffering), PlaybackState::Paused);
+        // Played while still buffering: the player says nothing new, so
+        // ending the hold shows what it is doing (found by the user).
+        assert_eq!(now.release(), Some(PlaybackState::Buffering));
+        assert_eq!(now.state, PlaybackState::Buffering);
+        assert_eq!(now.release(), None, "released once");
+        assert_eq!(now.report(PlaybackState::Playing), PlaybackState::Playing);
+
+        // Held and done buffering: nothing to show until it plays.
+        now.held = true;
+        assert_eq!(now.report(PlaybackState::Paused), PlaybackState::Paused);
+        assert_eq!(now.release(), None);
     }
 }

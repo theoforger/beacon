@@ -36,11 +36,16 @@ impl App {
                 if self.open_unopened() {
                     return;
                 }
-                self.release_hold();
-                if let (Some(player), Some(now)) = (&player, &self.now_playing) {
-                    match now.state {
-                        PlaybackState::Playing | PlaybackState::Buffering => player.pause(),
-                        PlaybackState::Paused | PlaybackState::Stopped => player.play(),
+                let (Some(player), Some(state)) =
+                    (&player, self.now_playing.as_ref().map(|now| now.state))
+                else {
+                    return;
+                };
+                match state {
+                    PlaybackState::Playing | PlaybackState::Buffering => player.pause(),
+                    PlaybackState::Paused | PlaybackState::Stopped => {
+                        self.release_hold();
+                        player.play();
                     }
                 }
             }

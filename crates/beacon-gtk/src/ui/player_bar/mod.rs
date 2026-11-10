@@ -129,6 +129,12 @@ impl PlayerBarWidgets {
         (&self.chapters.button, self.chapters.list(), &self.seek)
     }
 
+    /// The slim bar's Play, for tests.
+    #[cfg(test)]
+    pub fn mini_play(&self) -> &gtk::Button {
+        &self.mini.play
+    }
+
     /// The narrow layout's slim bar, which opens the sheet the player is in.
     pub fn mini(&self) -> &gtk::Stack {
         &self.mini.root
