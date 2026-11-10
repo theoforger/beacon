@@ -177,9 +177,23 @@ impl EpisodeRow {
     /// `setup.show_identity` is set; on the show's own page it would only
     /// repeat on every row.
     pub fn new(setup: &RowSetup) -> Self {
+        Self::build(setup, glib::Object::new())
+    }
+
+    /// A row the queue's card holds itself, outside a list view: an item
+    /// of the card's list for screen readers, and focusable, since no list
+    /// item takes the focus for it.
+    pub fn new_in_card(setup: &RowSetup) -> Self {
+        let row: Self = glib::Object::builder()
+            .property("accessible-role", gtk::AccessibleRole::ListItem)
+            .property("focusable", true)
+            .build();
+        Self::build(setup, row)
+    }
+
+    fn build(setup: &RowSetup, root: Self) -> Self {
         let show_identity = setup.show_identity;
         let selectable = setup.selectable;
-        let root: Self = glib::Object::new();
         root.add_css_class("episode-card");
         let content = gtk::Box::builder()
             .spacing(12)
@@ -305,15 +319,9 @@ impl EpisodeRow {
         entry("details", RowAction::ShowDetails);
         let move_up = entry("move-up", RowAction::MoveUp);
         let move_down = entry("move-down", RowAction::MoveDown);
-        // A queued episode dropped on this row, by its id.
-        let move_here = gio::SimpleAction::new("move-here", Some(glib::VariantTy::INT64));
-        let dropped = run.clone();
-        move_here.connect_activate(move |_, id| {
-            if let Some(id) = id.and_then(glib::Variant::get::<i64>) {
-                dropped(RowAction::MoveHere(EpisodeId(id)));
-            }
-        });
-        actions.add_action(&move_here);
+        // Only on the queue's rows (`set_movable`).
+        move_up.set_enabled(false);
+        move_down.set_enabled(false);
         episode_actions::add_to(&actions, run);
         // The menu's Select: select this episode, starting selection mode.
         let select_action = gio::SimpleAction::new("select", None);
@@ -411,6 +419,11 @@ impl EpisodeRow {
             .filter(|(now, _)| Some(*now) == id)
             .map(|(_, state)| state);
         play_button::set_icon(&parts.play, state);
+    }
+
+    /// The episode the row shows.
+    pub fn item(&self) -> Option<EpisodeItem> {
+        self.imp().parts.get()?.episode.borrow().clone()
     }
 
     /// What a screen reader says for the row's episode.

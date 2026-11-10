@@ -181,6 +181,28 @@ gridview.episode-list > child.activatable:active > .episode-card {
   background-image: image(color-mix(in srgb, currentColor 8%, transparent));
 }
 
+/* The queue's card lays out its own rows (`ui/widgets/queue_card.rs`), so
+   they take the list's hover, press and focus ring themselves. The row
+   being dragged is lifted: a card of its own, with a deeper shadow. */
+queuecard > .episode-card:hover {
+  background-image: image(color-mix(in srgb, currentColor 3%, transparent));
+}
+
+queuecard > .episode-card:active {
+  background-image: image(color-mix(in srgb, currentColor 8%, transparent));
+}
+
+queuecard > .episode-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-color) 50%, transparent);
+  outline-offset: -2px;
+}
+
+queuecard > .episode-card.dragging {
+  border-radius: 12px;
+  border-bottom-color: transparent;
+  box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 4px 12px 2px RGB(0 0 6 / 15%);
+}
+
 @media (prefers-contrast: more) {
   .episode-card:not(.last) {
     border-bottom: 1px solid color-mix(in srgb, currentColor var(--border-opacity), transparent);

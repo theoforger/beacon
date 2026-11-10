@@ -757,12 +757,13 @@ fn favorite_rows_show_a_star() {
 }
 
 /// In the Queue view, only the queued rows have a drag handle and Move Up
-/// and Move Down, unavailable at the queue's ends; a drop asks to move the
-/// dropped episode to the row's place.
+/// and Move Down, unavailable at the queue's ends. Dragged, a row stays
+/// inside its card, the others make way, and letting go saves the order.
 fn queued_rows_can_be_reordered() {
     use crate::ui::models::RowAction;
     use crate::ui::queue_data::QueueData;
     use crate::ui::queue_view::{QueueView, QueueViewInput, QueueViewOutput};
+    use crate::ui::widgets::queue_card::QueueCard;
 
     let asked = Rc::new(std::cell::RefCell::new(Vec::new()));
     let record = asked.clone();
@@ -778,8 +779,11 @@ fn queued_rows_can_be_reordered() {
         source_name: Some("New".into()),
         next: None,
     })));
-    let until = std::time::Instant::now() + Duration::from_millis(200);
-    run_until(|| std::time::Instant::now() > until);
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(300);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    settle();
 
     let mut rows = Vec::new();
     let mut stack = vec![view.clone().upcast::<gtk::Widget>()];
@@ -801,26 +805,12 @@ fn queued_rows_can_be_reordered() {
             .find(|row| row.accessible_name().starts_with(&format!("Episode {id},")))
             .unwrap_or_else(|| panic!("episode {id} has a row"))
     };
-    let handle = |row: &EpisodeRow| {
-        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
-        while let Some(widget) = stack.pop() {
-            if widget
-                .downcast_ref::<gtk::Image>()
-                .is_some_and(|i| i.icon_name().as_deref() == Some("list-drag-handle-symbolic"))
-                && widget.is_drawable()
-            {
-                return true;
-            }
-            let mut child = widget.first_child();
-            while let Some(c) = child {
-                child = c.next_sibling();
-                stack.push(c);
-            }
-        }
-        false
-    };
     for (id, queued) in [(1, false), (2, true), (3, true), (4, true), (5, false)] {
-        assert_eq!(handle(row(id)), queued, "episode {id}'s handle");
+        assert_eq!(
+            row(id).handle().is_some_and(|h| h.is_drawable()),
+            queued,
+            "episode {id}'s handle"
+        );
     }
 
     // The first can't go up nor the last down; the rest ask.
@@ -833,15 +823,37 @@ fn queued_rows_can_be_reordered() {
         let _ = row(id).activate_action(action, None);
     }
     let _ = row(1).activate_action("row.move-down", None);
-    let _ = row(3).activate_action("row.move-here", Some(&2i64.to_variant()));
     assert_eq!(
         *asked.borrow(),
-        [
-            (2, RowAction::MoveDown),
-            (4, RowAction::MoveUp),
-            (3, RowAction::MoveHere(EpisodeId(2))),
-        ]
+        [(2, RowAction::MoveDown), (4, RowAction::MoveUp)]
     );
+    asked.borrow_mut().clear();
+
+    let card = first::<QueueCard>(view.upcast_ref()).expect("the queue's card");
+    let ids = |card: &QueueCard| -> Vec<i64> {
+        card.rows()
+            .iter()
+            .filter_map(|r| r.item().map(|i| i.episode.id.0))
+            .collect()
+    };
+    let height = f64::from(card.rows()[0].height());
+    // Up from the first, it stays in the card; down past the end, too.
+    assert_eq!(card.drag_by(0, -50.0), 0.0);
+    let bottom = card.drag_by(0, 1000.0);
+    assert!(
+        (bottom - 2.0 * height).abs() < 2.0,
+        "{bottom} for rows of {height}"
+    );
+    // Over the last, the two below have made way.
+    settle();
+    let second = card.rows()[1].compute_bounds(&card).unwrap().y();
+    assert!(
+        f64::from(second).abs() < 2.0,
+        "the second row slid up to the top, at {second}"
+    );
+    card.let_go();
+    assert_eq!(ids(&card), [3, 4, 2], "in the new order at once");
+    assert_eq!(*asked.borrow(), [(4, RowAction::MoveHere(EpisodeId(2)))]);
     window.destroy();
 }
 

@@ -156,11 +156,16 @@ fn entries(data: &QueueData) -> Vec<Entry> {
             fold: None,
             top: if i == 0 { 32 } else { 24 },
         });
-        entries.extend(if *movable {
-            Entry::queue_card(items)
+        if *movable {
+            entries.push(Entry::QueueCard {
+                items: items.clone(),
+                // Translators: how a screen reader names the queued
+                // episodes' card in the Queue.
+                label: gettext("Next in Queue"),
+            });
         } else {
-            Entry::card(items)
-        });
+            entries.extend(Entry::card(items));
+        }
     }
     entries.push(Entry::Space(32));
     entries
@@ -231,14 +236,23 @@ mod tests {
             source_name: Some("New".into()),
             next: None,
         };
-        let movable: Vec<_> = entries(&data)
+        let shown: Vec<_> = entries(&data)
             .iter()
             .filter_map(|e| match e {
-                Entry::Episode { item, movable, .. } => Some((item.episode.id.0, *movable)),
+                Entry::Episode { item, .. } => Some(vec![item.episode.id.0]),
+                Entry::QueueCard { items, .. } => {
+                    Some(items.iter().map(|i| i.episode.id.0).collect())
+                }
                 _ => None,
             })
             .collect();
-        assert_eq!(movable, [(1, false), (2, true), (3, true), (4, false)]);
+        // The queue as one card; the others as rows of their own.
+        assert_eq!(shown, [vec![1], vec![2, 3], vec![4]]);
+        assert!(
+            entries(&data)
+                .iter()
+                .any(|e| matches!(e, Entry::QueueCard { items, .. } if items.len() == 2))
+        );
     }
 
     #[test]

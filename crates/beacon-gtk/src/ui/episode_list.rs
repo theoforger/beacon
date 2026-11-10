@@ -30,6 +30,7 @@ use gtk::{self, gio, glib, pango, prelude::*};
 
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
+use crate::ui::widgets::queue_card::QueueCard;
 
 /// A season of a show, by number; `None` for its episodes without one.
 pub type FoldKey = (ShowId, Option<u32>);
@@ -46,13 +47,17 @@ pub enum Entry {
         fold: Option<FoldKey>,
         top: i32,
     },
-    /// An episode; `first` and `last` round its group's card. A `movable`
-    /// one, queued, has a drag handle and Move Up and Move Down.
+    /// An episode; `first` and `last` round its group's card.
     Episode {
         item: Box<EpisodeItem>,
         first: bool,
         last: bool,
-        movable: bool,
+    },
+    /// The queue's episodes, as one card that reorders them by drag
+    /// (`ui/widgets/queue_card.rs`), named for screen readers.
+    QueueCard {
+        items: Vec<EpisodeItem>,
+        label: String,
     },
     /// A line of text in place of the episodes.
     Message(String),
@@ -67,6 +72,7 @@ enum Key<'a> {
     Header,
     Heading(&'a str),
     Episode(EpisodeId),
+    QueueCard,
     Message,
     Space,
 }
@@ -77,6 +83,7 @@ impl Entry {
             Entry::Header => Key::Header,
             Entry::Heading { title, .. } => Key::Heading(title),
             Entry::Episode { item, .. } => Key::Episode(item.episode.id),
+            Entry::QueueCard { .. } => Key::QueueCard,
             Entry::Message(_) => Key::Message,
             Entry::Space(_) => Key::Space,
         }
@@ -84,15 +91,6 @@ impl Entry {
 
     /// The episodes of `items` as one card's entries.
     pub fn card<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<Entry> {
-        Self::card_of(items, false)
-    }
-
-    /// The queue's episodes as one card's entries, which can be reordered.
-    pub fn queue_card<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>) -> Vec<Entry> {
-        Self::card_of(items, true)
-    }
-
-    fn card_of<'a>(items: impl IntoIterator<Item = &'a EpisodeItem>, movable: bool) -> Vec<Entry> {
         let items: Vec<_> = items.into_iter().collect();
         let count = items.len();
         items
@@ -102,7 +100,6 @@ impl Entry {
                 item: Box::new(item.clone()),
                 first: i == 0,
                 last: i + 1 == count,
-                movable,
             })
             .collect()
     }
@@ -209,11 +206,7 @@ impl EpisodeList {
             let Entry::Episode { item, .. } = entry.entry() else {
                 return;
             };
-            if setup.selection.is_active() {
-                setup.selection.toggle(item.episode.id);
-            } else {
-                (setup.on_action)(item, RowAction::ShowDetails);
-            }
+            activate(&setup, item);
         });
         // As wide as the pages' content always was, centred beyond it; only
         // a view that scrolls itself recycles its rows.
@@ -236,6 +229,16 @@ impl EpisodeList {
     /// Show `entries`, changing only what changed (see `sync`).
     pub fn set(&self, entries: Vec<Entry>) {
         sync(&self.store, entries);
+    }
+}
+
+/// Activating a row: in selection mode it is selected or not, otherwise
+/// its details open.
+pub fn activate(setup: &RowSetup, item: &EpisodeItem) {
+    if setup.selection.is_active() {
+        setup.selection.toggle(item.episode.id);
+    } else {
+        (setup.on_action)(item, RowAction::ShowDetails);
     }
 }
 
@@ -304,7 +307,6 @@ fn factory(
                 item: episode,
                 first,
                 last,
-                movable,
             } => {
                 let row = item
                     .child()
@@ -316,9 +318,18 @@ fn factory(
                     });
                 row.bind(episode);
                 row.set_edges(*first, *last);
-                row.set_movable(*movable, *first, *last);
                 // The list item is what has focus, so it carries the name.
                 item.set_accessible_label(&row.accessible_name());
+            }
+            Entry::QueueCard { items, label } => {
+                let card = item.child().and_downcast::<QueueCard>().unwrap_or_else(|| {
+                    let card = QueueCard::new(&setup, label);
+                    item.set_child(Some(&card));
+                    card
+                });
+                card.set(items);
+                // Focus goes to its rows, each its own stop.
+                item.set_focusable(false);
             }
             Entry::Header => {
                 if let Some(header) = &shown {
@@ -424,7 +435,6 @@ mod tests {
             }),
             first: false,
             last: false,
-            movable: false,
         }
     }
 
