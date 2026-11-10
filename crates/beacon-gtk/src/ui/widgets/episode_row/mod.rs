@@ -504,7 +504,13 @@ impl EpisodeRow {
         // Translators: separates the parts of an episode row when a screen
         // reader reads it; a pause, not a symbol.
         parts.name.replace(name.join(&gettext(", ")));
-        if state.is_partly_played() {
+        // Only with a length to measure it against: otherwise the bar could
+        // only stay empty (found in the M5 review).
+        let shown = episode
+            .info
+            .duration
+            .filter(|total| state.is_partly_played() && !total.is_zero());
+        if let Some(total) = shown {
             let progress = parts.progress.get_or_init(|| {
                 // Narrower than Adwaita lets a progress bar be (see
                 // `style.css`). Added, not set: setting the classes would
@@ -515,10 +521,7 @@ impl EpisodeRow {
                 progress
             });
             progress.set_visible(true);
-            if let Some(total) = episode.info.duration.filter(|d| !d.is_zero()) {
-                progress
-                    .set_fraction((state.position.as_secs_f64() / total.as_secs_f64()).min(1.0));
-            }
+            progress.set_fraction((state.position.as_secs_f64() / total.as_secs_f64()).min(1.0));
         } else if let Some(progress) = parts.progress.get() {
             progress.set_visible(false);
         }

@@ -60,11 +60,10 @@ impl EpisodeRow {
             }
         }
         if let Some(played) = parts.progress.get() {
-            let partly = parts
-                .episode
-                .borrow()
-                .as_ref()
-                .is_some_and(|item| item.episode.state.is_partly_played());
+            let partly = parts.episode.borrow().as_ref().is_some_and(|item| {
+                item.episode.state.is_partly_played()
+                    && item.episode.info.duration.is_some_and(|d| !d.is_zero())
+            });
             played.set_visible(partly && progress.is_none());
         }
         self.fit_title();

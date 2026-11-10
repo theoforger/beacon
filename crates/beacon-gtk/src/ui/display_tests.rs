@@ -143,6 +143,7 @@ fn widgets_lay_out_as_designed() {
     favorite_rows_show_a_star();
     queued_rows_can_be_reordered();
     downloads_show_on_rows();
+    progress_needs_a_length();
     preferences_follow_settings();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
@@ -911,6 +912,24 @@ fn downloads_show_on_rows() {
     settle();
     assert_eq!(bars(row.upcast_ref()), played);
     assert!(!labels(&row).iter().any(|l| l.contains("downloaded")));
+    window.destroy();
+}
+
+/// A partly played episode of unknown length has no progress bar, which
+/// could only stay empty (found in the M5 review).
+fn progress_needs_a_length() {
+    let row = EpisodeRow::new(&setup());
+    let window = window(&row);
+    let mut item = partly_played();
+    item.episode.info.duration = None;
+    row.bind(&item);
+    let until = std::time::Instant::now() + Duration::from_millis(100);
+    run_until(|| std::time::Instant::now() > until);
+    assert!(
+        bars(row.upcast_ref()).is_empty(),
+        "{:?}",
+        bars(row.upcast_ref())
+    );
     window.destroy();
 }
 
