@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 09:05-0500\n"
+"POT-Creation-Date: 2026-11-10 13:45-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,7 +36,7 @@ msgstr ""
 #: crates/beacon-gtk/src/app/actions.rs:204
 #: crates/beacon-gtk/src/app/downloads.rs:177
 #: crates/beacon-gtk/src/app/lists.rs:68
-#: crates/beacon-gtk/src/ui/selection_bar.rs:183
+#: crates/beacon-gtk/src/ui/selection_bar.rs:191
 msgid "_Cancel"
 msgstr ""
 
@@ -81,7 +81,7 @@ msgstr ""
 
 #: crates/beacon-gtk/src/app/downloads.rs:178
 #: crates/beacon-gtk/src/ui/episode_actions.rs:45
-#: crates/beacon-gtk/src/ui/selection_bar.rs:263
+#: crates/beacon-gtk/src/ui/selection_bar.rs:271
 msgid "_Download"
 msgstr ""
 
@@ -320,6 +320,20 @@ msgstr ""
 #: crates/beacon-gtk/src/ui/dialogs/preferences.rs:69
 #: data/shortcuts-dialog.ui:7
 msgid "General"
+msgstr ""
+
+#. Translators: download progress, such as "12.1 MB of 30.0 MB
+#. downloaded".
+#: crates/beacon-gtk/src/ui/downloads.rs:40
+#, rust-format
+msgid "{received} of {total} downloaded"
+msgstr ""
+
+#. Translators: download progress while the size is unknown,
+#. such as "12.1 MB downloaded".
+#: crates/beacon-gtk/src/ui/downloads.rs:45
+#, rust-format
+msgid "{received} downloaded"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/episode_actions.rs:31
@@ -881,20 +895,20 @@ msgstr ""
 msgid "Select _None"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/selection_bar.rs:198
+#: crates/beacon-gtk/src/ui/selection_bar.rs:206
 msgid "Download"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/selection_bar.rs:206
-#: crates/beacon-gtk/src/ui/selection_bar.rs:210
+#: crates/beacon-gtk/src/ui/selection_bar.rs:214
+#: crates/beacon-gtk/src/ui/selection_bar.rs:218
 msgid "Selection Actions"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/selection_bar.rs:242
+#: crates/beacon-gtk/src/ui/selection_bar.rs:250
 msgid "No Episodes Selected"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/selection_bar.rs:244
+#: crates/beacon-gtk/src/ui/selection_bar.rs:252
 #, rust-format
 msgid "{n} Selected"
 msgid_plural "{n} Selected"

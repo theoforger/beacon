@@ -5,6 +5,9 @@
     input.py key NAME...          press NAMEs together (for example Control_L f)
     input.py click X Y [BUTTON]   move the pointer and click (8 is the back button)
     input.py move X Y             move the pointer only, to hover
+    input.py press X Y            move the pointer and hold the first button
+    input.py drag X Y             move there in steps with the button held
+    input.py release              let the first button go
     input.py type TEXT            type TEXT (ASCII only)
 """
 
@@ -39,6 +42,26 @@ def main(args):
         xtest.fake_input(d, X.ButtonRelease, button)
     elif args[0] == "move":
         xtest.fake_input(d, X.MotionNotify, x=int(args[1]), y=int(args[2]))
+    elif args[0] == "press":
+        xtest.fake_input(d, X.MotionNotify, x=int(args[1]), y=int(args[2]))
+        d.sync()
+        time.sleep(0.2)
+        xtest.fake_input(d, X.ButtonPress, 1)
+    elif args[0] == "drag":
+        # From where the pointer is, in small steps, as a hand moves, so
+        # the drag threshold and drop targets see the motion.
+        here = d.screen().root.query_pointer()
+        x0, y0 = here.root_x, here.root_y
+        x1, y1 = int(args[1]), int(args[2])
+        for step in range(1, 21):
+            xtest.fake_input(
+                d, X.MotionNotify,
+                x=x0 + (x1 - x0) * step // 20, y=y0 + (y1 - y0) * step // 20,
+            )
+            d.sync()
+            time.sleep(0.03)
+    elif args[0] == "release":
+        xtest.fake_input(d, X.ButtonRelease, 1)
     elif args[0] == "type":
         for char in " ".join(args[1:]):
             keysym = XK.string_to_keysym(NAMES.get(char, char))

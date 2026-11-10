@@ -7,6 +7,8 @@
 #   STEP: key:NAME[+NAME…]   e.g. key:F10, key:Control_L+f
 #         click:X,Y[,BUTTON]  e.g. click:28,27, click:860,450,8 (mouse back)
 #         move:X,Y             e.g. move:1188,148 (hover, no click)
+#         press:X,Y, drag:X,Y, release  hold the first button, move with it
+#                              held, let go: a drag and drop
 #         type:TEXT            e.g. type:http://127.0.0.1:8765/feed.xml
 #         wait:SECONDS         e.g. wait:3
 #
@@ -35,6 +37,9 @@ for step in "$@"; do
         key:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' key $(echo "${step#key:}" | tr + ' '); sleep 1;" ;;
         click:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' click $(echo "${step#click:}" | tr , ' '); sleep 1;" ;;
         move:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' move $(echo "${step#move:}" | tr , ' '); sleep 1;" ;;
+        press:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' press $(echo "${step#press:}" | tr , ' '); sleep 0.3;" ;;
+        drag:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' drag $(echo "${step#drag:}" | tr , ' '); sleep 0.5;" ;;
+        release) steps="$steps python3 -I '$root/build-aux/headless/input.py' release; sleep 1;" ;;
         type:*) steps="$steps python3 -I '$root/build-aux/headless/input.py' type '${step#type:}'; sleep 1;" ;;
         wait:*) steps="$steps sleep ${step#wait:};" ;;
         *) echo "unknown step: $step" >&2; exit 2 ;;
@@ -54,7 +59,9 @@ fi
 export GSETTINGS_SCHEMA_DIR="$root/target/schemas" GSETTINGS_BACKEND=keyfile
 export XDG_CONFIG_HOME="$state/config" XDG_DATA_HOME="$state/data" XDG_CACHE_HOME="$state/cache"
 export GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1
-export ADW_DEBUG_COLOR_SCHEME="prefer-$scheme"
+export ADW_DEBUG_COLOR_SCHEME="prefer-${scheme%-hc}"
+# SCHEME light-hc or dark-hc: high contrast as well.
+case $scheme in *-hc) export ADW_DEBUG_HIGH_CONTRAST=1 ;; esac
 
 dbus-run-session -- xvfb-run -a -s "-screen 0 ${screen}x24" sh -c "
     gsettings set com.theoforger.Beacon window-width $width

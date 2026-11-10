@@ -234,9 +234,9 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m5.md`)
-- [ ] Accessibility and translation checks pass
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m5.md`, 2026-11-10)
+- [x] Accessibility and translation checks pass: strings through gettext, every file with strings in `POTFILES.in` (`ui/downloads.rs` added in the gate), labels and tooltips on icon-only buttons; the Orca and keyboard walk-throughs logged for M9
+- [x] Tests: unit tests for new logic, integration test for each feature's main scenario (downloads, resume and cleanup in `tests/downloads.rs`; rows, Preferences and narrow headers in `ui/display_tests.rs`)
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
