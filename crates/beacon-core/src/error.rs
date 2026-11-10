@@ -46,6 +46,23 @@ pub enum LibraryError {
     ShowNotFound(ShowId),
 }
 
+/// Why an episode could not be downloaded.
+#[derive(Debug, thiserror::Error)]
+pub enum DownloadError {
+    #[error("could not download the episode: {0}")]
+    Network(#[from] reqwest::Error),
+    #[error("the server answered with HTTP status {0}")]
+    Status(u16),
+    #[error("could not save the episode: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("the episode has no audio file")]
+    NoAudio,
+    #[error("the download was cancelled")]
+    Cancelled,
+    #[error(transparent)]
+    Store(#[from] StoreError),
+}
+
 /// Why an episode cannot be played. The player reports these; the details
 /// are for logs.
 #[derive(Debug, Clone, thiserror::Error)]

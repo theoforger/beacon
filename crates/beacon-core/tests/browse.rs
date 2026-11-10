@@ -11,8 +11,9 @@ use beacon_core::browse::{self, RecencyGroup};
 use beacon_core::model::{DownloadFilter, EpisodeFilter, LibraryCounts, ShowPrefs, SortOrder};
 use beacon_core::services::clock::Clock;
 use beacon_core::services::covers::CoverCache;
+use beacon_core::services::downloads::Downloader;
 use beacon_core::services::feeds::FeedClient;
-use beacon_core::services::{http_client, library::Library};
+use beacon_core::services::{download_client, http_client, library::Library};
 use beacon_core::store::Store;
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use httpmock::prelude::*;
@@ -52,7 +53,8 @@ async fn subscribed(
     let library = Library::new(
         store,
         FeedClient::new(http.clone()),
-        CoverCache::new(cache, http),
+        CoverCache::new(cache.join("covers"), http),
+        Downloader::new(cache.join("downloads"), download_client()),
         Arc::new(FixedClock(now())),
     );
     let id = library

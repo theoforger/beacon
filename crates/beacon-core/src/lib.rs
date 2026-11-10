@@ -13,4 +13,4 @@ pub mod services;
 pub mod store;
 pub mod text;
 
-pub use error::{CoverError, FeedError, LibraryError, PlaybackError, StoreError};
+pub use error::{CoverError, DownloadError, FeedError, LibraryError, PlaybackError, StoreError};

@@ -11,8 +11,9 @@ use beacon_core::LibraryError;
 use beacon_core::error::FeedError;
 use beacon_core::services::clock::Clock;
 use beacon_core::services::covers::CoverCache;
+use beacon_core::services::downloads::Downloader;
 use beacon_core::services::feeds::FeedClient;
-use beacon_core::services::{http_client, library::Library};
+use beacon_core::services::{download_client, http_client, library::Library};
 use beacon_core::store::{Store, SyncStats};
 use chrono::{DateTime, TimeZone, Utc};
 use httpmock::prelude::*;
@@ -58,7 +59,8 @@ fn library_with(store: Store) -> Setup {
     let library = Library::new(
         store,
         FeedClient::new(http.clone()),
-        CoverCache::new(cache.path().to_owned(), http),
+        CoverCache::new(cache.path().join("covers"), http),
+        Downloader::new(cache.path().join("downloads"), download_client()),
         Arc::new(clock),
     );
     Setup {

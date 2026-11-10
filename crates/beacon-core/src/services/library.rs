@@ -11,13 +11,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use futures_util::StreamExt;
 use url::Url;
 
-use crate::error::{LibraryError, StoreError};
+use crate::error::{DownloadError, LibraryError, StoreError};
 use crate::model::{Chapter, EpisodeId, ShowId};
+use crate::services::cleanup::CleanupPolicy;
 use crate::services::clock::Clock;
 use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
+use crate::services::downloads::{Downloader, Progress};
 use crate::services::feeds::FeedClient;
-use crate::services::http_client;
+use crate::services::{download_client, http_client};
 use crate::store::{Store, SyncStats};
 
 /// What a refresh of every show did.
@@ -32,25 +34,40 @@ pub struct RefreshSummary {
 /// waiting, few enough to be polite to the network and to podcast hosts.
 const REFRESH_AT_ONCE: usize = 4;
 
+/// Episodes downloaded at once; the others wait their turn, in the order
+/// asked, so Download All Episodes does not open a connection per episode.
+const DOWNLOADS_AT_ONCE: usize = 3;
+
 pub struct Library {
     store: Mutex<Store>,
     feeds: FeedClient,
     covers: CoverCache,
+    downloads: Downloader,
+    download_slots: tokio::sync::Semaphore,
     clock: Arc<dyn Clock>,
 }
 
 impl Library {
-    pub fn new(store: Store, feeds: FeedClient, covers: CoverCache, clock: Arc<dyn Clock>) -> Self {
+    pub fn new(
+        store: Store,
+        feeds: FeedClient,
+        covers: CoverCache,
+        downloads: Downloader,
+        clock: Arc<dyn Clock>,
+    ) -> Self {
         Self {
             store: Mutex::new(store),
             feeds,
             covers,
+            downloads,
+            download_slots: tokio::sync::Semaphore::new(DOWNLOADS_AT_ONCE),
             clock,
         }
     }
 
-    /// The library in `data_dir` (`beacon.db`), caching covers in
-    /// `cache_dir/covers`. Creates the folders if needed.
+    /// The library in `data_dir` (`beacon.db`, and downloaded episodes in
+    /// `downloads`), caching covers in `cache_dir/covers`. Creates the
+    /// folders if needed.
     pub fn open(data_dir: &Path, cache_dir: &Path) -> Result<Self, StoreError> {
         std::fs::create_dir_all(data_dir)?;
         let store = Store::open(&data_dir.join("beacon.db"))?;
@@ -59,6 +76,7 @@ impl Library {
             store,
             FeedClient::new(http.clone()),
             CoverCache::new(cache_dir.join("covers"), http),
+            Downloader::new(data_dir.join("downloads"), download_client()),
             Arc::new(SystemClock),
         ))
     }
@@ -150,10 +168,65 @@ impl Library {
         }
     }
 
-    /// The episode's own cover, downloaded once and then kept with the
-    /// shows' covers. `None` when it has no image of its own, or the same
-    /// image as its show (GNOME Podcasts' rule), or the image cannot be
-    /// fetched: the show's cover stands in.
+    /// Download episode `id`, reporting to `progress`, once one of the
+    /// download slots is free. Resumes a download that stopped part way;
+    /// an episode already downloaded is left as it is. Returns its file.
+    pub async fn download(
+        &self,
+        id: EpisodeId,
+        progress: &Progress,
+    ) -> Result<PathBuf, DownloadError> {
+        let url = {
+            let store = self.lock();
+            let episode = store.episode(id)?.ok_or(DownloadError::NoAudio)?;
+            if let Some(path) = episode.state.download_path.filter(|p| p.exists()) {
+                return Ok(path);
+            }
+            episode
+                .info
+                .enclosure
+                .map(|e| e.url)
+                .ok_or(DownloadError::NoAudio)?
+        };
+        let _slot = self
+            .download_slots
+            .acquire()
+            .await
+            .map_err(|_| DownloadError::Cancelled)?;
+        if progress.is_cancelled() {
+            return Err(DownloadError::Cancelled);
+        }
+        let path = self.downloads.fetch(id, &url, progress).await?;
+        self.lock()
+            .set_download(id, Some(&path), self.clock.now())?;
+        Ok(path)
+    }
+
+    /// Delete the downloads `policy` finds old, leaving queued episodes
+    /// and those in `keep` (the one playing). Returns how many it deleted.
+    pub fn clean_downloads(
+        &self,
+        policy: CleanupPolicy,
+        keep: &[EpisodeId],
+    ) -> Result<usize, StoreError> {
+        if !policy.enabled {
+            return Ok(0);
+        }
+        let now = self.clock.now();
+        let old: Vec<EpisodeId> = {
+            let store = self.lock();
+            let queue = store.queue()?;
+            store
+                .downloaded_episodes()?
+                .into_iter()
+                .filter(|e| policy.expired(e, now))
+                .map(|e| e.id)
+                .filter(|id| !queue.contains(id) && !keep.contains(id))
+                .collect()
+        };
+        self.delete_downloads(&old)
+    }
+
     /// Delete the downloaded files of `ids` and forget them; a file
     /// already gone is forgotten too. Returns how many were downloaded.
     pub fn delete_downloads(&self, ids: &[EpisodeId]) -> Result<usize, StoreError> {
@@ -175,6 +248,10 @@ impl Library {
         Ok(deleted)
     }
 
+    /// The episode's own cover, downloaded once and then kept with the
+    /// shows' covers. `None` when it has no image of its own, or the same
+    /// image as its show (GNOME Podcasts' rule), or the image cannot be
+    /// fetched: the show's cover stands in.
     pub async fn episode_cover(&self, id: EpisodeId) -> Result<Option<PathBuf>, StoreError> {
         let (episode_image, show_image) = {
             let store = self.lock();
