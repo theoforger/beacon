@@ -18,6 +18,7 @@ use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::page_filters;
+use crate::ui::selection_bar::Bulk;
 
 /// Where New's filter menu choices are remembered, by menu group.
 use super::library::{NEW_KEYS, Parts};
@@ -34,7 +35,9 @@ impl App {
             }
             ContentOutput::OpenShow(id) => self.open_show(id),
             ContentOutput::GoBack => self.go_back(),
-            ContentOutput::Change(ids, change) => self.change_episodes(ids, change),
+            ContentOutput::Change(ids, Bulk::Change(change)) => self.change_episodes(ids, change),
+            ContentOutput::Change(ids, Bulk::Download) => self.start_downloads(ids),
+            ContentOutput::DownloadAll(ids) => self.confirm_download_all(ids, root),
             ContentOutput::NewPrefsChanged(prefs) => {
                 for (group, value) in page_filters::states(&prefs) {
                     let Some((_, key)) = NEW_KEYS.iter().find(|(g, _)| *g == group) else {
@@ -132,6 +135,7 @@ impl App {
                     }
                 });
             }
+            RowAction::ToggleDownload => self.toggle_download(&item),
             RowAction::ToggleFavorite => {
                 self.job(Parts::EPISODE, false, move |store| {
                     store.set_favorite(id, !state.favorite)

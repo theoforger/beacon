@@ -27,6 +27,7 @@ use crate::ui::models::{EpisodeItem, RowAction};
 use crate::ui::play_button;
 use crate::ui::selection::Selection;
 
+mod downloading;
 mod menu;
 mod reorder;
 mod selecting;
@@ -81,6 +82,15 @@ pub fn show_playing(playing: Option<(EpisodeId, PlaybackState)>) {
             }
             None => false,
         });
+    });
+}
+
+/// Show the downloads under way (`ui/downloads.rs`) on the rows.
+pub fn show_downloads() {
+    ROWS.with_borrow(|rows| {
+        for row in rows.iter().filter_map(glib::WeakRef::upgrade) {
+            row.show_download();
+        }
     });
 }
 
@@ -140,6 +150,8 @@ pub struct Parts {
     text: gtk::Box,
     /// Made when the row first shows a partly played episode.
     progress: OnceCell<gtk::ProgressBar>,
+    /// Made when the row first shows a download under way.
+    download: OnceCell<gtk::ProgressBar>,
     menu: gtk::MenuButton,
     play: gtk::Button,
     /// Play with its loading spinner: hidden whole, so its spacing goes too.
@@ -327,6 +339,7 @@ impl EpisodeRow {
             subtitle,
             text,
             progress: OnceCell::new(),
+            download: OnceCell::new(),
             menu,
             play,
             play_holder,
@@ -361,10 +374,10 @@ impl EpisodeRow {
         let Some(parts) = self.imp().parts.get() else {
             return;
         };
-        let progress = parts
-            .progress
-            .get()
-            .is_some_and(gtk::ProgressBar::is_visible);
+        let progress = [parts.progress.get(), parts.download.get()]
+            .into_iter()
+            .flatten()
+            .any(gtk::ProgressBar::is_visible);
         parts.title.set_lines(if progress { 1 } else { 2 });
     }
 
@@ -509,7 +522,8 @@ impl EpisodeRow {
         } else if let Some(progress) = parts.progress.get() {
             progress.set_visible(false);
         }
-        self.fit_title();
+        // Over the playback progress, which it hides while it shows.
+        self.show_download();
         // Built when opened (below), so drop one worded for the old state.
         if parts.menu.menu_model().is_some() {
             parts.menu.set_menu_model(None::<&gio::MenuModel>);

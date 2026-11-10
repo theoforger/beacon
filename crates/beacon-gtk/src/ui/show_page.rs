@@ -10,9 +10,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use beacon_core::model::{
-    DownloadFilter, EpisodeChange, EpisodeFilter, EpisodeId, ShowId, ShowPrefs,
-};
+use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
@@ -22,7 +20,7 @@ use crate::ui::messages::{Inbox, Output};
 use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
 use crate::ui::selection::Selection;
-use crate::ui::selection_bar;
+use crate::ui::selection_bar::{self, Bulk};
 use crate::ui::show_hero::ShowHero;
 use crate::ui::widgets::episode_row::RowSetup;
 
@@ -35,6 +33,7 @@ pub enum ShowPageInput {
     Choose(page_filters::Choice),
     /// Mark All as Played, or as Unplayed when every episode is played.
     MarkAll,
+    DownloadAll,
     CopyFeedAddress,
     Unsubscribe,
     /// A season was folded or unfolded.
@@ -49,8 +48,10 @@ pub enum ShowPageOutput {
     MarkAll(ShowId, bool),
     Unsubscribe(ShowId),
     FeedAddressCopied,
+    /// Download All Episodes: the episodes not downloaded yet.
+    DownloadAll(Vec<EpisodeId>),
     /// A change to the selected episodes.
-    Change(Vec<EpisodeId>, EpisodeChange),
+    Change(Vec<EpisodeId>, Bulk),
 }
 
 mod imp {
@@ -91,6 +92,8 @@ pub struct Parts {
     filter: page_filters::FilterButton,
     /// More Options: Mark All, Download All Episodes, Copy Feed Address.
     more: gtk::MenuButton,
+    /// Download All Episodes, unavailable when all are downloaded.
+    download_all: gio::SimpleAction,
     rows: RowSetup,
     list: EpisodeList,
     /// Folded seasons, kept while the app runs.
@@ -184,6 +187,10 @@ impl ShowPage {
         let i = input.clone();
         mark_all.connect_activate(move |_, _| i(ShowPageInput::MarkAll));
         actions.add_action(&mark_all);
+        let download_all = gio::SimpleAction::new("download-all", None);
+        let i = input.clone();
+        download_all.connect_activate(move |_, _| i(ShowPageInput::DownloadAll));
+        actions.add_action(&download_all);
         let copy = gio::SimpleAction::new("copy-feed", None);
         let i = input.clone();
         copy.connect_activate(move |_, _| i(ShowPageInput::CopyFeedAddress));
@@ -198,6 +205,7 @@ impl ShowPage {
             hero,
             filter,
             more,
+            download_all,
             rows,
             list,
             folding,
@@ -240,6 +248,7 @@ impl ShowPage {
                     parts.more.set_menu_model(Some(&more_menu(data.all_played)));
                 }
                 parts.filter.set_prefs(&data.prefs);
+                parts.download_all.set_enabled(!data.to_download.is_empty());
                 imp.data.replace(Some(*data));
                 self.show_episodes();
             }
@@ -254,6 +263,12 @@ impl ShowPage {
                     .map(|d| (d.show.id, d.all_played));
                 if let Some((show, all_played)) = all {
                     imp.output.emit(ShowPageOutput::MarkAll(show, !all_played));
+                }
+            }
+            ShowPageInput::DownloadAll => {
+                let ids = imp.data.borrow().as_ref().map(|d| d.to_download.clone());
+                if let Some(ids) = ids.filter(|ids| !ids.is_empty()) {
+                    imp.output.emit(ShowPageOutput::DownloadAll(ids));
                 }
             }
             ShowPageInput::CopyFeedAddress => {
@@ -366,7 +381,7 @@ fn more_menu(all_played: bool) -> gio::Menu {
         gettext("Mark All as _Played")
     };
     menu.append(Some(&mark_all), Some("show.mark-all"));
-    // Downloads arrive in M5; the item stays disabled until then.
+    // Unavailable when every episode is downloaded.
     menu.append(
         Some(&gettext("_Download All Episodes")),
         Some("show.download-all"),

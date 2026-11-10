@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use beacon_core::model::{Episode, EpisodeId, EpisodeInfo, EpisodeState, Season, ShowId};
 use chrono::Utc;
-use gtk::{self, gdk, glib, prelude::*};
+use gtk::{self, gdk, gio, glib, prelude::*};
 
 use crate::ui::dialogs::description::text_height;
 use crate::ui::episode_list::{Entry, EpisodeList};
@@ -36,6 +36,11 @@ fn partly_played() -> EpisodeItem {
             info: EpisodeInfo {
                 title: "A long episode title that goes on and on".into(),
                 duration: Some(Duration::from_secs(3600)),
+                enclosure: Some(beacon_core::model::Enclosure {
+                    url: url::Url::parse("https://example.com/1.mp3").unwrap(),
+                    mime_type: None,
+                    length: None,
+                }),
                 ..Default::default()
             },
             state: EpisodeState {
@@ -137,6 +142,8 @@ fn widgets_lay_out_as_designed() {
     the_details_pane_offers_the_row_menus_actions();
     favorite_rows_show_a_star();
     queued_rows_can_be_reordered();
+    downloads_show_on_rows();
+    preferences_follow_settings();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
@@ -218,6 +225,7 @@ fn seasons_fold_away_their_episodes() {
         seasons: Some(vec![season(2, 4..=6), season(1, 1..=3)]),
         episodes: Vec::new(),
         all_played: false,
+        to_download: Vec::new(),
     };
     page.send(ShowPageInput::Set(Box::new(data.clone())));
     let nav = adw::NavigationView::new();
@@ -650,6 +658,7 @@ fn the_podcast_header_fits_its_description() {
             seasons: None,
             episodes: Vec::new(),
             all_played: false,
+            to_download: Vec::new(),
         });
         // A window of the width: the header takes all it is given.
         let window = gtk::Window::builder()
@@ -818,6 +827,127 @@ fn queued_rows_can_be_reordered() {
         ]
     );
     window.destroy();
+}
+
+/// The visible progress bars in `widget`, with their fractions.
+fn bars(widget: &gtk::Widget) -> Vec<f64> {
+    let mut found = Vec::new();
+    let mut stack = vec![widget.clone()];
+    while let Some(widget) = stack.pop() {
+        if let Some(bar) = widget.downcast_ref::<gtk::ProgressBar>()
+            && bar.is_drawable()
+        {
+            found.push(bar.fraction());
+        }
+        let mut child = widget.first_child();
+        while let Some(c) = child {
+            child = c.next_sibling();
+            stack.push(c);
+        }
+    }
+    found
+}
+
+/// A row shows its episode's download under way in place of its playback
+/// progress, and the playback progress again once it ends.
+fn downloads_show_on_rows() {
+    use std::collections::HashMap;
+
+    use crate::ui::downloads;
+
+    let row = EpisodeRow::new(&setup());
+    let window = window(&row);
+    let settle = || {
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+    };
+    let item = partly_played();
+    row.bind(&item);
+    settle();
+    let played = bars(row.upcast_ref());
+    assert_eq!(played.len(), 1, "the playback progress");
+
+    downloads::set(HashMap::from([(item.episode.id, Some(0.4))]));
+    settle();
+    assert_eq!(bars(row.upcast_ref()), [0.4], "the download, alone");
+    assert!(
+        crate::ui::episode_actions::items(
+            crate::ui::episode_actions::menu(&item, "row").upcast_ref()
+        )
+        .iter()
+        .any(|(label, _)| label == "Cancel _Download")
+    );
+
+    downloads::set(HashMap::new());
+    settle();
+    assert_eq!(bars(row.upcast_ref()), played);
+    window.destroy();
+}
+
+/// Preferences' rows show and change their settings, and the rows under
+/// Delete Old Downloads are unavailable while it is off. Settings from
+/// the schema in `data/`, compiled for the test, in memory.
+fn preferences_follow_settings() {
+    use adw::prelude::{AdwDialogExt, PreferencesRowExt};
+
+    let schemas = std::env::temp_dir().join(format!("beacon-schemas-{}", std::process::id()));
+    std::fs::create_dir_all(&schemas).unwrap();
+    let compiled = std::process::Command::new("glib-compile-schemas")
+        .arg(format!("--targetdir={}", schemas.display()))
+        .arg(concat!(env!("CARGO_MANIFEST_DIR"), "/../../data"))
+        .status()
+        .is_ok_and(|status| status.success());
+    if !compiled {
+        return;
+    }
+    let source = gio::SettingsSchemaSource::from_directory(&schemas, None, false).unwrap();
+    let schema = source.lookup(crate::config::APP_ID, false).unwrap();
+    let backend = gio::memory_settings_backend_new();
+    let settings = gio::Settings::new_full(&schema, Some(&backend), None);
+
+    let dialog = crate::ui::dialogs::preferences::dialog(&settings);
+    let host = window(&gtk::Box::new(gtk::Orientation::Vertical, 0));
+    dialog.present(Some(&host));
+    let until = std::time::Instant::now() + Duration::from_millis(200);
+    run_until(|| std::time::Instant::now() > until);
+    let switches: Vec<adw::SwitchRow> = {
+        let mut found = Vec::new();
+        let mut stack = vec![dialog.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if let Some(row) = widget.downcast_ref::<adw::SwitchRow>() {
+                found.push(row.clone());
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        found.sort_by_key(|row| row.title().len());
+        found
+    };
+    let [enabled, only_played] = &switches[..] else {
+        panic!("two switches, found {}", switches.len());
+    };
+    let after = first::<adw::SpinRow>(dialog.upcast_ref()).expect("Delete After");
+
+    assert!(!enabled.is_active(), "off by default");
+    assert!(only_played.is_active(), "on by default");
+    assert_eq!(after.value(), 7.0);
+    assert!(!after.is_sensitive() && !only_played.is_sensitive());
+
+    settings.set_boolean("delete-old-downloads", true).unwrap();
+    assert!(enabled.is_active());
+    assert!(after.is_sensitive() && only_played.is_sensitive());
+    after.set_value(30.0);
+    assert_eq!(settings.uint("delete-after-days"), 30);
+    only_played.set_active(false);
+    assert!(!settings.boolean("delete-only-played"));
+    let policy = crate::app::downloads::cleanup_policy(&settings);
+    assert!(policy.enabled && policy.after_days == 30 && !policy.only_played);
+    let _ = std::fs::remove_dir_all(&schemas);
+    dialog.force_close();
+    host.destroy();
 }
 
 /// Where the seek bar's chapter ticks are, as fractions of its width.
@@ -1003,6 +1133,7 @@ fn resize_cost() {
             seasons: None,
             episodes: items,
             all_played: false,
+            to_download: Vec::new(),
         };
         let page = ShowPage::new(&gtk::ToggleButton::new());
         page.send(ShowPageInput::Set(Box::new(data)));

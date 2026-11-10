@@ -70,5 +70,21 @@
       <summary>Last episode played</summary>
       <description>The episode the queue’s Next from list carries on after, kept across restarts; 0 for none.</description>
     </key>
+    <key name="delete-old-downloads" type="b">
+      <default>false</default>
+      <summary>Delete old downloads</summary>
+      <description>Whether downloaded episodes are deleted once older than delete-after-days. Queued episodes are never deleted.</description>
+    </key>
+    <key name="delete-after-days" type="u">
+      <range min="1" max="365"/>
+      <default>7</default>
+      <summary>Days before a download is deleted</summary>
+      <description>How many days old a download gets before it is deleted, when delete-old-downloads is on.</description>
+    </key>
+    <key name="delete-only-played" type="b">
+      <default>true</default>
+      <summary>Only delete played episodes</summary>
+      <description>Whether only played episodes are deleted, counting days from when each was played; otherwise days count from when the download finished.</description>
+    </key>
   </schema>
 </schemalist>

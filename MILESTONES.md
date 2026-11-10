@@ -223,14 +223,14 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Drag handles, plus Move Up and Move Down in the row menu; the playing episode shows no In Queue marker (`ui/widgets/episode_row/reorder.rs`, `beacon_core::queue::step`)
 - [x] Favorites and Downloaded views with empty status pages (`ui/episodes_view.rs`)
 - [x] Selection mode in Queue, Favorites and Downloaded; Clear in the Queue and Downloaded headers (asked by the user 2026-11-08; `ui/content/lists.rs`, `app/lists.rs`)
-- [ ] `DownloadService`: manual downloads only, with resume; Download / Delete Download
-- [ ] Preferences (`AdwPreferencesDialog`) with a Downloads group: Delete Old Downloads (switch, off by default), Delete After (spin row, days), and Only Delete Played Episodes (switch, on by default); the dependent rows are disabled while the master switch is off
-- [ ] Cleanup at startup and daily; never deletes queued episodes; shows a toast when it removes something
+- [x] `DownloadService`: manual downloads only, with resume; Download / Delete Download (`services/downloads.rs`, `app/downloads.rs`; also Cancel Download, selection Download and Download All Episodes)
+- [x] Preferences (`AdwPreferencesDialog`) with a Downloads group: Delete Old Downloads (switch, off by default), Delete After (spin row, days), and Only Delete Played Episodes (switch, on by default); the dependent rows are disabled while the master switch is off
+- [x] Cleanup at startup and daily; never deletes queued episodes; shows a toast when it removes something (`services/cleanup.rs`; also when Preferences closes)
 
 ### Tests
 
-- [ ] Unit: queue order, auto-continue, auto-delete rules (with an injected clock)
-- [ ] Integration: queue order and auto-continue; marking played leaves the queue alone; download with resume; auto-delete removes an old download
+- [x] Unit: queue order, auto-continue, auto-delete rules (with an injected clock)
+- [x] Integration: queue order and auto-continue; marking played leaves the queue alone; download with resume; auto-delete removes an old download (`tests/browse.rs`, `tests/downloads.rs`)
 
 ### Exit gate
 

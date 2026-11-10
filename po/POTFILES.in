@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Files with translatable strings. Keep sorted.
 crates/beacon-gtk/src/app/actions.rs
+crates/beacon-gtk/src/app/downloads.rs
 crates/beacon-gtk/src/app/library.rs
 crates/beacon-gtk/src/app/lists.rs
 crates/beacon-gtk/src/app/setup.rs
@@ -14,6 +15,7 @@ crates/beacon-gtk/src/ui/content/sections.rs
 crates/beacon-gtk/src/ui/details_pane/build.rs
 crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
+crates/beacon-gtk/src/ui/dialogs/preferences.rs
 crates/beacon-gtk/src/ui/episode_actions.rs
 crates/beacon-gtk/src/ui/episodes_view.rs
 crates/beacon-gtk/src/ui/errors.rs
@@ -32,6 +34,7 @@ crates/beacon-gtk/src/ui/show_hero.rs
 crates/beacon-gtk/src/ui/show_page.rs
 crates/beacon-gtk/src/ui/shows_grid.rs
 crates/beacon-gtk/src/ui/sidebar.rs
+crates/beacon-gtk/src/ui/widgets/episode_row/downloading.rs
 crates/beacon-gtk/src/ui/widgets/episode_row/menu.rs
 crates/beacon-gtk/src/ui/widgets/episode_row/mod.rs
 crates/beacon-gtk/src/ui/widgets/episode_row/selecting.rs

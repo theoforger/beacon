@@ -92,6 +92,7 @@ impl App {
             details,
             bar,
             sleep: controls::Sleep::default(),
+            downloads: Rc::default(),
         };
 
         // The details toggle and the pane stay in step whichever side changes.
@@ -151,6 +152,8 @@ impl App {
                 if model.settings.boolean("refresh-on-startup") {
                     model.start_refresh(true);
                 }
+                // Old downloads, if Preferences asks (`app/downloads.rs`).
+                model.schedule_cleanup();
             }
         }
 
@@ -158,8 +161,8 @@ impl App {
     }
 }
 
-/// The window's actions: About, Search, Back, Refresh Feeds and the details
-/// pane. Returns Refresh Feeds, which is unavailable without a library.
+/// The window's actions: About, Preferences, Search, Back, Refresh Feeds
+/// and the details pane. Returns Refresh Feeds, which is unavailable without a library.
 fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::SimpleAction {
     let window = root.downgrade();
     let about = gio::ActionEntry::builder("about")
@@ -180,6 +183,7 @@ fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::Simple
         message("search", || AppMsg::ToggleSearch),
         message("back", || AppMsg::GoBack),
         message("details", || AppMsg::ToggleDetails),
+        message("preferences", || AppMsg::Preferences),
     ]);
     let refresh = gio::SimpleAction::new("refresh", None);
     let s = sender.clone();

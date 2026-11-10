@@ -11,7 +11,7 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeChange, EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::{EpisodeId, ShowId, ShowPrefs};
 use gtk::glib;
 use url::Url;
 
@@ -23,6 +23,7 @@ use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
 use crate::ui::queue_data::QueueData;
+use crate::ui::selection_bar::Bulk;
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 use beacon_core::queue::Source;
@@ -80,8 +81,10 @@ pub enum ContentOutput {
     Subscribe(Url),
     /// Leave the page showing, as Back does.
     GoBack,
-    /// A change to the selected episodes.
-    Change(Vec<EpisodeId>, EpisodeChange),
+    /// What was chosen for the selected episodes.
+    Change(Vec<EpisodeId>, Bulk),
+    /// A podcast page's Download All Episodes.
+    DownloadAll(Vec<EpisodeId>),
     /// The Queue's Clear, with the episodes it held.
     ClearQueue(Vec<EpisodeId>),
     /// Downloaded's Clear, with the downloaded episodes.
@@ -183,6 +186,7 @@ impl Content {
                     ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
                     ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
                     ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
+                    ShowPageOutput::DownloadAll(ids) => ContentOutput::DownloadAll(ids),
                 });
             }
         });
@@ -232,6 +236,34 @@ impl Content {
 
         widgets.root_header.pack_end(&lists.select);
         widgets.start.append(&lists.clear);
+        // The start goes when neither shows, or the header would still
+        // space it from the title: 6px New's narrow header has not got.
+        let fit_start = {
+            let (start, holder, refresh, clear) = (
+                widgets.start.clone(),
+                widgets.refresh_holder.clone(),
+                widgets.refresh.clone(),
+                lists.clear.clone(),
+            );
+            // Each one's own flag: `is_visible` also asks the start, which
+            // this hides.
+            let shown = |widget: &gtk::Widget| widget.property::<bool>("visible");
+            std::rc::Rc::new(move || {
+                start.set_visible(
+                    (shown(holder.upcast_ref()) && shown(refresh.upcast_ref()))
+                        || shown(clear.upcast_ref()),
+                );
+            })
+        };
+        fit_start();
+        for widget in [
+            widgets.refresh_holder.upcast_ref::<gtk::Widget>(),
+            widgets.refresh.upcast_ref(),
+            lists.clear.upcast_ref(),
+        ] {
+            let fit_start = fit_start.clone();
+            widget.connect_visible_notify(move |_| fit_start());
+        }
         sections::attach_new_selection(
             &widgets.root_toolbar,
             &widgets.root_header,

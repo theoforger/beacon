@@ -20,9 +20,28 @@ use gtk::{self, gio, glib};
 
 use crate::ui::selection::Selection;
 
-/// Called with the selected episodes, in the page's order, and the change
+/// What the selection's actions ask for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Bulk {
+    /// Queue, Favorites or Played, set the same on every episode.
+    Change(EpisodeChange),
+    /// Download those not yet downloaded.
+    Download,
+}
+
+/// Called with the selected episodes, in the page's order, and what was
 /// chosen for them.
-pub type OnChange = Box<dyn Fn(Vec<EpisodeId>, EpisodeChange)>;
+pub type OnChange = Box<dyn Fn(Vec<EpisodeId>, Bulk)>;
+
+/// The selected episodes Download would download: those with audio, not
+/// downloaded yet.
+fn to_download(items: &[crate::ui::models::EpisodeItem]) -> Vec<EpisodeId> {
+    items
+        .iter()
+        .filter(|i| i.episode.info.enclosure.is_some() && i.episode.state.download_path.is_none())
+        .map(|i| i.episode.id)
+        .collect()
+}
 
 /// An icon-only button with its tooltip and accessible label.
 fn icon_button(icon: &str, label: &str) -> gtk::Button {
@@ -118,10 +137,17 @@ pub fn attach(
         let (s, on_change) = (selection.clone(), on_change.clone());
         action.connect_activate(move |_, _| {
             let items = s.selected();
+            if name == "download" {
+                on_change(to_download(&items), Bulk::Download);
+                return;
+            }
             let offered =
                 EpisodeChange::offered(items.iter().map(|i| (i.in_queue, &i.episode.state)));
             if let Some(change) = offered.get(index) {
-                on_change(items.iter().map(|i| i.episode.id).collect(), *change);
+                on_change(
+                    items.iter().map(|i| i.episode.id).collect(),
+                    Bulk::Change(*change),
+                );
             }
         });
         group.add_action(&action);
@@ -218,13 +244,14 @@ pub fn attach(
             ngettext("{n} Selected", "{n} Selected", count as u32)
                 .replace("{n}", &count.to_string())
         });
-        // Downloads arrive in M5.
+        // Download only while something selected is not downloaded.
+        let downloadable = !to_download(&s.selected()).is_empty();
         for name in ACTIONS {
             if let Some(action) = group
                 .lookup_action(name)
                 .and_downcast::<gio::SimpleAction>()
             {
-                action.set_enabled(count > 0 && name != "download");
+                action.set_enabled(count > 0 && (name != "download" || downloadable));
             }
         }
         let labels = toggle_labels(s);

@@ -7,6 +7,7 @@
 
 mod actions;
 mod controls;
+pub(crate) mod downloads;
 mod library;
 mod lists;
 mod media;
@@ -67,6 +68,12 @@ pub enum AppMsg {
     Requeue(Vec<EpisodeId>),
     /// Delete All Downloads, confirmed.
     DeleteDownloads(Vec<EpisodeId>),
+    /// Download these episodes (Download All Episodes, confirmed).
+    Download(Vec<EpisodeId>),
+    /// Look for old downloads to delete (at startup and once a day).
+    CleanDownloads,
+    /// Open Preferences.
+    Preferences,
     Player(PlayerEvent),
     /// What the player bar asks for.
     Bar(PlayerBarOutput),
@@ -92,6 +99,15 @@ pub enum AppCommand {
     /// bar.
     Chapters(EpisodeId, Vec<beacon_core::model::Chapter>),
     DownloadsDeleted(Result<usize, StoreError>),
+    /// A download ended: done, failed or cancelled, with the episode's
+    /// title when it failed.
+    Downloaded(
+        EpisodeId,
+        String,
+        Result<PathBuf, beacon_core::DownloadError>,
+    ),
+    /// Old downloads deleted, as Preferences asks.
+    Cleaned(Result<usize, StoreError>),
     /// The episode last played, read back at launch.
     Restore(Option<Box<EpisodeItem>>),
 }
@@ -158,6 +174,8 @@ pub struct App {
     details: DetailsPane,
     bar: PlayerBar,
     sleep: controls::Sleep,
+    /// The downloads under way.
+    downloads: downloads::Active,
 }
 
 impl App {
@@ -193,6 +211,9 @@ impl App {
             AppMsg::ConfirmUnsubscribe(id) => self.unsubscribe(id),
             AppMsg::Requeue(ids) => self.requeue(ids),
             AppMsg::DeleteDownloads(ids) => self.delete_downloads(ids),
+            AppMsg::Download(ids) => self.start_downloads(ids),
+            AppMsg::CleanDownloads => self.clean_downloads(),
+            AppMsg::Preferences => self.open_preferences(root),
             AppMsg::Player(event) => self.player_event(event),
             AppMsg::Bar(output) => self.bar_output(output),
             AppMsg::Media(control) => self.media_control(control, root),
@@ -221,6 +242,8 @@ impl App {
             AppCommand::Restore(Some(item)) => self.restore(*item),
             AppCommand::PlayNext(Some(item)) => self.play_episode(&item),
             AppCommand::DownloadsDeleted(result) => self.downloads_deleted(result),
+            AppCommand::Downloaded(id, title, result) => self.downloaded(id, &title, result),
+            AppCommand::Cleaned(result) => self.cleaned(result),
             AppCommand::Chapters(id, chapters) => {
                 self.bar
                     .send(PlayerBarInput::Chapters(id, chapters.clone()));

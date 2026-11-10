@@ -28,6 +28,8 @@ pub enum RowAction {
     Play,
     ShowDetails,
     ToggleQueue,
+    /// Download, Cancel Download or Delete Download, as the episode is.
+    ToggleDownload,
     ToggleFavorite,
     TogglePlayed,
     /// Start the episode from the beginning next time, leaving whether it
@@ -70,6 +72,9 @@ pub struct ShowPageData {
     /// Every episode is played, whatever the filter shows: the page offers
     /// Mark All as Unplayed instead of Mark All as Played.
     pub all_played: bool,
+    /// What Download All Episodes downloads: every episode with audio not
+    /// yet downloaded, whatever the filter shows, newest first.
+    pub to_download: Vec<EpisodeId>,
 }
 
 /// What turning episodes into items needs: their shows and the queue.
@@ -156,6 +161,11 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
     let prefs = store.show_prefs(id)?;
     let all = store.episodes(id)?;
     let all_played = !all.is_empty() && all.iter().all(|e| e.state.played);
+    let to_download = all
+        .iter()
+        .filter(|e| e.info.enclosure.is_some() && e.state.download_path.is_none())
+        .map(|e| e.id)
+        .collect();
     let mut episodes: Vec<Episode> = all.into_iter().filter(|e| prefs.accepts(e)).collect();
 
     let seasons = browse::group_by_season(episodes.clone(), prefs.order).map(|groups| {
@@ -183,6 +193,7 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
         seasons,
         episodes,
         all_played,
+        to_download,
     }))
 }
 

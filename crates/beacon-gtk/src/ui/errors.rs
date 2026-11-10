@@ -3,7 +3,7 @@
 //! What to tell people when something fails. Each error variant has its own
 //! translated message; the core's `Display` text is for logs only.
 
-use beacon_core::error::{FeedError, LibraryError, PlaybackError, StoreError};
+use beacon_core::error::{DownloadError, FeedError, LibraryError, PlaybackError, StoreError};
 use gettextrs::gettext;
 
 pub fn library(error: &LibraryError) -> String {
@@ -39,4 +39,26 @@ pub fn playback(error: &PlaybackError) -> String {
         PlaybackError::NoAudio => gettext("This episode has no audio to play"),
         PlaybackError::Stream(_) => gettext("Could not play this episode"),
     }
+}
+
+/// Why "title" did not download; `None` when it was cancelled, which needs
+/// no message.
+pub fn download(error: &DownloadError, title: &str) -> Option<String> {
+    let message = match error {
+        DownloadError::Cancelled => return None,
+        // Translators: {title} is an episode's title.
+        DownloadError::Network(_) => gettext("Could not download “{title}”: the connection failed"),
+        // Translators: {title} is an episode's title; {code} an HTTP status
+        // code, such as 404.
+        DownloadError::Status(code) => {
+            gettext("Could not download “{title}”: the server answered with error {code}")
+                .replace("{code}", &code.to_string())
+        }
+        // Translators: {title} is an episode's title.
+        DownloadError::Io(_) => gettext("Could not save “{title}” on this device"),
+        // Translators: {title} is an episode's title.
+        DownloadError::NoAudio => gettext("“{title}” has no audio to download"),
+        DownloadError::Store(store) => return Some(self::store(store)),
+    };
+    Some(message.replace("{title}", title))
 }

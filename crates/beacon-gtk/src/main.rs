@@ -66,4 +66,5 @@ fn setup_app_actions(app: &adw::Application) {
     app.set_accels_for_action("win.back", &["<Alt>Left", "Back"]);
     app.set_accels_for_action("win.refresh", &["<Control>r", "F5"]);
     app.set_accels_for_action("win.details", &["F9"]);
+    app.set_accels_for_action("win.preferences", &["<Control>comma"]);
 }

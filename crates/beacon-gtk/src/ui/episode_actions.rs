@@ -8,11 +8,13 @@
 use gettextrs::gettext;
 use gtk::{gio, prelude::*};
 
+use crate::ui::downloads;
 use crate::ui::models::{EpisodeItem, RowAction};
 
 /// Each action's name in its group, and what it asks for.
-const ACTIONS: [(&str, RowAction); 4] = [
+const ACTIONS: [(&str, RowAction); 5] = [
     ("queue", RowAction::ToggleQueue),
+    ("download", RowAction::ToggleDownload),
     ("favorite", RowAction::ToggleFavorite),
     ("played", RowAction::TogglePlayed),
     ("reset", RowAction::ResetProgress),
@@ -32,8 +34,18 @@ pub fn menu(item: &EpisodeItem, group: &str) -> gio::Menu {
         }),
         Some(&action("queue")),
     );
-    // Downloads arrive in M5: no action yet, so the item is greyed out.
-    menu.append(Some(&gettext("_Download")), Some(&action("download")));
+    // Only for an episode with audio. Deleting a download is not
+    // confirmed: the episode can be downloaded again, as in GNOME Podcasts.
+    if item.episode.info.enclosure.is_some() {
+        let download = if downloads::is_downloading(item.episode.id) {
+            gettext("Cancel _Download")
+        } else if state.download_path.is_some() {
+            gettext("_Delete Download")
+        } else {
+            gettext("_Download")
+        };
+        menu.append(Some(&download), Some(&action("download")));
+    }
     menu.append(
         Some(&if state.favorite {
             gettext("Remove From _Favorites")
@@ -118,14 +130,15 @@ mod tests {
     }
 
     #[test]
-    fn every_action_named_is_added_but_download() {
+    fn every_action_named_is_added() {
         let mut item = item();
         item.episode.state.position = std::time::Duration::from_secs(90);
+        item.episode.info.enclosure = Some(enclosure());
         let group = gio::SimpleActionGroup::new();
         add_to(&group, |_| {});
         for action in actions(&item) {
             let name = action.strip_prefix("pane.").expect("in the group given");
-            assert_eq!(group.has_action(name), name != "download", "{name}");
+            assert!(group.has_action(name), "{name}");
         }
     }
 
@@ -139,5 +152,34 @@ mod tests {
         // Played as well: still the position alone.
         item.episode.state.played = true;
         assert!(resets(&item));
+    }
+
+    fn enclosure() -> beacon_core::model::Enclosure {
+        beacon_core::model::Enclosure {
+            url: url::Url::parse("https://example.com/1.mp3").unwrap(),
+            mime_type: None,
+            length: None,
+        }
+    }
+
+    #[test]
+    fn download_is_worded_for_the_episode() {
+        let label = |item: &EpisodeItem| {
+            items(menu(item, "pane").upcast_ref())
+                .into_iter()
+                .find(|(_, action)| action == "pane.download")
+                .map(|(label, _)| label.replace('_', ""))
+        };
+        let mut item = item();
+        assert_eq!(label(&item), None, "no audio to download");
+        item.episode.info.enclosure = Some(enclosure());
+        assert_eq!(label(&item).as_deref(), Some("Download"));
+        item.episode.state.download_path = Some("/downloads/1.mp3".into());
+        assert_eq!(label(&item).as_deref(), Some("Delete Download"));
+        let mut active = std::collections::HashMap::new();
+        active.insert(item.episode.id, None);
+        downloads::set(active);
+        assert_eq!(label(&item).as_deref(), Some("Cancel Download"));
+        downloads::set(std::collections::HashMap::new());
     }
 }
