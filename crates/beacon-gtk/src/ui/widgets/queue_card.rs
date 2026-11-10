@@ -161,6 +161,7 @@ impl QueueCard {
         card.update_property(&[gtk::accessible::Property::Label(label)]);
         let _ = card.imp().setup.set(setup.clone());
         card.connect_arrow_keys();
+        card.connect_drag();
         card
     }
 
@@ -201,7 +202,6 @@ impl QueueCard {
             row.set_edges(index == 0, index + 1 == count);
             row.set_movable(true, index == 0, index + 1 == count);
             row.update_property(&[gtk::accessible::Property::Label(&row.accessible_name())]);
-            self.connect_handle(row);
         }
         for slide in imp.slides.take().into_iter().flatten() {
             slide.skip();
@@ -223,8 +223,7 @@ impl QueueCard {
     #[cfg(test)]
     pub fn drag_by(&self, index: usize, dy: f64) -> f64 {
         if self.imp().drag.get().is_none() {
-            let row = self.imp().rows.borrow()[index].clone();
-            self.begin_drag(&row);
+            self.begin_drag(index);
         }
         self.update_drag(dy);
         self.imp().drag.get().map_or(0.0, |drag| drag.dy)
@@ -304,27 +303,30 @@ impl QueueCard {
         self.add_controller(keys);
     }
 
-    /// Drag the row by its handle, once it has one.
-    fn connect_handle(&self, row: &EpisodeRow) {
-        let Some(handle) = row.handle() else {
-            return;
-        };
-        // Once per handle: a handle keeps its gesture as the row is bound
-        // to other episodes.
-        if handle.observe_controllers().n_items() > 0 {
-            return;
-        }
+    /// Drag a row by its handle. The gesture is the card's, which stays
+    /// still: on the handle, which moves with its row, the pointer was
+    /// measured from a moving point and the row fell behind it, half way
+    /// (found by the user). Captured, so a press on a handle never also
+    /// opens the row's details.
+    fn connect_drag(&self) {
         let gesture = gtk::GestureDrag::builder()
             .button(gdk::BUTTON_PRIMARY)
+            .propagation_phase(gtk::PropagationPhase::Capture)
             .build();
-        let (card, r) = (self.downgrade(), row.downgrade());
-        gesture.connect_drag_begin(move |gesture, _, _| {
-            let (Some(card), Some(row)) = (card.upgrade(), r.upgrade()) else {
+        let card = self.downgrade();
+        gesture.connect_drag_begin(move |gesture, x, y| {
+            let Some(card) = card.upgrade() else {
                 return;
             };
-            // Claimed, so the press does not also open the details.
-            gesture.set_state(gtk::EventSequenceState::Claimed);
-            card.begin_drag(&row);
+            match card.handle_at(x, y) {
+                Some(index) => {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    card.begin_drag(index);
+                }
+                None => {
+                    gesture.set_state(gtk::EventSequenceState::Denied);
+                }
+            }
         });
         let card = self.downgrade();
         gesture.connect_drag_update(move |_, _, dy| {
@@ -338,12 +340,37 @@ impl QueueCard {
                 card.end_drag();
             }
         });
-        handle.add_controller(gesture);
+        self.add_controller(gesture);
     }
 
-    fn begin_drag(&self, row: &EpisodeRow) {
+    /// The row whose drag handle is at `x`, `y` in the card, if any: the
+    /// handle's column of the row, its full height and a little wider than
+    /// the icon, so it is easy to grab.
+    pub fn handle_at(&self, x: f64, y: f64) -> Option<usize> {
+        const SLACK: f32 = 6.0;
+        #[allow(clippy::cast_possible_truncation)]
+        let (x, y) = (x as f32, y as f32);
+        self.imp().rows.borrow().iter().position(|row| {
+            let handle = row
+                .handle()
+                .filter(gtk::Widget::is_drawable)
+                .and_then(|handle| handle.compute_bounds(self));
+            let row = row.compute_bounds(self);
+            match (handle, row) {
+                (Some(handle), Some(row)) => {
+                    x >= handle.x() - SLACK
+                        && x <= handle.x() + handle.width() + SLACK
+                        && y >= row.y()
+                        && y < row.y() + row.height()
+                }
+                _ => false,
+            }
+        })
+    }
+
+    fn begin_drag(&self, index: usize) {
         let imp = self.imp();
-        let Some(index) = imp.rows.borrow().iter().position(|r| r == row) else {
+        let Some(row) = imp.rows.borrow().get(index).cloned() else {
             return;
         };
         imp.drag.set(Some(Drag {

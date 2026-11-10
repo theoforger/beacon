@@ -836,6 +836,25 @@ fn queued_rows_can_be_reordered() {
             .filter_map(|r| r.item().map(|i| i.episode.id.0))
             .collect()
     };
+    // The handle's column grabs the row; the rest of the row does not.
+    let handle = card.rows()[1]
+        .handle()
+        .and_then(|h| h.compute_bounds(&card))
+        .expect("a queued row's handle");
+    let middle = |b: &gtk::graphene::Rect| {
+        (
+            f64::from(b.x() + b.width() / 2.0),
+            f64::from(b.y() + b.height() / 2.0),
+        )
+    };
+    let (hx, hy) = middle(&handle);
+    assert_eq!(card.handle_at(hx, hy), Some(1));
+    assert_eq!(
+        card.handle_at(hx, hy + 20.0),
+        Some(1),
+        "anywhere in its column"
+    );
+    assert_eq!(card.handle_at(hx + 200.0, hy), None, "the row's text");
     let height = f64::from(card.rows()[0].height());
     // Up from the first, it stays in the card; down past the end, too.
     assert_eq!(card.drag_by(0, -50.0), 0.0);
