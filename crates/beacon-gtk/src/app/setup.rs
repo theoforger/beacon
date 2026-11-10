@@ -105,7 +105,7 @@ impl App {
             .sync_create()
             .build();
 
-        model.build_frame();
+        model.build_frame(root);
         root.add_breakpoint(model.narrow_breakpoint());
         model.manage_focus();
         model.content.widgets().capture_typing(root);
@@ -193,7 +193,7 @@ fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::Simple
 }
 
 /// The main view: sidebar, content and details. `build_frame` sets it into
-/// the window's frame, under the toasts.
+/// the window's frame, inside the toasts.
 fn widgets(
     root: &adw::ApplicationWindow,
     sidebar: &Sidebar,
@@ -204,7 +204,6 @@ fn widgets(
     root.set_width_request(360);
     root.set_height_request(294);
     let toasts = adw::ToastOverlay::new();
-    root.set_content(Some(&toasts));
 
     let content_page = adw::NavigationPage::builder()
         .title(labels::title(Location::ALL[0]))

@@ -98,8 +98,15 @@ impl App {
     /// it, and the narrow breakpoint moves only the player bar: moving the
     /// main view (as an `AdwMultiLayoutView` did) restyled every widget in
     /// it, a second's freeze with long episode lists open.
-    pub(super) fn build_frame(&self) {
-        self.frame.set_content(Some(&self.widgets.details_split));
+    ///
+    /// Toasts show over the main view only, above the player rather than
+    /// over it (asked by the user 2026-11-10; GNOME Podcasts lays them over
+    /// the player too).
+    pub(super) fn build_frame(&self, root: &adw::ApplicationWindow) {
+        self.widgets
+            .toasts
+            .set_child(Some(&self.widgets.details_split));
+        self.frame.set_content(Some(&self.widgets.toasts));
         self.frame.add_bottom_bar(&self.bar);
         // The content ends above the slim bar, not under it.
         self.sheet
@@ -108,7 +115,7 @@ impl App {
             .build();
         self.sheet.set_content(Some(&self.frame));
         self.sheet.set_bottom_bar(Some(self.bar.widgets().mini()));
-        self.widgets.toasts.set_child(Some(&self.sheet));
+        root.set_content(Some(&self.sheet));
     }
 
     /// Narrow windows: the sidebar becomes a page with the content pushed on
