@@ -28,7 +28,7 @@ impl App {
         match output {
             ContentOutput::ClearQueue(queued) => self.clear_queue(queued),
             ContentOutput::DeleteAllDownloads(ids) => {
-                self.confirm_delete_downloads(ids, root);
+                self.confirm_delete_downloads(ids, true, root);
             }
             ContentOutput::Action(item, action, source) => {
                 self.row_action(*item, action, source);

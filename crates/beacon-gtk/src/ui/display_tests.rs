@@ -867,9 +867,38 @@ fn downloads_show_on_rows() {
     let played = bars(row.upcast_ref());
     assert_eq!(played.len(), 1, "the playback progress");
 
-    downloads::set(HashMap::from([(item.episode.id, Some(0.4))]));
+    // Labels showing in the row, for the download's text.
+    let labels = |row: &EpisodeRow| {
+        let mut found = Vec::new();
+        let mut stack = vec![row.clone().upcast::<gtk::Widget>()];
+        while let Some(widget) = stack.pop() {
+            if let Some(label) = widget.downcast_ref::<gtk::Label>()
+                && label.is_drawable()
+            {
+                found.push(label.label().to_string());
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                child = c.next_sibling();
+                stack.push(c);
+            }
+        }
+        found
+    };
+    downloads::set(HashMap::from([(
+        item.episode.id,
+        downloads::Shown {
+            received: 12_000_000,
+            total: Some(30_000_000),
+        },
+    )]));
     settle();
     assert_eq!(bars(row.upcast_ref()), [0.4], "the download, alone");
+    assert!(
+        labels(&row).contains(&"12.0\u{a0}MB of 30.0\u{a0}MB downloaded".to_owned()),
+        "{:?}",
+        labels(&row)
+    );
     assert!(
         crate::ui::episode_actions::items(
             crate::ui::episode_actions::menu(&item, "row").upcast_ref()
@@ -881,6 +910,7 @@ fn downloads_show_on_rows() {
     downloads::set(HashMap::new());
     settle();
     assert_eq!(bars(row.upcast_ref()), played);
+    assert!(!labels(&row).iter().any(|l| l.contains("downloaded")));
     window.destroy();
 }
 

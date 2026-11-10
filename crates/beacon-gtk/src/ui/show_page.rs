@@ -383,7 +383,7 @@ fn more_menu(all_played: bool) -> gio::Menu {
     menu.append(Some(&mark_all), Some("show.mark-all"));
     // Unavailable when every episode is downloaded.
     menu.append(
-        Some(&gettext("_Download All Episodes")),
+        Some(&gettext("_Download All Episodes…")),
         Some("show.download-all"),
     );
     menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));

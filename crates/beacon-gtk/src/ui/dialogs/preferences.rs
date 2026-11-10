@@ -20,7 +20,8 @@ pub fn dialog(settings: &gio::Settings) -> adw::PreferencesDialog {
         .build();
 
     let after = adw::SpinRow::builder()
-        .title(gettext("Delete _After"))
+        // Sentence capitalization, as the HIG's Spin Buttons page asks.
+        .title(gettext("Delete _after"))
         // Translators: the unit of the Delete After row's number.
         .subtitle(gettext("Days"))
         .use_underline(true)
@@ -43,7 +44,7 @@ pub fn dialog(settings: &gio::Settings) -> adw::PreferencesDialog {
     let only_played = adw::SwitchRow::builder()
         .title(gettext("Only Delete _Played Episodes"))
         .subtitle(gettext(
-            "Days count from when an episode was played. Otherwise, from when it was downloaded",
+            "Days count from when an episode was played, not when it was downloaded",
         ))
         .use_underline(true)
         .build();

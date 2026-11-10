@@ -39,7 +39,13 @@ fn publish(active: &Active) {
         active
             .borrow()
             .iter()
-            .map(|(id, progress)| (*id, progress.fraction()))
+            .map(|(id, progress)| {
+                let shown = downloads::Shown {
+                    received: progress.received(),
+                    total: progress.total(),
+                };
+                (*id, shown)
+            })
             .collect(),
     );
 }
@@ -62,7 +68,16 @@ impl App {
         if let Some(progress) = active {
             progress.cancel();
         } else if item.episode.state.download_path.is_some() {
-            self.delete_downloads(vec![id]);
+            // Asked first, as Delete All Downloads is: the HIG's Dialogs
+            // page wants a confirmation or an undo for what destroys.
+            if let Some(root) = self
+                .widgets
+                .toasts
+                .root()
+                .and_downcast::<adw::ApplicationWindow>()
+            {
+                self.confirm_delete_downloads(vec![id], false, &root);
+            }
         } else {
             self.start_downloads(vec![id]);
         }

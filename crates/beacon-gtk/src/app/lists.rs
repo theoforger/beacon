@@ -38,17 +38,24 @@ impl App {
         });
     }
 
-    /// Ask before deleting every download.
+    /// Ask before deleting downloads: `all` of them (Downloaded's Clear),
+    /// or one (Delete Download).
     pub(super) fn confirm_delete_downloads(
         &self,
         ids: Vec<EpisodeId>,
+        all: bool,
         root: &adw::ApplicationWindow,
     ) {
         if ids.is_empty() {
             return;
         }
+        let title = if all {
+            gettext("Delete All Downloads?")
+        } else {
+            gettext("Delete Download?")
+        };
         let dialog = adw::AlertDialog::new(
-            Some(&gettext("Delete All Downloads?")),
+            Some(&title),
             Some(
                 &ngettext(
                     "The downloaded episode will be removed from this device",

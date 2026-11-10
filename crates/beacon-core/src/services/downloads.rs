@@ -41,6 +41,11 @@ impl Progress {
         })
     }
 
+    /// The whole size, once the server has said it.
+    pub fn total(&self) -> Option<u64> {
+        Some(self.total.load(Ordering::Relaxed)).filter(|total| *total > 0)
+    }
+
     pub fn received(&self) -> u64 {
         self.received.load(Ordering::Relaxed)
     }

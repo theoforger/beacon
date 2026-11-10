@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beacon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 18:40-0500\n"
+"POT-Creation-Date: 2026-11-10 09:05-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,8 +34,8 @@ msgid ""
 msgstr ""
 
 #: crates/beacon-gtk/src/app/actions.rs:204
-#: crates/beacon-gtk/src/app/downloads.rs:162
-#: crates/beacon-gtk/src/app/lists.rs:61
+#: crates/beacon-gtk/src/app/downloads.rs:177
+#: crates/beacon-gtk/src/app/lists.rs:68
 #: crates/beacon-gtk/src/ui/selection_bar.rs:183
 msgid "_Cancel"
 msgstr ""
@@ -68,24 +68,24 @@ msgid_plural "{n} new episodes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/downloads.rs:152
+#: crates/beacon-gtk/src/app/downloads.rs:167
 #, rust-format
 msgid "Download {n} Episode?"
 msgid_plural "Download {n} Episodes?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/downloads.rs:159
+#: crates/beacon-gtk/src/app/downloads.rs:174
 msgid "Downloaded episodes take up space on this device until they are deleted"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/downloads.rs:163
+#: crates/beacon-gtk/src/app/downloads.rs:178
 #: crates/beacon-gtk/src/ui/episode_actions.rs:45
 #: crates/beacon-gtk/src/ui/selection_bar.rs:263
 msgid "_Download"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/downloads.rs:212
+#: crates/beacon-gtk/src/app/downloads.rs:227
 #, rust-format
 msgid "Deleted {n} old download"
 msgid_plural "Deleted {n} old downloads"
@@ -105,22 +105,26 @@ msgstr ""
 msgid "_Undo"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:51
+#: crates/beacon-gtk/src/app/lists.rs:53
 msgid "Delete All Downloads?"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:54
+#: crates/beacon-gtk/src/app/lists.rs:55
+msgid "Delete Download?"
+msgstr ""
+
+#: crates/beacon-gtk/src/app/lists.rs:61
 #, rust-format
 msgid "The downloaded episode will be removed from this device"
 msgid_plural "The {n} downloaded episodes will be removed from this device"
 msgstr[0] ""
 msgstr[1] ""
 
-#: crates/beacon-gtk/src/app/lists.rs:62
+#: crates/beacon-gtk/src/app/lists.rs:69
 msgid "_Delete"
 msgstr ""
 
-#: crates/beacon-gtk/src/app/lists.rs:87
+#: crates/beacon-gtk/src/app/lists.rs:94
 #, rust-format
 msgid "Deleted {n} download"
 msgid_plural "Deleted {n} downloads"
@@ -289,33 +293,31 @@ msgstr ""
 msgid "Queued episodes are never deleted"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:23
-msgid "Delete _After"
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:24
+msgid "Delete _after"
 msgstr ""
 
 #. Translators: the unit of the Delete After row's number.
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:25
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:26
 msgid "Days"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:44
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:45
 msgid "Only Delete _Played Episodes"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:46
-msgid ""
-"Days count from when an episode was played. Otherwise, from when it was "
-"downloaded"
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:47
+msgid "Days count from when an episode was played, not when it was downloaded"
 msgstr ""
 
 #. Translators: a section title in the Sort and Filter menu, over
 #. All, Downloaded and Not Downloaded.
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:62
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:63
 #: crates/beacon-gtk/src/ui/page_filters.rs:68
 msgid "Downloads"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:68
+#: crates/beacon-gtk/src/ui/dialogs/preferences.rs:69
 #: data/shortcuts-dialog.ui:7
 msgid "General"
 msgstr ""
@@ -335,7 +337,7 @@ msgid "Cancel _Download"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/episode_actions.rs:43
-msgid "_Delete Download"
+msgid "_Delete Download…"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/episode_actions.rs:51
@@ -932,7 +934,7 @@ msgid "Mark All as _Played"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/show_page.rs:386
-msgid "_Download All Episodes"
+msgid "_Download All Episodes…"
 msgstr ""
 
 #: crates/beacon-gtk/src/ui/show_page.rs:389
@@ -992,7 +994,7 @@ msgstr ""
 msgid "_About Beacon"
 msgstr ""
 
-#: crates/beacon-gtk/src/ui/widgets/episode_row/downloading.rs:28
+#: crates/beacon-gtk/src/ui/widgets/episode_row/downloading.rs:29
 msgid "Download Progress"
 msgstr ""
 

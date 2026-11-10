@@ -40,7 +40,7 @@ pub fn menu(item: &EpisodeItem, group: &str) -> gio::Menu {
         let download = if downloads::is_downloading(item.episode.id) {
             gettext("Cancel _Download")
         } else if state.download_path.is_some() {
-            gettext("_Delete Download")
+            gettext("_Delete Download…")
         } else {
             gettext("_Download")
         };
@@ -175,9 +175,9 @@ mod tests {
         item.episode.info.enclosure = Some(enclosure());
         assert_eq!(label(&item).as_deref(), Some("Download"));
         item.episode.state.download_path = Some("/downloads/1.mp3".into());
-        assert_eq!(label(&item).as_deref(), Some("Delete Download"));
+        assert_eq!(label(&item).as_deref(), Some("Delete Download…"));
         let mut active = std::collections::HashMap::new();
-        active.insert(item.episode.id, None);
+        active.insert(item.episode.id, downloads::Shown::default());
         downloads::set(active);
         assert_eq!(label(&item).as_deref(), Some("Cancel Download"));
         downloads::set(std::collections::HashMap::new());
