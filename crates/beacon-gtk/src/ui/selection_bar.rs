@@ -173,8 +173,16 @@ pub fn attach(
     let item = gio::MenuItem::new(Some(&gettext("Select _None")), Some("selection.none"));
     item.set_attribute_value("accel", Some(&"<Shift><Control>a".to_variant()));
     selecting.append_item(&item);
+    // A label that can shorten: "No Episodes Selected" in full made the
+    // header 70px wider than the narrowest window (found in the M5
+    // review). The menu button keeps its arrow beside it.
+    let title_label = gtk::Label::builder()
+        .ellipsize(gtk::pango::EllipsizeMode::End)
+        .css_classes(["heading"])
+        .build();
     let title = gtk::MenuButton::builder()
         .always_show_arrow(true)
+        .child(&title_label)
         .menu_model(&selecting)
         .css_classes(["flat"])
         .build();
@@ -238,7 +246,7 @@ pub fn attach(
         header.set_visible(!active);
         selection_header.set_visible(active);
         let count = s.count();
-        title.set_label(&if count == 0 {
+        title_label.set_label(&if count == 0 {
             gettext("No Episodes Selected")
         } else {
             ngettext("{n} Selected", "{n} Selected", count as u32)

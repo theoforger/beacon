@@ -304,6 +304,13 @@ impl Content {
             .deliver(input, |message| self.update(message));
     }
 
+    /// The sections' selection, for tests.
+    #[cfg(test)]
+    pub fn selection(&self) -> crate::ui::selection::Selection {
+        let parts = self.imp().parts.get().expect("built when constructed");
+        parts.lists.selection.clone()
+    }
+
     /// Refresh Feeds and Clear, which share the header's start, for tests.
     #[cfg(test)]
     pub fn start_buttons(&self) -> (gtk::Button, gtk::Button) {

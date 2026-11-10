@@ -410,7 +410,14 @@ fn narrow_headers_fit_three_window_buttons() {
         .collapsed(true)
         .show_content(true)
         .build();
-    let window = window(&split);
+    // The narrowest window, so the page's breakpoints fold what they fold
+    // (selection mode's actions into one menu).
+    let window = gtk::Window::builder()
+        .default_width(NARROWEST)
+        .default_height(640)
+        .child(&split)
+        .build();
+    window.present();
     // What the narrow breakpoint hides.
     content.widgets().details_toggle().set_visible(false);
     content.widgets().refresh_holder().set_visible(false);
@@ -424,14 +431,22 @@ fn narrow_headers_fit_three_window_buttons() {
         content.send(ContentInput::ShowSection(section));
         let until = std::time::Instant::now() + Duration::from_millis(100);
         run_until(|| std::time::Instant::now() > until);
-        needed.push((section, minimum_width(&page)));
+        needed.push((format!("{section:?}"), minimum_width(&page)));
+        // Selection mode's header too, with its longest heading ("No
+        // Episodes Selected"), which overflowed 360px (found in the M5
+        // review).
+        content.selection().set_active(true);
+        let until = std::time::Instant::now() + Duration::from_millis(100);
+        run_until(|| std::time::Instant::now() > until);
+        needed.push((format!("{section:?} selecting"), minimum_width(&page)));
+        content.selection().set_active(false);
     }
     window.destroy();
     settings.set_gtk_decoration_layout(layout.as_deref());
     for (section, needed) in needed {
         assert!(
             needed <= NARROWEST,
-            "{section:?}'s narrow page needs {needed}px"
+            "{section}'s narrow page needs {needed}px"
         );
     }
 }
