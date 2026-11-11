@@ -12,6 +12,8 @@
 | `hey-riddle-riddle.xml` | Excerpt of [Hey Riddle Riddle](https://rss.art19.com/hey-riddle-riddle), fetched 2026-10-28 | Full, bonus and trailer episodes, some without episode numbers |
 | `destination-linux.xml` | Excerpt of [Destination Linux](https://feeds.fireside.fm/destinationlinux/rss), fetched 2026-10-28 | A real Fireside feed: Podcasting 2.0 chapter URLs, people tags and a transcript, single-digit-hour and `MM:SS` durations, a legacy WordPress GUID |
 | `destination-linux-489-chapters.json` | [Chapters of episode 489](https://feeds.fireside.fm/destinationlinux/json/episodes/2ccead8f-d833-4919-a578-d1ca3b8e2b58/chapters), fetched 2026-10-28 | Podcasting 2.0 JSON chapters (12), for fetching chapters in M4 |
+| `itunes/search-recorded.json` | The iTunes Search API's answer to `term=hey riddle riddle&media=podcast&entity=podcast&country=US&limit=2`, fetched 2026-11-10 | A real podcast result, every field Apple returns |
+| `itunes/search-mixed.json`, `itunes/search-empty.json` | Hand-written, in the recorded answer's shape | Results without a feed, a repeated feed, an episode among shows, an empty author and a bad date; no results |
 | `adventure-zone.xml` | Excerpt of [The Adventure Zone](https://feeds.simplecast.com/cYQVc__c), fetched 2026-10-28 | The only real fixture with season tags (10 seasons, unnamed); a trailer and a bonus episode inside seasons without episode numbers; an episode numbered 0; an episode without artwork; single-digit days in dates |
 
 Hand-written fixtures are GPL-3.0-or-later and use fictional shows from the mockup. `{{BASE}}` is replaced with the test server's address.

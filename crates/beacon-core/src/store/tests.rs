@@ -169,6 +169,55 @@ fn full_text_search_follows_updates() {
 }
 
 #[test]
+fn search_matches_every_word_anywhere_in_the_text() {
+    let (mut store, show) = store_with_show();
+    store
+        .sync_episodes(
+            show,
+            &[
+                episode("a", "Riddles in the dark", 1),
+                episode("b", "The dark side of riddles", 2),
+                episode("c", "Only riddles", 3),
+            ],
+            now(),
+        )
+        .unwrap();
+    // Every word, in any order, each as a prefix.
+    assert_eq!(store.search_episodes("dark riddle").unwrap().len(), 2);
+    assert_eq!(store.search_episodes("  RIDDLE  ").unwrap().len(), 3);
+    assert!(store.search_episodes("   ").unwrap().is_empty());
+    assert!(store.search_episodes("riddle (\"* OR").unwrap().is_empty());
+
+    let other = store
+        .insert_show(
+            &Url::parse("https://example.com/other.xml").unwrap(),
+            &ShowInfo {
+                title: "Other Riddles".into(),
+                author: Some("Dark Matter Media".into()),
+                ..Default::default()
+            },
+            now(),
+        )
+        .unwrap();
+    store
+        .sync_episodes(other, &[episode("d", "More riddles", 4)], now())
+        .unwrap();
+    assert_eq!(store.search_episodes("riddles").unwrap().len(), 4);
+    assert_eq!(
+        store.search_show_episodes(show, "riddles").unwrap().len(),
+        3
+    );
+    assert_eq!(
+        store.search_show_episodes(other, "riddles").unwrap().len(),
+        1
+    );
+    // Shows by title or author, the title's match first.
+    assert_eq!(store.search_shows("dark").unwrap(), [other]);
+    assert_eq!(store.search_shows("root").unwrap(), [show]);
+    assert!(store.search_shows("silence").unwrap().is_empty());
+}
+
+#[test]
 fn deleting_a_show_removes_its_episodes() {
     let (mut store, show) = store_with_show();
     store

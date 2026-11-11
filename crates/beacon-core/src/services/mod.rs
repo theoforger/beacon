@@ -5,6 +5,7 @@ pub mod clock;
 pub mod covers;
 pub mod downloads;
 pub mod feeds;
+pub mod itunes;
 pub mod library;
 
 /// User agent for every request Beacon makes.

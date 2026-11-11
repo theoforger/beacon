@@ -108,3 +108,21 @@ impl From<StoreError> for SyncError {
         Self::Library(LibraryError::Store(err))
     }
 }
+
+/// Why a search of Apple's podcast directory, or a lookup, did not go
+/// through (`docs/specs/add-and-itunes.md`). The UI has a message for each.
+#[derive(Debug, thiserror::Error)]
+pub enum ItunesError {
+    #[error("could not reach the iTunes Search API: {0}")]
+    Network(#[from] reqwest::Error),
+    #[error("too many searches; the next is allowed in {0:?}")]
+    RateLimited(std::time::Duration),
+    #[error("Apple has no podcast directory for the country {0}")]
+    NoStore(String),
+    #[error("the iTunes Search API answered with HTTP status {0}")]
+    Status(u16),
+    #[error("could not read the iTunes Search API's answer: {0}")]
+    Parse(String),
+    #[error("Apple's directory has no feed for this show")]
+    NoFeed,
+}

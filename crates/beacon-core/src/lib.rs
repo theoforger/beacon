@@ -15,5 +15,6 @@ pub mod sync;
 pub mod text;
 
 pub use error::{
-    CoverError, DownloadError, FeedError, LibraryError, PlaybackError, StoreError, SyncError,
+    CoverError, DownloadError, FeedError, ItunesError, LibraryError, PlaybackError, StoreError,
+    SyncError,
 };

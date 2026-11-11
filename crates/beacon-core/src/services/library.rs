@@ -12,7 +12,7 @@ use futures_util::StreamExt;
 use url::Url;
 
 use crate::error::{DownloadError, LibraryError, StoreError};
-use crate::model::{Chapter, EpisodeId, ShowId};
+use crate::model::{Chapter, EpisodeId, ParsedFeed, ShowId};
 use crate::services::cleanup::CleanupPolicy;
 use crate::services::clock::Clock;
 use crate::services::clock::SystemClock;
@@ -21,6 +21,18 @@ use crate::services::downloads::{Downloader, Progress};
 use crate::services::feeds::FeedClient;
 use crate::services::{download_client, http_client};
 use crate::store::{Store, SyncStats};
+
+/// A feed fetched to be looked at before subscribing. Nothing of it is
+/// stored but its cover, cached with the shows' covers so that subscribing
+/// finds it there.
+#[derive(Debug, Clone)]
+pub struct FeedPreview {
+    pub url: Url,
+    pub feed: ParsedFeed,
+    pub cover: Option<PathBuf>,
+    /// The show, when the feed is already subscribed to.
+    pub subscribed: Option<ShowId>,
+}
 
 /// What a refresh of every show did.
 #[derive(Debug, Default)]
@@ -106,6 +118,39 @@ impl Library {
             return Err(LibraryError::AlreadySubscribed(id));
         }
         let feed = self.feeds.fetch(url).await?;
+        self.store_feed(url, &feed, from_server).await
+    }
+
+    /// Fetch the feed at `url` to show it before subscribing.
+    pub async fn preview(&self, url: &Url) -> Result<FeedPreview, LibraryError> {
+        let feed = self.feeds.fetch(url).await?;
+        let cover = match &feed.show.image_url {
+            Some(image) => self.covers.fetch(image).await.ok(),
+            None => None,
+        };
+        Ok(FeedPreview {
+            url: url.clone(),
+            subscribed: self.lock().show_id_for_feed(url)?,
+            feed,
+            cover,
+        })
+    }
+
+    /// Subscribe to a feed already fetched for its preview, without
+    /// fetching it again.
+    pub async fn subscribe_preview(&self, preview: &FeedPreview) -> Result<ShowId, LibraryError> {
+        if let Some(id) = self.lock().show_id_for_feed(&preview.url)? {
+            return Err(LibraryError::AlreadySubscribed(id));
+        }
+        self.store_feed(&preview.url, &preview.feed, false).await
+    }
+
+    async fn store_feed(
+        &self,
+        url: &Url,
+        feed: &ParsedFeed,
+        from_server: bool,
+    ) -> Result<ShowId, LibraryError> {
         let now = self.clock.now();
         let id = {
             let insert = |store: &mut Store| {

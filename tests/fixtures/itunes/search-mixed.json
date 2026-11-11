@@ -1,0 +1,24 @@
+{
+ "resultCount": 5,
+ "results": [
+  {"wrapperType": "track", "kind": "podcast", "collectionId": 1412570127, "trackId": 1412570127,
+   "artistName": "Headgum", "collectionName": "Hey Riddle Riddle",
+   "feedUrl": "{{BASE}}/hey-riddle-riddle.xml",
+   "artworkUrl100": "{{BASE}}/art/riddle-100.jpg",
+   "artworkUrl600": "{{BASE}}/art/riddle-600.jpg",
+   "primaryGenreName": "Leisure", "trackCount": 715,
+   "releaseDate": "2026-11-04T09:00:00Z",
+   "collectionViewUrl": "https://podcasts.apple.com/us/podcast/hey-riddle-riddle/id1412570127?uo=4"},
+  {"wrapperType": "track", "kind": "podcast", "collectionId": 2000000001,
+   "artistName": "Nobody", "collectionName": "No Feed Here"},
+  {"wrapperType": "track", "kind": "podcast", "collectionId": 1412570128,
+   "artistName": "Headgum", "collectionName": "Hey Riddle Riddle (again)",
+   "feedUrl": "{{BASE}}/hey-riddle-riddle.xml"},
+  {"wrapperType": "track", "kind": "podcast-episode", "collectionId": 2000000002, "trackId": 3,
+   "collectionName": "An Episode", "feedUrl": "{{BASE}}/episode.xml"},
+  {"wrapperType": "track", "kind": "podcast", "collectionId": 958230465,
+   "artistName": "", "collectionName": "Hello From The Magic Tavern",
+   "feedUrl": "{{BASE}}/magic-tavern.xml",
+   "primaryGenreName": "Comedy", "releaseDate": "not a date"}
+ ]
+}

@@ -280,22 +280,74 @@ impl Store {
         Ok(chapters)
     }
 
-    /// Episodes whose title or description match a full-text query.
+    /// Episodes whose title or description match every word of `query`,
+    /// best first: a match in the title counts for more.
     pub fn search_episodes(&self, query: &str) -> Result<Vec<EpisodeId>, StoreError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT rowid FROM episodes_fts WHERE episodes_fts MATCH ?1 ORDER BY rank")?;
+        self.search_ids(
+            "SELECT rowid FROM episodes_fts WHERE episodes_fts MATCH ?1
+             ORDER BY bm25(episodes_fts, 10.0, 1.0) LIMIT 500",
+            query,
+            [],
+        )
+        .map(|ids| ids.into_iter().map(EpisodeId).collect())
+    }
+
+    /// The episodes of one show that match `query`, best first.
+    pub fn search_show_episodes(
+        &self,
+        show: ShowId,
+        query: &str,
+    ) -> Result<Vec<EpisodeId>, StoreError> {
+        self.search_ids(
+            "SELECT f.rowid FROM episodes_fts f JOIN episodes e ON e.id = f.rowid
+             WHERE episodes_fts MATCH ?1 AND e.show_id = ?2
+             ORDER BY bm25(episodes_fts, 10.0, 1.0)",
+            query,
+            [show.0],
+        )
+        .map(|ids| ids.into_iter().map(EpisodeId).collect())
+    }
+
+    /// Shows whose title, author or description match every word of
+    /// `query`, best first.
+    pub fn search_shows(&self, query: &str) -> Result<Vec<ShowId>, StoreError> {
+        self.search_ids(
+            "SELECT rowid FROM shows_fts WHERE shows_fts MATCH ?1
+             ORDER BY bm25(shows_fts, 10.0, 5.0, 1.0)",
+            query,
+            [],
+        )
+        .map(|ids| ids.into_iter().map(ShowId).collect())
+    }
+
+    fn search_ids<const N: usize>(
+        &self,
+        sql: &str,
+        query: &str,
+        extra: [i64; N],
+    ) -> Result<Vec<i64>, StoreError> {
+        let Some(query) = fts_query(query) else {
+            return Ok(Vec::new());
+        };
+        let mut stmt = self.conn.prepare(sql)?;
+        let mut values: Vec<&dyn rusqlite::ToSql> = vec![&query];
+        values.extend(extra.iter().map(|v| v as &dyn rusqlite::ToSql));
         let ids = stmt
-            .query_map([fts_phrase(query)], |row| row.get(0).map(EpisodeId))?
+            .query_map(values.as_slice(), |row| row.get(0))?
             .collect::<Result<_, _>>()?;
         Ok(ids)
     }
 }
 
-/// Quote user input as an FTS5 phrase prefix, so punctuation cannot break the
-/// query syntax.
-fn fts_phrase(query: &str) -> String {
-    format!("\"{}\"*", query.replace('"', "\"\""))
+/// Each word of the user's input as a quoted prefix term, so punctuation
+/// cannot break the query syntax and every word must match somewhere.
+/// `None` when there are no words.
+fn fts_query(query: &str) -> Option<String> {
+    let terms: Vec<_> = query
+        .split_whitespace()
+        .map(|word| format!("\"{}\"*", word.replace('"', "\"\"")))
+        .collect();
+    (!terms.is_empty()).then(|| terms.join(" "))
 }
 
 #[cfg(test)]

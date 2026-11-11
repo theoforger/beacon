@@ -1,0 +1,10 @@
+
+
+
+{
+ "resultCount":1,
+ "results": [
+{"wrapperType":"track", "kind":"podcast", "artistId":716626244, "collectionId":1412570127, "trackId":1412570127, "artistName":"Headgum", "collectionName":"Hey Riddle Riddle", "trackName":"Hey Riddle Riddle", "collectionCensoredName":"Hey Riddle Riddle", "trackCensoredName":"Hey Riddle Riddle", "artistViewUrl":"https://podcasts.apple.com/us/artist/headgum/716626244?uo=4", "collectionViewUrl":"https://podcasts.apple.com/us/podcast/hey-riddle-riddle/id1412570127?uo=4", "feedUrl":"https://rss.art19.com/hey-riddle-riddle", "trackViewUrl":"https://podcasts.apple.com/us/podcast/hey-riddle-riddle/id1412570127?uo=4", "artworkUrl30":"https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/ef/45/9d/ef459df7-557a-73fa-7a47-916bd0584ec9/mza_6525839620399448900.jpeg/30x30bb.jpg", "artworkUrl60":"https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/ef/45/9d/ef459df7-557a-73fa-7a47-916bd0584ec9/mza_6525839620399448900.jpeg/60x60bb.jpg", "artworkUrl100":"https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/ef/45/9d/ef459df7-557a-73fa-7a47-916bd0584ec9/mza_6525839620399448900.jpeg/100x100bb.jpg", "collectionPrice":0.00, "trackPrice":0.00, "collectionHdPrice":0, "releaseDate":"2026-11-04T09:00:00Z", "collectionExplicitness":"notExplicit", "trackExplicitness":"explicit", "trackCount":715, "trackTimeMillis":3676, "country":"USA", "currency":"USD", "primaryGenreName":"Leisure", "contentAdvisoryRating":"Explicit", "artworkUrl600":"https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/ef/45/9d/ef459df7-557a-73fa-7a47-916bd0584ec9/mza_6525839620399448900.jpeg/600x600bb.jpg", "genreIds":["1502", "26", "1303", "1495"], "genres":["Leisure", "Podcasts", "Comedy", "Improv"]}]
+}
+
+
