@@ -14,7 +14,7 @@ use gtk::{gio, glib};
 
 use super::sender::AppSender;
 use super::{
-    App, AppMsg, AppWidgets, DETAILS_WIDTH, controls, library, media, playback, toast, window,
+    App, AppMsg, AppWidgets, DETAILS_WIDTH, controls, library, media, playback, sync, toast, window,
 };
 use crate::config::APP_ID;
 use crate::navigation::Location;
@@ -58,11 +58,13 @@ impl App {
         }
 
         let widgets = widgets(root, &sidebar, &content, &details);
+        let library = library.ok().map(Arc::new);
         let mut model = App {
             widgets,
             sender: sender.clone(),
             settings: gio::Settings::new(APP_ID),
-            library: library.ok().map(Arc::new),
+            sync: sync::Sync::new(library.as_ref()),
+            library,
             last_show: None,
             details_episode: None,
             source: None,
@@ -135,10 +137,23 @@ impl App {
         let settings = model.settings.clone();
         let library = model.library.clone();
         let last_position = model.last_position.clone();
+        let sync_on_close = model.sync.on_close();
+        let closing = std::rc::Rc::new(std::cell::Cell::new(false));
+        let s = sender.clone();
         root.connect_close_request(move |window| {
+            if closing.get() {
+                return glib::Propagation::Proceed;
+            }
             window::save_window_state(&settings, window);
             playback::save_on_close(library.as_ref(), &last_position);
-            glib::Propagation::Proceed
+            if !sync_on_close.get() {
+                return glib::Propagation::Proceed;
+            }
+            // One last sync, out of sight; it closes the window when done.
+            closing.set(true);
+            window.set_visible(false);
+            s.input(AppMsg::Sync(sync::SyncMsg::Closing));
+            glib::Propagation::Stop
         });
 
         model.refresh.set_enabled(model.library.is_some());
@@ -147,6 +162,7 @@ impl App {
             None => {
                 model.reload(library::Parts::ALL);
                 model.restore_last_episode();
+                model.load_sync();
                 // New episodes since last time, as GNOME Podcasts looks for
                 // them (`refresh-on-startup`).
                 if model.settings.boolean("refresh-on-startup") {

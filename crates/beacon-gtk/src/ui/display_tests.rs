@@ -146,6 +146,7 @@ fn widgets_lay_out_as_designed() {
     downloads_show_on_rows();
     progress_needs_a_length();
     preferences_follow_settings();
+    crate::ui::dialogs::sync_page::the_sync_page_shows_each_state();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
@@ -1047,7 +1048,8 @@ fn preferences_follow_settings() {
     let backend = gio::memory_settings_backend_new();
     let settings = gio::Settings::new_full(&schema, Some(&backend), None);
 
-    let dialog = crate::ui::dialogs::preferences::dialog(&settings);
+    let sync = crate::ui::dialogs::sync_page::SyncPage::default();
+    let dialog = crate::ui::dialogs::preferences::dialog(&settings, &sync);
     let host = window(&gtk::Box::new(gtk::Orientation::Vertical, 0));
     dialog.present(Some(&host));
     let until = std::time::Instant::now() + Duration::from_millis(200);
@@ -1056,6 +1058,10 @@ fn preferences_follow_settings() {
         let mut found = Vec::new();
         let mut stack = vec![dialog.clone().upcast::<gtk::Widget>()];
         while let Some(widget) = stack.pop() {
+            // The Sync page's switch is tested on its own.
+            if widget.is::<crate::ui::dialogs::sync_page::SyncPage>() {
+                continue;
+            }
             if let Some(row) = widget.downcast_ref::<adw::SwitchRow>() {
                 found.push(row.clone());
             }

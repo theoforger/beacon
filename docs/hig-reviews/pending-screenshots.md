@@ -8,6 +8,9 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
+| 2026-11-10 | M6, `ui/dialogs/sync_page.rs` | Sync page signed in: the account row (user, server as subtitle), Sync switch, Last synced with Sync Now, the Log Out button row; long server addresses and user names wrap rather than widen the dialog; light and high contrast | 1440×900 light, 360×640 light and dark, signed-in state (only signed out, dark, was taken) | Needs an account: run nc-gpodder-lite locally (`docs/testing.md`), log in with Browser, approve in the browser, then reopen Preferences → Sync |
+| 2026-11-10 | M6, `ui/dialogs/sync_page.rs` | Waiting for the browser: spinner and label centred under the rows, Cancel below, the rows unavailable; "Logging in…" without Cancel for Password | 1440×900 light, 360×640 dark | Preferences → Sync, a server address, Log In (Browser); for Password, a server that answers slowly |
+| 2026-11-10 | M6, `app/sync/`, `ui/errors.rs` | Sync toasts above the player bar: "Logged in as {user}", "The sync server refused the login; log in again", "The GPodder Sync app is not installed on this server", "This is not a server address"; one line at 360px or wrapping cleanly | 360×640 dark, 1440×900 light | Log in with a wrong password (Password), a server without the app, or `ftp://x` as the address |
 
 ## Manual accessibility checks
 
@@ -46,3 +49,4 @@ Checks that need a person at a real GNOME session: Orca, keyboard walk-throughs,
 | 2026-11-10 | `ui/selection_bar.rs` | The selection heading, shortened in a narrow window, is still read in full ("No Episodes Selected") | Orca |
 | 2026-11-10 | `ui/widgets/queue_card.rs` | Next in Queue's rows: Down from Now Playing reaches the first queued row, Up and Down move between them and on to Next from; each is read by its name as a list item in a list named Next in Queue; Enter opens the details and Space too; Tab reaches its Play and More Options; in selection mode Enter toggles it | Orca, keyboard |
 | 2026-11-10 | `ui/selection_bar.rs` (no Select in narrow windows) | In a narrow window, a long press on a row with a touchscreen enters selection mode with that row selected; with a keyboard, the row menu's Select and Ctrl+A still enter it, and leaving selection mode puts focus somewhere sensible (Select is hidden) | Touchscreen, keyboard |
+| 2026-11-10 | M6, `ui/dialogs/sync_page.rs` | Sync page: Tab order server, Log in with (read with that label, Browser and Password as toggles with their state), username, password, Log In; Enter in any field logs in; the waiting label is read when it appears and Cancel is reachable; signed in, the account row reads user and server, the switch reads "Sync" and its state, Last synced reads its time and Sync Now, Log Out reads as a button; mnemonics (Alt+L, Alt+S, Alt+N, Alt+O) work | Orca, keyboard |

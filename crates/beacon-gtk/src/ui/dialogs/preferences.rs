@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Preferences (`docs/specs/auto-delete.md`): a Downloads group of stock
-//! rows, each bound to its setting. Delete Old Downloads turns the others
-//! on; while it is off they are unavailable.
+//! Preferences: General, a Downloads group of stock rows each bound to its
+//! setting (`docs/specs/auto-delete.md`; Delete Old Downloads turns the
+//! others on, and while it is off they are unavailable); and Sync
+//! (`sync_page.rs`).
 
 use adw::prelude::*;
 use gettextrs::gettext;
 use gtk::gio;
 
-/// The dialog, its rows bound to `settings`.
-pub fn dialog(settings: &gio::Settings) -> adw::PreferencesDialog {
+use super::sync_page::SyncPage;
+
+/// The dialog, its rows bound to `settings`, with the Sync page after
+/// General.
+pub fn dialog(settings: &gio::Settings, sync: &SyncPage) -> adw::PreferencesDialog {
     let enabled = adw::SwitchRow::builder()
         .title(gettext("Delete _Old Downloads"))
         .subtitle(gettext("Queued episodes are never deleted"))
@@ -72,5 +76,6 @@ pub fn dialog(settings: &gio::Settings) -> adw::PreferencesDialog {
     page.add(&downloads);
     let dialog = adw::PreferencesDialog::new();
     dialog.add(&page);
+    dialog.add(sync);
     dialog
 }

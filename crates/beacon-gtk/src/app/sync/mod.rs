@@ -1,0 +1,341 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! Sync with nextcloud-gpodder (`docs/specs/sync.md`): logging in and out
+//! from the Sync page of Preferences, and syncing after refreshes, after
+//! subscribing and unsubscribing, a while after playback pauses, on Sync
+//! Now and once when the window closes. The work runs in the background
+//! through `beacon_core::sync`; this keeps the account and the page in
+//! step.
+
+use std::cell::Cell;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
+use std::time::{Duration, Instant};
+
+use adw::prelude::*;
+use beacon_core::SyncError;
+use beacon_core::services::http_client;
+use beacon_core::services::library::Library;
+use beacon_core::store::SyncAccount;
+use beacon_core::sync::keyring;
+use beacon_core::sync::nextcloud::{BrowserLogin, Credentials, NextcloudBackend};
+use beacon_core::sync::service::{SyncService, SyncSummary};
+use gtk::glib;
+
+use super::library::Parts;
+use super::{App, AppCommand, AppMsg, toast};
+use crate::ui::dialogs::sync_page::{SyncPage, SyncPageInput, SyncPageOutput, SyncView};
+use crate::ui::errors;
+
+/// How long after playback pauses or stops a sync runs, so a pause to
+/// answer the door does not sync each time.
+pub(super) const AFTER_PAUSE: Duration = Duration::from_secs(30);
+/// After subscribing or unsubscribing: long enough for the change to be
+/// written first.
+pub(super) const AFTER_SUBSCRIBING: Duration = Duration::from_secs(1);
+/// How long closing the window waits for its last sync.
+const ON_CLOSE: Duration = Duration::from_secs(5);
+mod login;
+
+/// How often a browser login asks whether it was approved.
+const POLL_EVERY: Duration = Duration::from_secs(3);
+
+#[derive(Debug)]
+pub enum SyncMsg {
+    Page(SyncPageOutput),
+    /// A sync waited for (after a pause, say) is due.
+    Due,
+    /// The window is closing: one last sync, then close.
+    Closing,
+}
+
+#[derive(Debug)]
+pub enum SyncCommand {
+    /// The account and its app password, read at launch.
+    Loaded(Result<Option<(SyncAccount, Option<Credentials>)>, SyncError>),
+    /// A sync ended; `manual` for Sync Now and the first one after login.
+    Synced {
+        result: Result<SyncSummary, SyncError>,
+        account: Option<SyncAccount>,
+        manual: bool,
+    },
+    BrowserLogin(Result<BrowserLogin, SyncError>),
+    LoggedIn(Result<(SyncAccount, Credentials), SyncError>),
+    LoggedOut(Result<(), SyncError>),
+    /// The sync on closing ended, or ran out of time.
+    Closed,
+}
+
+struct LoggingIn {
+    browser: bool,
+    cancel: Arc<AtomicBool>,
+}
+
+/// The sync side of the window.
+#[derive(Default)]
+pub struct Sync {
+    service: Option<Arc<SyncService>>,
+    account: Option<SyncAccount>,
+    backend: Option<NextcloudBackend>,
+    /// The account has been read at launch.
+    loaded: bool,
+    /// A sync was asked for before that.
+    wanted: bool,
+    running: bool,
+    /// Asked for again while one ran: `Some(manual)`.
+    again: Option<bool>,
+    logging_in: Option<LoggingIn>,
+    /// A sync waiting to run, and when.
+    timer: Option<(glib::SourceId, Instant)>,
+    page: glib::WeakRef<SyncPage>,
+    /// Whether closing waits for a last sync; read by the close handler.
+    on_close: Rc<Cell<bool>>,
+    /// The last sync before closing has started.
+    closing: bool,
+}
+
+impl Sync {
+    pub(super) fn new(library: Option<&Arc<Library>>) -> Self {
+        Self {
+            service: library.map(|library| Arc::new(SyncService::new(library.clone()))),
+            ..Self::default()
+        }
+    }
+
+    /// Shared with the window's close handler.
+    pub(super) fn on_close(&self) -> Rc<Cell<bool>> {
+        self.on_close.clone()
+    }
+
+    fn ready(&self) -> Option<(Arc<SyncService>, NextcloudBackend)> {
+        self.account.as_ref().filter(|account| account.active)?;
+        Some((self.service.clone()?, self.backend.clone()?))
+    }
+
+    fn view(&self) -> SyncView {
+        match (&self.account, &self.logging_in) {
+            (Some(account), _) => SyncView::SignedIn {
+                user: account.user.clone(),
+                server: account.server.to_string(),
+                active: account.active,
+                last_synced: account.last_synced,
+                syncing: self.running,
+            },
+            (None, Some(login)) => SyncView::LoggingIn {
+                browser: login.browser,
+            },
+            (None, None) => SyncView::SignedOut,
+        }
+    }
+}
+
+impl App {
+    /// Read the account and its app password, at launch.
+    pub(super) fn load_sync(&self) {
+        let Some(library) = self.library.clone() else {
+            return;
+        };
+        self.sender.spawn(async move {
+            let result = async {
+                let Some(account) = library.with_store(|store| store.sync_account())? else {
+                    return Ok(None);
+                };
+                let credentials = keyring::load(&account.server, &account.user).await?;
+                Ok(Some((account, credentials)))
+            }
+            .await;
+            command(SyncCommand::Loaded(result))
+        });
+    }
+
+    /// The Sync page for Preferences, showing the account as it is now.
+    pub(super) fn sync_page(&mut self) -> SyncPage {
+        let page = SyncPage::default();
+        let sender = self.sender.clone();
+        page.connect_output(move |output| sender.input(AppMsg::Sync(SyncMsg::Page(output))));
+        page.send(SyncPageInput::Show(self.sync.view()));
+        self.sync.page.set(Some(&page));
+        page
+    }
+
+    fn show_sync(&self) {
+        let sync = &self.sync;
+        sync.on_close.set(sync.ready().is_some());
+        if let Some(page) = sync.page.upgrade() {
+            page.send(SyncPageInput::Show(sync.view()));
+        }
+    }
+
+    pub(super) fn sync_message(&mut self, message: SyncMsg) {
+        match message {
+            SyncMsg::Page(output) => self.sync_page_output(output),
+            SyncMsg::Due => {
+                self.sync.timer = None;
+                self.request_sync(false);
+            }
+            SyncMsg::Closing => self.sync_on_close(),
+        }
+    }
+
+    /// Sync now, or once the one running ends. `manual` (Sync Now) shows
+    /// every error; otherwise only those the user can fix.
+    pub(super) fn request_sync(&mut self, manual: bool) {
+        let sync = &mut self.sync;
+        if !sync.loaded {
+            sync.wanted = true;
+            return;
+        }
+        if sync.running {
+            sync.again = Some(sync.again.unwrap_or(false) || manual);
+            return;
+        }
+        if sync.account.as_ref().is_some_and(|a| a.active) && sync.backend.is_none() {
+            // Signed in, but the keyring had no app password.
+            self.sync_failed(&SyncError::Unauthorized, manual);
+            return;
+        }
+        let Some((service, backend)) = sync.ready() else {
+            return;
+        };
+        sync.running = true;
+        self.show_sync();
+        self.sender.spawn(async move {
+            let result = service.sync(&backend).await;
+            let account = service
+                .library()
+                .with_store(|store| store.sync_account())
+                .ok()
+                .flatten();
+            command(SyncCommand::Synced {
+                result,
+                account,
+                manual,
+            })
+        });
+    }
+
+    /// Sync in `delay`, unless one is due sooner already.
+    pub(super) fn schedule_sync(&mut self, delay: Duration) {
+        if self.sync.ready().is_none() {
+            return;
+        }
+        let due = Instant::now() + delay;
+        if let Some((_, at)) = &self.sync.timer
+            && *at <= due
+        {
+            return;
+        }
+        if let Some((source, _)) = self.sync.timer.take() {
+            source.remove();
+        }
+        let sender = self.sender.clone();
+        let source = glib::timeout_add_local_once(delay, move || {
+            sender.input(AppMsg::Sync(SyncMsg::Due));
+        });
+        self.sync.timer = Some((source, due));
+    }
+
+    fn sync_failed(&self, error: &SyncError, manual: bool) {
+        tracing::warn!("sync failed: {error}");
+        if (manual || errors::sync_needs_attention(error))
+            && let Some(message) = errors::sync(error)
+        {
+            toast(&self.widgets.toasts, &message);
+        }
+    }
+
+    pub(super) fn sync_command(&mut self, command: SyncCommand) {
+        match command {
+            SyncCommand::Loaded(result) => {
+                self.sync.loaded = true;
+                match result {
+                    Ok(Some((account, credentials))) => {
+                        self.sync.account = Some(account);
+                        self.sync.backend =
+                            credentials.map(|c| NextcloudBackend::new(http_client(), c));
+                    }
+                    Ok(None) => {}
+                    Err(err) => self.sync_failed(&err, false),
+                }
+                self.show_sync();
+                if std::mem::take(&mut self.sync.wanted) {
+                    self.request_sync(false);
+                }
+            }
+            SyncCommand::Synced {
+                result,
+                account,
+                manual,
+            } => {
+                self.sync.running = false;
+                // Signed out meanwhile: the account stays gone.
+                if self.sync.account.is_some() && account.is_some() {
+                    self.sync.account = account;
+                }
+                match result {
+                    Ok(summary) => {
+                        for (feed, err) in &summary.failed {
+                            tracing::warn!("could not subscribe to {feed} from the server: {err}");
+                        }
+                        tracing::debug!(?summary, "synced");
+                        if summary.changed_library() {
+                            self.reload(Parts::ALL);
+                        }
+                    }
+                    Err(SyncError::NotConfigured) => {}
+                    Err(err) => self.sync_failed(&err, manual),
+                }
+                self.show_sync();
+                if let Some(manual) = self.sync.again.take() {
+                    self.request_sync(manual);
+                }
+            }
+            SyncCommand::BrowserLogin(result) => self.browser_login(result),
+            SyncCommand::LoggedIn(result) => self.logged_in(result),
+            SyncCommand::LoggedOut(result) => {
+                if let Err(err) = result {
+                    self.sync_failed(&err, true);
+                }
+            }
+            SyncCommand::Closed => {
+                if let Some(window) = self
+                    .widgets
+                    .toasts
+                    .root()
+                    .and_then(|root| root.downcast::<gtk::Window>().ok())
+                {
+                    window.close();
+                }
+            }
+        }
+    }
+
+    /// The window is closing: pause, sync once, then close, after at most
+    /// five seconds.
+    fn sync_on_close(&mut self) {
+        if let Some(player) = &self.player {
+            player.pause();
+        }
+        // The second time, when time runs out, closes at once.
+        let first = !std::mem::replace(&mut self.sync.closing, true);
+        let Some((service, backend)) = self.sync.ready().filter(|_| first) else {
+            self.sync_command(SyncCommand::Closed);
+            return;
+        };
+        self.sender.spawn(async move {
+            if let Err(err) = service.sync(&backend).await {
+                tracing::warn!("could not sync on closing: {err}");
+            }
+            command(SyncCommand::Closed)
+        });
+        let sender = self.sender.clone();
+        glib::timeout_add_local_once(ON_CLOSE, move || {
+            sender.input(AppMsg::Sync(SyncMsg::Closing));
+        });
+    }
+}
+
+fn command(command: SyncCommand) -> AppCommand {
+    AppCommand::Sync(Box::new(command))
+}

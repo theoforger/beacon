@@ -448,6 +448,7 @@ impl App {
                 if matches!(state, PlaybackState::Paused | PlaybackState::Stopped) {
                     // Progress bars show where it stopped.
                     self.save_position(Parts::PROGRESS);
+                    self.schedule_sync(super::sync::AFTER_PAUSE);
                 }
             }
             PlayerEvent::Buffered(share) => {

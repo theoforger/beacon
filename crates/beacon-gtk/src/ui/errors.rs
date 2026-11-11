@@ -3,7 +3,9 @@
 //! What to tell people when something fails. Each error variant has its own
 //! translated message; the core's `Display` text is for logs only.
 
-use beacon_core::error::{DownloadError, FeedError, LibraryError, PlaybackError, StoreError};
+use beacon_core::error::{
+    DownloadError, FeedError, LibraryError, PlaybackError, StoreError, SyncError,
+};
 use gettextrs::gettext;
 
 pub fn library(error: &LibraryError) -> String {
@@ -61,4 +63,33 @@ pub fn download(error: &DownloadError, title: &str) -> Option<String> {
         DownloadError::Store(store) => return Some(self::store(store)),
     };
     Some(message.replace("{title}", title))
+}
+
+/// Why a sync, a login or a logout failed; `None` when the login was
+/// cancelled, which needs no message.
+pub fn sync(error: &SyncError) -> Option<String> {
+    Some(match error {
+        SyncError::Cancelled => return None,
+        SyncError::NotConfigured => gettext("Log in to a sync server first"),
+        SyncError::InvalidServer => gettext("This is not a server address"),
+        SyncError::Network(_) => gettext("Could not reach the sync server"),
+        SyncError::Unauthorized => gettext("The sync server refused the login; log in again"),
+        SyncError::AppMissing => gettext("The GPodder Sync app is not installed on this server"),
+        // Translators: the number is an HTTP status code, such as 500.
+        SyncError::Status(code) => gettext("The sync server answered with error {code}")
+            .replace("{code}", &code.to_string()),
+        SyncError::Parse(_) => gettext("The sync server sent something Beacon cannot read"),
+        SyncError::LoginExpired => gettext("The login was not approved in time"),
+        SyncError::Keyring(_) => gettext("The keyring is not available"),
+        SyncError::Library(library) => self::library(library),
+    })
+}
+
+/// Whether a sync nobody asked for should say it failed: only when the
+/// user can do something about it.
+pub fn sync_needs_attention(error: &SyncError) -> bool {
+    matches!(
+        error,
+        SyncError::Unauthorized | SyncError::AppMissing | SyncError::Keyring(_)
+    )
 }

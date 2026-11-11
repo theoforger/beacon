@@ -233,6 +233,7 @@ impl App {
             &self.widgets.toasts,
             &gettext("Unsubscribed from {show}").replace("{show}", &title),
         );
+        self.schedule_sync(super::sync::AFTER_SUBSCRIBING);
     }
 
     pub(super) fn subscribed(&mut self, url: &Url, result: Result<ShowId, LibraryError>) {
@@ -243,6 +244,7 @@ impl App {
                 // The toast names the show once its page has loaded.
                 self.subscribed_toast = Some(id);
                 self.job(Parts::ALL, true, |_| Ok(()));
+                self.request_sync(false);
             }
             Err(LibraryError::AlreadySubscribed(id)) => {
                 self.open_show(id);
@@ -279,6 +281,7 @@ impl App {
         if let Some(message) = refresh_message(summary, at_startup) {
             toast(&self.widgets.toasts, &message);
         }
+        self.request_sync(false);
     }
 }
 

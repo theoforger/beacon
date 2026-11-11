@@ -3,3 +3,4 @@
 pub mod about;
 pub mod description;
 pub mod preferences;
+pub mod sync_page;

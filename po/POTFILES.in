@@ -5,6 +5,8 @@ crates/beacon-gtk/src/app/downloads.rs
 crates/beacon-gtk/src/app/library.rs
 crates/beacon-gtk/src/app/lists.rs
 crates/beacon-gtk/src/app/setup.rs
+crates/beacon-gtk/src/app/sync/login.rs
+crates/beacon-gtk/src/app/sync/mod.rs
 crates/beacon-gtk/src/main.rs
 crates/beacon-gtk/src/player/mpris.rs
 crates/beacon-gtk/src/ui/add_page.rs
@@ -16,6 +18,7 @@ crates/beacon-gtk/src/ui/details_pane/build.rs
 crates/beacon-gtk/src/ui/details_pane/mod.rs
 crates/beacon-gtk/src/ui/dialogs/about.rs
 crates/beacon-gtk/src/ui/dialogs/preferences.rs
+crates/beacon-gtk/src/ui/dialogs/sync_page.rs
 crates/beacon-gtk/src/ui/downloads.rs
 crates/beacon-gtk/src/ui/episode_actions.rs
 crates/beacon-gtk/src/ui/episodes_view.rs

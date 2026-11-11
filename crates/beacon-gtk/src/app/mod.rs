@@ -15,6 +15,7 @@ mod object;
 mod playback;
 mod sender;
 mod setup;
+mod sync;
 mod window;
 
 pub use object::Window;
@@ -83,6 +84,7 @@ pub enum AppMsg {
     Media(MediaControl),
     /// The connection came or went, or became metered or not.
     NetworkChanged,
+    Sync(sync::SyncMsg),
 }
 
 #[derive(Debug)]
@@ -110,6 +112,7 @@ pub enum AppCommand {
     Cleaned(Result<usize, StoreError>),
     /// The episode last played, read back at launch.
     Restore(Option<Box<EpisodeItem>>),
+    Sync(Box<sync::SyncCommand>),
 }
 
 /// The window's parts the app reaches into.
@@ -176,6 +179,8 @@ pub struct App {
     sleep: controls::Sleep,
     /// The downloads under way.
     downloads: downloads::Active,
+    /// The sync account and the syncs it runs.
+    sync: sync::Sync,
 }
 
 impl App {
@@ -222,6 +227,7 @@ impl App {
                 self.buffer_restored();
                 self.preload_next();
             }
+            AppMsg::Sync(message) => self.sync_message(message),
         }
     }
 
@@ -244,6 +250,7 @@ impl App {
             AppCommand::DownloadsDeleted(result) => self.downloads_deleted(result),
             AppCommand::Downloaded(id, title, result) => self.downloaded(id, &title, result),
             AppCommand::Cleaned(result) => self.cleaned(result),
+            AppCommand::Sync(command) => self.sync_command(*command),
             AppCommand::Chapters(id, chapters) => {
                 self.bar
                     .send(PlayerBarInput::Chapters(id, chapters.clone()));

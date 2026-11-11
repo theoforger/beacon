@@ -56,7 +56,13 @@ fn setup_gettext() {
 
 fn setup_app_actions(app: &adw::Application) {
     let quit = gio::ActionEntry::builder("quit")
-        .activate(|app: &adw::Application, _, _| app.quit())
+        // Closing each window, rather than quitting outright, saves the
+        // window's state and lets it sync once more.
+        .activate(|app: &adw::Application, _, _| {
+            for window in app.windows() {
+                window.close();
+            }
+        })
         .build();
     app.add_action_entries([quit]);
 

@@ -128,6 +128,30 @@ pub fn date(published: DateTime<Utc>) -> String {
         .unwrap_or_default()
 }
 
+/// When a sync last finished: "Today at 14:05", or "Oct 27 at 14:05".
+pub fn synced_at(at: DateTime<Utc>) -> String {
+    let Some(local) = glib::DateTime::from_unix_local(at.timestamp()).ok() else {
+        return String::new();
+    };
+    // Translators: a time of day in GLib's strftime format, as in "14:05".
+    let time = local
+        .format(&gettext("%H:%M"))
+        .map(String::from)
+        .unwrap_or_default();
+    let today = glib::DateTime::now_local()
+        .ok()
+        .is_some_and(|now| now.ymd() == local.ymd());
+    if today {
+        // Translators: when sync last finished, as in "Today at 14:05".
+        gettext("Today at {time}").replace("{time}", &time)
+    } else {
+        // Translators: when sync last finished, as in "Oct 27 at 14:05".
+        gettext("{date} at {time}")
+            .replace("{date}", &date(at))
+            .replace("{time}", &time)
+    }
+}
+
 /// "52 min", or "1 h 6 min".
 pub fn length(duration: Duration) -> String {
     let minutes = (duration.as_secs() + 30) / 60;

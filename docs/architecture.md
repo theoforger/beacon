@@ -17,7 +17,7 @@ beacon/
   po/                       POTFILES.in, LINGUAS, .pot, translations
   docs/
     design/                 exported mockup
-    specs/                  feature specs (OPML, Add page and iTunes, auto-delete)
+    specs/                  feature specs (OPML, Add page and iTunes, auto-delete, sync)
     hig-checklist.md
     hig-reviews/            HIG gate reports
     decisions.md            every crate and custom-widget choice
@@ -27,7 +27,8 @@ beacon/
     beacon-core/            no GTK
       src/model/            domain types: Show, Episode, Season, QueueItem
       src/store/            SQLite, migrations/, queries
-      src/services/         feeds, itunes, downloads, cleanup, opml, sync
+      src/services/         feeds, itunes, downloads, cleanup, opml
+      src/sync/             gpodder payloads, SyncBackend, nextcloud-gpodder, keyring, SyncService
     beacon-gtk/             the app
       src/main.rs, app.rs   window, sections, breakpoints
       src/ui/               sidebar, content pages, details pane, player bar
@@ -122,3 +123,8 @@ Map every mockup element to a stock libadwaita widget first. A custom widget nee
 - Queue reordering: `beacon_core::queue::{step, drop_index}`, `Store::{step_queued, drop_queued}`; `ui/widgets/episode_row/reorder.rs` (the drag handle, Move Up and Move Down), `ui/widgets/queue_card.rs` (the Next in Queue card, an `Entry::QueueCard` of the Queue's list, which lays out and drags its own rows).
 - Downloads: `services/downloads.rs` (`Downloader` writes `ID.part` and resumes it with a range request; `Progress` is shared with the UI and cancels), `Library::download` (three at a time) and `Library::delete_downloads`, `services::download_client` (no limit on a whole request); `DownloadError`. `app/downloads.rs` starts, cancels and finishes them and publishes their progress every 250ms to `ui/downloads.rs`, which rows (`episode_row/downloading.rs`, a progress bar) and menus (`episode_actions.rs`: Download, Cancel Download, Delete Download) read. Selection mode's Download (`selection_bar::Bulk`) and a podcast page's Download All Episodes (confirmed) start several.
 - Auto-delete: `services/cleanup.rs` (`CleanupPolicy::expired`), `Library::clean_downloads` (never queued episodes, nor those kept); `app/downloads.rs` runs it at startup, once a day and when Preferences closes. `ui/dialogs/preferences.rs`: the Preferences dialog's Downloads group, bound to `delete-old-downloads`, `delete-after-days` and `delete-only-played`.
+
+### M6
+
+- Sync, core: `sync/mod.rs` (the gpodder payloads: `SubscriptionChanges`, `EpisodeAction`, times with or without a zone, -1 for unset; the `SyncBackend` trait), `sync/nextcloud.rs` (`NextcloudBackend`; `server_url`; Login Flow v2 with `start_browser_login` and `wait_for_browser_login`; `log_in_with_password`; `revoke`), `sync/keyring.rs` (the app password through `oo7`), `sync/service.rs` (`SyncService::sync`, one at a time: subscriptions, episode actions, push, clear); `SyncError`. Storage: migration `004_sync.sql` (`sync_account`, `sync_guard`, `sync_shows`, `sync_episodes`, and the triggers that record local changes), `store/sync.rs` (`Store::quietly`, the account, the first-sync snapshot `record_library`, `pending_*`, `finish_sync`, `apply_play` with the merge rules); `Library::subscribe_from_server`.
+- Sync, app: `app/sync/mod.rs` (the account and its backend, `request_sync`, `schedule_sync`, the sync on closing), `app/sync/login.rs` (the page's requests: logging in through the browser, with `GtkUriLauncher`, or a password; Log Out; the Sync switch). Syncs run after refreshes, after subscribing (and a second after unsubscribing), 30 seconds after playback pauses or stops, on Sync Now and when the window closes. `ui/dialogs/sync_page.rs`: the Sync page of Preferences (`SyncView` in, `SyncPageOutput` out).

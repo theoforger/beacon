@@ -249,20 +249,20 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Migration `004_sync.sql`: the sync account, pending show and episode changes, and triggers that record every local change while sync is on, without echoing changes applied from the server
-- [ ] `SyncBackend` trait with shared gpodder types; `NextcloudBackend` for nextcloud-gpodder's subscriptions and episode actions
-- [ ] Login: Nextcloud Login Flow v2 through the browser (OpenURI portal), or a password turned into an app password; Log Out revokes the app password
+- [x] Migration `004_sync.sql`: the sync account, pending show and episode changes, and triggers that record every local change while sync is on, without echoing changes applied from the server
+- [x] `SyncBackend` trait with shared gpodder types; `NextcloudBackend` for nextcloud-gpodder's subscriptions and episode actions
+- [x] Login: Nextcloud Login Flow v2 through the browser (OpenURI portal), or a password turned into an app password; Log Out revokes the app password
 - [ ] App password kept in the keyring through `oo7` (Secret portal); no new sandbox permission
-- [ ] `SyncService`: pull subscriptions, then episode actions, then push pending changes; the first sync merges both sides with nothing removed; `since` comes from the server's timestamps
-- [ ] Merge rules: a newer local change wins, a finished play marks the episode played, a partial play never un-plays one; an unmatched episode refreshes its show once, then is dropped
-- [ ] Sync runs after refreshing feeds, after subscribing and unsubscribing, after pausing (debounced), on Sync Now and once on close
-- [ ] Preferences: a Sync page with GNOME Podcasts' rows (server, Browser / Password, username and password, Log In; then account, Sync switch, Last Synced, Sync Now, Log Out)
-- [ ] Every `SyncError` variant has its own message, shown as a toast
+- [x] `SyncService`: pull subscriptions, then episode actions, then push pending changes; the first sync merges both sides with nothing removed; `since` comes from the server's timestamps
+- [x] Merge rules: a newer local change wins, a finished play marks the episode played, a partial play never un-plays one; an unmatched episode refreshes its show once, then is dropped
+- [x] Sync runs after refreshing feeds, after subscribing and unsubscribing, after pausing (debounced), on Sync Now and once on close
+- [x] Preferences: a Sync page with GNOME Podcasts' rows (server, Browser / Password, username and password, Log In; then account, Sync switch, Last Synced, Sync Now, Log Out)
+- [x] Every `SyncError` variant has its own message, shown as a toast
 
 ### Tests
 
-- [ ] Unit: gpodder JSON, the login flows and logout, HTTP status mapping, triggers and the echo guard, merge rules, the first-sync snapshot
-- [ ] Integration (a mock nextcloud-gpodder): a fresh library picks up a show and a position; a local play and an unsubscribe are pushed and leave nothing pending
+- [x] Unit: gpodder JSON, the login flows and logout, HTTP status mapping, triggers and the echo guard, merge rules, the first-sync snapshot
+- [x] Integration (a mock nextcloud-gpodder): a fresh library picks up a show and a position; a local play and an unsubscribe are pushed and leave nothing pending
 
 ### Exit gate
 

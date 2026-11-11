@@ -188,8 +188,9 @@ impl App {
 
     /// Preferences. Closing it looks for old downloads at once, so a
     /// change shows without waiting a day.
-    pub(super) fn open_preferences(&self, root: &adw::ApplicationWindow) {
-        let dialog = crate::ui::dialogs::preferences::dialog(&self.settings);
+    pub(super) fn open_preferences(&mut self, root: &adw::ApplicationWindow) {
+        let sync = self.sync_page();
+        let dialog = crate::ui::dialogs::preferences::dialog(&self.settings, &sync);
         let sender = self.sender.clone();
         dialog.connect_closed(move |_| sender.input(AppMsg::CleanDownloads));
         dialog.present(Some(root));
