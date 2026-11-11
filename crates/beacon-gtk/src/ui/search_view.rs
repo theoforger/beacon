@@ -14,12 +14,13 @@ use beacon_core::model::ShowId;
 use gettextrs::{gettext, ngettext};
 use gtk::glib;
 
+use crate::ui::covers::Cover;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::messages::Output;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard};
 use crate::ui::search_data::SearchResults;
 use crate::ui::selection::Selection;
-use crate::ui::shows_grid::show_tile;
+use crate::ui::shows_grid::show_tile_with;
 use crate::ui::widgets::episode_row::RowSetup;
 
 #[derive(Debug)]
@@ -209,7 +210,8 @@ impl SearchView {
 fn set_tiles(flow: &gtk::FlowBox, cards: &[ShowCard]) {
     flow.remove_all();
     for card in cards {
-        flow.append(&show_tile(card));
+        // The Shows grid's narrowest cover: two still fit at 360px.
+        flow.append(&show_tile_with(card, Cover::new(150)));
     }
 }
 

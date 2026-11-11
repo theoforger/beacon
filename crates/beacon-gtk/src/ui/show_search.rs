@@ -71,7 +71,14 @@ impl ShowSearch {
         scope
             .upcast_ref::<gtk::Widget>()
             .update_property(&[gtk::accessible::Property::Label(&gettext("Search Scope"))]);
-        let row = gtk::Box::builder().spacing(6).build();
+        // Beside the field when both fit, under it when not, so the scope's
+        // labels are never cut short (found at 360px in the M7 review).
+        let row = adw::WrapBox::builder()
+            .child_spacing(6)
+            .line_spacing(6)
+            .justify(adw::JustifyMode::Fill)
+            .build();
+        entry.set_width_chars(16);
         row.append(&entry);
         row.append(&scope);
         let bar = gtk::SearchBar::builder()

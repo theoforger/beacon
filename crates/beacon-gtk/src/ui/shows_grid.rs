@@ -194,8 +194,13 @@ fn tile_factory() -> gtk::SignalListItemFactory {
     factory
 }
 
-pub(crate) fn show_tile(card: &ShowCard) -> gtk::Box {
-    let cover = Cover::filling(COVER_MIN);
+fn show_tile(card: &ShowCard) -> gtk::Box {
+    show_tile_with(card, Cover::filling(COVER_MIN))
+}
+
+/// A show's tile around `cover`: a filling one on the grid, a fixed one
+/// where nothing measures height for width (search results).
+pub(crate) fn show_tile_with(card: &ShowCard, cover: Cover) -> gtk::Box {
     cover.set(card.cover.as_deref());
     let art = cover.widget();
     // On the cover itself, so the badge stays in its corner at any width.

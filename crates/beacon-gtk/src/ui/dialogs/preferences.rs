@@ -46,7 +46,7 @@ fn country_row(settings: &gio::Settings) -> adw::ComboRow {
     let countries = countries();
     let names: Vec<&str> = countries.iter().map(|(_, name)| name.as_str()).collect();
     let row = adw::ComboRow::builder()
-        .title(gettext("_Country or Region"))
+        .title(gettext("_Country or region"))
         .subtitle(gettext("Whose Apple Podcasts directory Add searches"))
         .use_underline(true)
         .model(&gtk::StringList::new(&names))
