@@ -10,6 +10,7 @@ use adw::prelude::*;
 use gtk::{self, gdk, gio, glib};
 
 use super::{App, NARROW_BREAKPOINT_SP};
+use crate::ui::selection_bar;
 use crate::ui::widgets::episode_row;
 
 /// The details pane's maximum width in the narrow layout: more than any
@@ -182,6 +183,7 @@ impl App {
         );
         breakpoint.connect_apply(move |_| {
             episode_row::set_narrow(true);
+            selection_bar::set_narrow(true);
             frame.remove(&player);
             sheet.set_sheet(Some(&player));
             bar.set_sheet(true);
@@ -197,6 +199,7 @@ impl App {
         );
         breakpoint.connect_unapply(move |_| {
             episode_row::set_narrow(false);
+            selection_bar::set_narrow(false);
             was_open.set(sheet.is_open());
             sheet.set_open(false);
             sheet.set_sheet(None::<&gtk::Widget>);

@@ -458,6 +458,7 @@ fn narrow_headers_fit_three_window_buttons() {
     // What the narrow breakpoint hides.
     content.widgets().details_toggle().set_visible(false);
     content.widgets().refresh_holder().set_visible(false);
+    crate::ui::selection_bar::set_narrow(true);
     // The page's breakpoint bin reports less and clips what it holds, so
     // measure the page inside it.
     let page =
@@ -469,6 +470,14 @@ fn narrow_headers_fit_three_window_buttons() {
         let until = std::time::Instant::now() + Duration::from_millis(100);
         run_until(|| std::time::Instant::now() > until);
         needed.push((format!("{section:?}"), minimum_width(&page)));
+        // Select is left out, and Ctrl+A still selects.
+        let select = content.select_button();
+        assert!(!select.is_visible(), "{section:?} leaves Select out");
+        assert!(crate::ui::selection_bar::takes_shortcut(
+            &select,
+            &content.selection(),
+            0
+        ));
         // Selection mode's header too, with its longest heading ("No
         // Episodes Selected"), which overflowed 360px (found in the M5
         // review).
@@ -479,6 +488,7 @@ fn narrow_headers_fit_three_window_buttons() {
         content.selection().set_active(false);
     }
     window.destroy();
+    crate::ui::selection_bar::set_narrow(false);
     settings.set_gtk_decoration_layout(layout.as_deref());
     for (section, needed) in needed {
         assert!(

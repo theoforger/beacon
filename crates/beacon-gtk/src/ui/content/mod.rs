@@ -23,7 +23,7 @@ use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
 use crate::ui::queue_data::QueueData;
-use crate::ui::selection_bar::Bulk;
+use crate::ui::selection_bar::{self, Bulk};
 use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 use beacon_core::queue::Source;
@@ -234,7 +234,9 @@ impl Content {
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
 
-        widgets.root_header.pack_end(&lists.select);
+        widgets
+            .root_header
+            .pack_end(&selection_bar::select_holder(&lists.select));
         widgets.start.append(&lists.clear);
         // The start goes when neither shows, or the header would still
         // space it from the title: 6px New's narrow header has not got.
@@ -302,6 +304,13 @@ impl Content {
         self.imp()
             .inbox
             .deliver(input, |message| self.update(message));
+    }
+
+    /// The header's Select, for tests.
+    #[cfg(test)]
+    pub fn select_button(&self) -> gtk::Button {
+        let parts = self.imp().parts.get().expect("built");
+        parts.lists.select.clone()
     }
 
     /// The sections' selection, for tests.

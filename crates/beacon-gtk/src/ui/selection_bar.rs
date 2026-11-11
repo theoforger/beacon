@@ -8,8 +8,12 @@
 //! menu where the page is too narrow for them. The heading is a menu with
 //! Select All and Select None, the classic GNOME selection title. A Select
 //! button in the page's own header enters selection mode; so do selecting
-//! a row and Ctrl+A. Escape and Cancel leave it.
+//! a row and Ctrl+A. Escape and Cancel leave it. Narrow windows leave the
+//! Select button out (asked by the user 2026-11-10): beside three window
+//! buttons it crowded the title, and a long press, a secondary click or a
+//! row menu's Select enters selection mode there.
 
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use beacon_core::model::{EpisodeChange, EpisodeId};
@@ -65,6 +69,39 @@ pub fn select_button(selection: &Selection) -> gtk::Button {
     let s = selection.clone();
     select.connect_clicked(move |_| s.set_active(true));
     select
+}
+
+thread_local! {
+    /// Whether the window has the narrow layout, which leaves Select out.
+    static NARROW: Cell<bool> = const { Cell::new(false) };
+    /// Every holder made, to hide or show with the layout.
+    static HOLDERS: RefCell<Vec<glib::WeakRef<adw::Bin>>> = const { RefCell::new(Vec::new()) };
+}
+
+/// `select` in a holder for the header, hidden in the narrow layout. The
+/// holder hides rather than the button, whose own visibility says whether
+/// the page offers selection (and so whether Ctrl+A applies).
+pub fn select_holder(select: &gtk::Button) -> adw::Bin {
+    let holder = adw::Bin::builder()
+        .child(select)
+        .visible(!NARROW.get())
+        .build();
+    HOLDERS.with_borrow_mut(|holders| holders.push(holder.downgrade()));
+    holder
+}
+
+/// Tell the Select buttons whether the window has the narrow layout.
+pub fn set_narrow(narrow: bool) {
+    NARROW.set(narrow);
+    HOLDERS.with_borrow_mut(|holders| {
+        holders.retain(|holder| match holder.upgrade() {
+            Some(holder) => {
+                holder.set_visible(!narrow);
+                true
+            }
+            None => false,
+        });
+    });
 }
 
 /// Below this page width the actions fold into one menu: four icons,

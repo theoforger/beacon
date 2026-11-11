@@ -167,7 +167,7 @@ impl ShowPage {
         header.pack_end(&more);
         header.pack_end(filter.widget());
         let select = selection_bar::select_button(&rows.selection);
-        header.pack_end(&select);
+        header.pack_end(&selection_bar::select_holder(&select));
         selection_bar::attach(
             &toolbar,
             &header,
