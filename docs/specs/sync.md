@@ -32,7 +32,7 @@ An action:
 
 - `podcast` is the feed URL and `episode` the enclosure URL. The server identifies an episode by `guid`, or by `episode` when there is no GUID. Send `guid` whenever there is one.
 - `started`, `position` and `total` are seconds; -1 means unset.
-- `since` and the response `timestamp` are Unix seconds. An action's `timestamp` is a date-time string, UTC, with or without a zone (servers since 3.11.0 send one). Parse both.
+- `since` and the response `timestamp` are Unix seconds. The server hands out the actions whose own `timestamp` is after `since` (nextcloud-gpodder and nc-gpodder-lite filter on `timestamp_epoch > since`), so an action dated before another device last fetched never reaches that device. An action's `timestamp` is a date-time string, UTC, with or without a zone (servers since 3.11.0 send one). Parse both.
 - A 404 on these paths means the app is not installed on that server.
 - The README's examples have trailing commas and mix `PLAY` with `play`. Send upper case and accept either.
 
@@ -52,7 +52,7 @@ Log Out sends `DELETE /ocs/v2.php/core/apppassword` and then removes the account
 SQLite triggers record every change while an active account exists, so nothing depends on each call site remembering:
 
 - inserting a show records `add`, deleting one records `remove`, and each cancels a pending opposite;
-- a change to an episode's `position_secs` or `played` upserts one pending PLAY per episode: the first `started` stays, while `position`, `total` and the time update. Played sends `position = total`; `total` is the duration, or the position when the duration is unknown.
+- a change to an episode's `position_secs` or `played` upserts one pending PLAY per episode: the first `started` stays, while `position`, `total` and the time update. Played sends `position = total`; `total` is the duration, or the furthest position seen when the duration is unknown. Marking unplayed records nothing and drops the pending PLAY. Episodes without an enclosure are not recorded.
 
 Pending rows copy the feed URL, GUID and enclosure URL, so they survive an unsubscribe.
 
@@ -68,10 +68,13 @@ One at a time. In order:
    - A play within 5 seconds of `total` marks the episode played.
    - Played is sticky: a partial play from elsewhere never un-plays an episode. It does move the position, so the episode resumes there if played again.
    - An action for a known show whose episode is not stored refreshes that show once, then retries. If it still does not match, it is logged and dropped.
-3. **Push** the pending subscriptions, then the pending episode actions.
-4. **Clear** the pending rows recorded before the sync started. Store the timestamps the server returned as the next `since`, never the local clock, so a wrong clock cannot skip changes.
+   - An action already matching the episode (an echo of Beacon's own) changes nothing.
+3. **Push** the pending subscriptions, then the pending episode actions. `guid` is sent only when it differs from the enclosure URL, Beacon's fallback for a feed without GUIDs. Each action is dated the later of when it changed and the server's `timestamp` from step 2, so it is never older than a `since` the server has already handed out.
+4. **Clear** the pending rows recorded before the sync started. Store the timestamps the server returned in steps 1 and 2, less one second, as the next `since`, never the local clock, so a wrong clock cannot skip changes and a change another device sent in the same second is not missed.
 
-**First sync** (no stored timestamps): fetch everything, then push every local subscription and a PLAY for each episode with a position or marked played, leaving out what the server already has. Subscriptions are merged as a union: the first sync never removes a local show, even one the server lists as removed.
+**First sync** (no stored timestamps): fetch everything, then push every local subscription and a PLAY for each episode with a position or marked played, leaving out what the server already has. Subscriptions are merged as a union: the first sync never removes a local show, even one the server lists as removed. A played episode's change dates from when it was played; a position has no date, so the server's wins.
+
+Outside the first sync, a pending local subscription change wins over the server's opposite one.
 
 ## When it runs
 
@@ -97,7 +100,7 @@ A Sync page in the Preferences dialog. GNOME Podcasts uses the same rows in a se
 ## Open questions
 
 1. **Marking unplayed** is not synced. gpodder has no "unplayed" action; NEW exists, but only `allActions=true` returns it, and it is unclear whether AntennaPod and Kasts act on it. Check before adding.
-2. **Made-up GUIDs.** Beacon falls back to the enclosure URL, the link or the title when a feed item has no GUID (`docs/decisions.md`, Episode identity). Such GUIDs should not be sent as `guid`. This needs either a column marking feed-supplied GUIDs, or sending `guid` only when it differs from the enclosure URL.
+2. ~~**Made-up GUIDs.**~~ Settled 2026-11-10: `guid` is sent only when it differs from the enclosure URL. Beacon's fallbacks after the enclosure URL (the link, the title) apply only to items without audio, which are never synced.
 3. **Feed URL changes.** nextcloud-gpodder has no `update_urls`. A feed that moves stays subscribed under its old URL on the server.
 
 ## Later: gpodder.net-style servers

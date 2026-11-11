@@ -92,17 +92,34 @@ impl Library {
 
     /// Subscribe to the feed at `url`. Only the newest episode starts unseen.
     pub async fn subscribe(&self, url: &Url) -> Result<ShowId, LibraryError> {
+        self.subscribe_with(url, false).await
+    }
+
+    /// Subscribe to a feed the sync server lists, without recording it to
+    /// be sent back.
+    pub async fn subscribe_from_server(&self, url: &Url) -> Result<ShowId, LibraryError> {
+        self.subscribe_with(url, true).await
+    }
+
+    async fn subscribe_with(&self, url: &Url, from_server: bool) -> Result<ShowId, LibraryError> {
         if let Some(id) = self.lock().show_id_for_feed(url)? {
             return Err(LibraryError::AlreadySubscribed(id));
         }
         let feed = self.feeds.fetch(url).await?;
         let now = self.clock.now();
         let id = {
+            let insert = |store: &mut Store| {
+                let id = store.insert_show(url, &feed.show, now)?;
+                store.sync_episodes(id, &feed.episodes, now)?;
+                store.mark_seen_except_newest(id)?;
+                Ok(id)
+            };
             let mut store = self.lock();
-            let id = store.insert_show(url, &feed.show, now)?;
-            store.sync_episodes(id, &feed.episodes, now)?;
-            store.mark_seen_except_newest(id)?;
-            id
+            if from_server {
+                store.quietly(insert)?
+            } else {
+                insert(&mut store)?
+            }
         };
         self.cache_cover(id).await;
         Ok(id)

@@ -27,6 +27,7 @@ The scenario tests for each milestone are listed under its Tests heading in `MIL
 ## Rules for all tests
 
 - CI never calls the real iTunes API or real podcast servers. Use recorded fixtures.
+- `beacon-core/tests/live_sync.rs` (ignored by default) runs the sync scenario with two libraries against a real nextcloud-gpodder server, such as a local nc-gpodder-lite with a feed served by `python3 -m http.server`; its header lists the variables it needs. Run it by hand after changing the sync engine.
 - One scheduled job may call the live iTunes API to check assumptions such as the `feedUrl` field. It must not block merges.
 - Playback tests use a short local audio file and a silent output, never a real sound device.
 - Unit and integration tests run on every push and pull request.

@@ -13,6 +13,7 @@ publish = false
 chrono = "0.4.45"
 futures-util = "0.3.34"
 linkify = "0.11.0"
+oo7 = "0.7.1"
 reqwest = { version = "0.13.5", features = ["stream"] }
 rss = { version = "2.1.2", default-features = false }
 rusqlite = { version = "0.41", features = ["chrono", "url"] }
@@ -21,7 +22,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.1"
 thiserror = "2.0.21"
-tokio = { version = "1.54.1", features = ["fs", "io-util", "sync"] }
+tokio = { version = "1.54.1", features = ["fs", "io-util", "sync", "time"] }
 url = "2.5.8"
 
 [dev-dependencies]

@@ -11,7 +11,10 @@ use url::Url;
 
 mod rows;
 mod state;
+mod sync;
 mod views;
+
+pub use self::sync::{Applied, PendingMark, PendingPlay, SyncAccount};
 
 use self::rows::{EPISODE_COLUMNS, SHOW_COLUMNS, episode_from_row, episode_params, show_from_row};
 use crate::error::StoreError;
@@ -20,10 +23,11 @@ use crate::model::{Chapter, Episode, EpisodeId, ParsedEpisode, Show, ShowId, Sho
 /// The schema's changes, in order. A library's `user_version` counts the
 /// ones applied, as rusqlite_migration (used until 2026-11-09) kept it, so
 /// libraries it made carry on.
-const MIGRATIONS: [&str; 3] = [
+const MIGRATIONS: [&str; 4] = [
     include_str!("migrations/001_initial.sql"),
     include_str!("migrations/002_show_prefs.sql"),
     include_str!("migrations/003_download_filter.sql"),
+    include_str!("migrations/004_sync.sql"),
 ];
 
 /// Apply the changes `conn` has not had, each in its own transaction.
@@ -67,7 +71,10 @@ impl Store {
     fn init(mut conn: Connection) -> Result<Self, StoreError> {
         conn.pragma_update(None, "foreign_keys", true)?;
         migrate(&mut conn)?;
-        Ok(Self { conn })
+        let store = Self { conn };
+        // A guard left set by a crash would silence the sync triggers.
+        store.set_guard(false)?;
+        Ok(store)
     }
 
     pub fn show_id_for_feed(&self, feed_url: &Url) -> Result<Option<ShowId>, StoreError> {

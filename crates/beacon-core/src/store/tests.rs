@@ -44,10 +44,10 @@ fn a_library_gets_the_changes_it_has_not_had() {
     conn.execute_batch(MIGRATIONS[0]).unwrap();
     conn.pragma_update(None, "user_version", 1).unwrap();
     migrate(&mut conn).unwrap();
-    assert_eq!(version(&conn), 3);
+    assert_eq!(version(&conn), 4);
     // Applying again changes nothing.
     migrate(&mut conn).unwrap();
-    assert_eq!(version(&conn), 3);
+    assert_eq!(version(&conn), 4);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn a_library_from_a_newer_beacon_is_left_alone() {
         migrate(&mut conn),
         Err(StoreError::TooNew {
             applied: 9,
-            known: 3
+            known: 4
         })
     ));
 }

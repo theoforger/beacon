@@ -74,3 +74,37 @@ pub enum PlaybackError {
     #[error("could not play the episode: {0}")]
     Stream(String),
 }
+
+/// Why a sync, a login or a logout did not go through
+/// (`docs/specs/sync.md`, Errors). The UI has a message for each.
+#[derive(Debug, thiserror::Error)]
+pub enum SyncError {
+    #[error("no sync account, or sync is off")]
+    NotConfigured,
+    #[error("not a server address")]
+    InvalidServer,
+    #[error("could not reach the sync server: {0}")]
+    Network(#[from] reqwest::Error),
+    #[error("the server did not accept the login")]
+    Unauthorized,
+    #[error("the server has no nextcloud-gpodder app")]
+    AppMissing,
+    #[error("the sync server answered with HTTP status {0}")]
+    Status(u16),
+    #[error("could not read the sync server's answer: {0}")]
+    Parse(String),
+    #[error("the browser login was not approved within 20 minutes")]
+    LoginExpired,
+    #[error("the browser login was cancelled")]
+    Cancelled,
+    #[error("the keyring is unavailable: {0}")]
+    Keyring(String),
+    #[error(transparent)]
+    Library(#[from] LibraryError),
+}
+
+impl From<StoreError> for SyncError {
+    fn from(err: StoreError) -> Self {
+        Self::Library(LibraryError::Store(err))
+    }
+}

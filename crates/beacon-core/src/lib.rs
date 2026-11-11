@@ -11,6 +11,9 @@ pub mod playback;
 pub mod queue;
 pub mod services;
 pub mod store;
+pub mod sync;
 pub mod text;
 
-pub use error::{CoverError, DownloadError, FeedError, LibraryError, PlaybackError, StoreError};
+pub use error::{
+    CoverError, DownloadError, FeedError, LibraryError, PlaybackError, StoreError, SyncError,
+};
