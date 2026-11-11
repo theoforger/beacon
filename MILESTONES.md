@@ -209,7 +209,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green (2026-11-08, on `b1ad387`); docs up to date
 - [x] Human review of the running app (2026-11-08)
 
-## M5 Queue and lists
+## M5 Queue and lists ✓
 
 **Done when:** the queue behaves like the mockup's.
 
@@ -226,6 +226,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] `DownloadService`: manual downloads only, with resume; Download / Delete Download (`services/downloads.rs`, `app/downloads.rs`; also Cancel Download, selection Download and Download All Episodes)
 - [x] Preferences (`AdwPreferencesDialog`) with a Downloads group: Delete Old Downloads (switch, off by default), Delete After (spin row, days), and Only Delete Played Episodes (switch, on by default); the dependent rows are disabled while the master switch is off
 - [x] Cleanup at startup and daily; never deletes queued episodes; shows a toast when it removes something (`services/cleanup.rs`; also when Preferences closes)
+- [x] After review (2026-11-10): queued rows drag inside their card, which they cannot leave, the others sliding aside as the dragged row passes, and the dragged row stays under the pointer and solid (`ui/widgets/queue_card.rs`); Play on the episode restored at launch shows its spinner while it still buffers; toasts rise above the player bar rather than over it; narrow windows leave Select out of the header (a long press, a secondary click or the row menu's Select enters selection mode)
 
 ### Tests
 
@@ -237,8 +238,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m5.md`, 2026-11-10)
 - [x] Accessibility and translation checks pass: strings through gettext, every file with strings in `POTFILES.in` (`ui/downloads.rs` added in the gate), labels and tooltips on icon-only buttons; the Orca and keyboard walk-throughs logged for M9
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario (downloads, resume and cleanup in `tests/downloads.rs`; rows, Preferences and narrow headers in `ui/display_tests.rs`)
-- [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] CI and docs: CI green (2026-11-10, on `b689645`); docs up to date
+- [x] Human review of the running app (2026-11-10)
 
 ## M6 Sync
 
