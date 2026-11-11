@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Checks what Beacon assumes of the live iTunes Search API (feedUrl in
+# podcast results, thumbnails, lookups, 400 for a country without a
+# directory). Scheduled and run by hand only, never on pushes or pull
+# requests, so it cannot block a merge; CI's own checks use recorded
+# answers (docs/testing.md).
+
+name: Live iTunes API
+
+on:
+  schedule:
+    # Mondays, 06:17 UTC.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  itunes:
+    name: iTunes Search API assumptions
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    container: fedora:45
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y --setopt=install_weak_deps=False gcc git sqlite-devel
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p beacon-core --test live_itunes -- --ignored

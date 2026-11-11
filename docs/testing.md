@@ -28,7 +28,7 @@ The scenario tests for each milestone are listed under its Tests heading in `MIL
 
 - CI never calls the real iTunes API or real podcast servers. Use recorded fixtures.
 - `beacon-core/tests/live_sync.rs` (ignored by default) runs the sync scenario with two libraries against a real nextcloud-gpodder server, such as a local nc-gpodder-lite with a feed served by `python3 -m http.server`; its header lists the variables it needs. Run it by hand after changing the sync engine.
-- One scheduled job may call the live iTunes API to check assumptions such as the `feedUrl` field. It must not block merges.
+- One scheduled job may call the live iTunes API to check assumptions such as the `feedUrl` field. It must not block merges. It is `.github/workflows/itunes-live.yml` (Mondays, or by hand), running `cargo test -p beacon-core --test live_itunes -- --ignored`: six calls checking `feedUrl`, the thumbnail and store link, a lookup by ID, a 400 for a country without a directory, and three storefronts.
 - Playback tests use a short local audio file and a silent output, never a real sound device.
 - Unit and integration tests run on every push and pull request.
 - A bug fix starts with a failing test that reproduces it.
