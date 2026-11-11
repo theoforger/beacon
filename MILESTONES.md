@@ -281,23 +281,23 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Deliverables
 
 - [x] Check Apple's terms, attribution rules and rate limits; confirm `feedUrl` in a live response (open question 1)
-- [ ] `GtkSearchBar` under the header, toggled from the header and by Ctrl+F; hidden on the Add page
-- [ ] On a podcast page, a This Show / Everywhere toggle; This Show filters the page in place
-- [ ] Results for matching shows and episodes (FTS5); with no results, a suggested Search Online button that opens Add with the query (not shown in the This Show scope)
-- [ ] Add page (over the current section): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
-- [ ] iTunes client: search on Enter or after a pause, cached results, `country` from the locale and as a setting, about 20 calls per minute
-- [ ] Artwork-terms decision applied to the result covers
-- [ ] Categories and charts stay out until there is a verified source
-- [ ] Scheduled, non-blocking CI job that checks the live iTunes API assumptions
+- [x] `GtkSearchBar` under the header, toggled from the header and by Ctrl+F; hidden on the Add page
+- [x] On a podcast page, a This Show / Everywhere toggle; This Show filters the page in place
+- [x] Results for matching shows and episodes (FTS5); with no results, a suggested Search Online button that opens Add with the query (not shown in the This Show scope)
+- [x] Add page (over the current section): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
+- [x] iTunes client: search on Enter or after a pause, cached results, `country` from the locale and as a setting, about 20 calls per minute
+- [x] Artwork-terms decision applied to the result covers
+- [x] Categories and charts stay out until there is a verified source
+- [x] Scheduled, non-blocking CI job that checks the live iTunes API assumptions
 
 ### Tests
 
-- [ ] Unit: query building, URL detection, the rate limiter
-- [ ] Integration (canned iTunes responses): search in This Show and Everywhere scope, the no-results page, Search Online, subscribe from iTunes results
+- [x] Unit: query building, URL detection, the rate limiter
+- [x] Integration (canned iTunes responses): search in This Show and Everywhere scope, the no-results page, Search Online, subscribe from iTunes results
 
 ### Exit gate
 
-- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
