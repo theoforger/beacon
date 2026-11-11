@@ -229,3 +229,10 @@ queuecard > .episode-card.dragging {
 list.chapter-list {
   background: none;
 }
+
+/* The shows a search finds, as tiles on the Shows grid: the same padding
+ * round each, so the focus ring and hover highlight frame the tile. */
+.search-shows > flowboxchild {
+  padding: 6px;
+  border-radius: 14px;
+}

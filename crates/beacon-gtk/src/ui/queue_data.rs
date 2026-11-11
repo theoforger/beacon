@@ -44,7 +44,7 @@ fn source_ids(store: &Store, source: Source, lists: Lists) -> Result<Vec<Episode
             .into_iter()
             .map(|(_, item)| item.episode.id)
             .collect(),
-        Source::Show(id) => match models::show_page(store, id)? {
+        Source::Show(id) => match models::show_page(store, id, None)? {
             Some(page) => match page.seasons {
                 Some(seasons) => seasons
                     .into_iter()

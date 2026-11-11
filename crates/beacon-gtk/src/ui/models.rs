@@ -75,6 +75,8 @@ pub struct ShowPageData {
     /// What Download All Episodes downloads: every episode with audio not
     /// yet downloaded, whatever the filter shows, newest first.
     pub to_download: Vec<EpisodeId>,
+    /// The search in This Show scope the episodes are narrowed to.
+    pub query: Option<String>,
 }
 
 /// What turning episodes into items needs: their shows and the queue.
@@ -153,7 +155,13 @@ pub fn new_items(
     Ok(items)
 }
 
-pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, StoreError> {
+/// The podcast page, its episodes narrowed to those matching `query` (a
+/// search in This Show scope) when there is one.
+pub fn show_page(
+    store: &Store,
+    id: ShowId,
+    query: Option<&str>,
+) -> Result<Option<ShowPageData>, StoreError> {
     let context = Context::load(store)?;
     let Some(show) = context.shows.get(&id).cloned() else {
         return Ok(None);
@@ -166,7 +174,15 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
         .filter(|e| e.info.enclosure.is_some() && e.state.download_path.is_none())
         .map(|e| e.id)
         .collect();
-    let mut episodes: Vec<Episode> = all.into_iter().filter(|e| prefs.accepts(e)).collect();
+    let matches: Option<std::collections::HashSet<EpisodeId>> = match query {
+        Some(query) => Some(store.search_show_episodes(id, query)?.into_iter().collect()),
+        None => None,
+    };
+    let mut episodes: Vec<Episode> = all
+        .into_iter()
+        .filter(|e| prefs.accepts(e))
+        .filter(|e| matches.as_ref().is_none_or(|m| m.contains(&e.id)))
+        .collect();
 
     let seasons = browse::group_by_season(episodes.clone(), prefs.order).map(|groups| {
         groups
@@ -194,6 +210,7 @@ pub fn show_page(store: &Store, id: ShowId) -> Result<Option<ShowPageData>, Stor
         episodes,
         all_played,
         to_download,
+        query: query.map(str::to_owned),
     }))
 }
 

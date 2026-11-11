@@ -10,86 +10,34 @@
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use beacon_core::browse::RecencyGroup;
-use beacon_core::model::{EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::ShowPrefs;
 use gtk::glib;
-use url::Url;
 
 use crate::navigation::Location;
-use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
+use crate::ui::add_page::AddPage;
 use crate::ui::labels;
 use crate::ui::messages::{Inbox, Output};
-use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
-use crate::ui::queue_data::QueueData;
-use crate::ui::selection_bar::{self, Bulk};
-use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput, ShowPageOutput};
+use crate::ui::preview_page::{PREVIEW_TAG, PreviewPage};
+use crate::ui::search_view::SearchView;
+use crate::ui::selection_bar;
+use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
-use beacon_core::queue::Source;
 
 mod build;
+mod directory;
 mod lists;
+mod messages;
+mod routes;
+pub(crate) mod search;
 mod sections;
 pub use build::ContentWidgets;
+pub use messages::{ContentInput, ContentOutput, SearchScope};
+use routes::{search_output, show_page_output};
 use sections::{bring_forward, new_details_toggle, section_id};
 
 const ROOT_TAG: &str = "root";
-
-#[derive(Debug)]
-pub enum ContentInput {
-    /// Show a section at its top level, leaving any deeper pages.
-    ShowSection(Location),
-    /// Slide the Add page in over the current section.
-    OpenAdd,
-    /// Slide a podcast page in, or refresh it if it is already open.
-    OpenShow(Box<ShowPageData>),
-    /// Refresh the podcast page if it is open; never opens it.
-    UpdateShow(Box<ShowPageData>),
-    /// The show is gone: leave its page.
-    CloseShow,
-    SetShows(Vec<ShowCard>),
-    SetNew {
-        items: Vec<(RecencyGroup, EpisodeItem)>,
-        prefs: ShowPrefs,
-        has_shows: bool,
-    },
-    /// The Add page's subscription finished, either way.
-    SubscribeDone,
-    /// A choice in New's filter menu: the group's action name and the value.
-    ChooseNew(page_filters::Choice),
-    /// Whether feeds are refreshing.
-    Refreshing(bool),
-    SetQueue(Box<QueueData>),
-    SetFavorites(Vec<EpisodeItem>),
-    SetDownloaded(Vec<EpisodeItem>),
-}
-
-#[derive(Debug)]
-pub enum ContentOutput {
-    /// A row's action, with the list it is in: what plays after it, unless
-    /// it is the Queue's own (`None`), which leaves that as it was.
-    Action(Box<EpisodeItem>, RowAction, Option<Source>),
-    OpenShow(ShowId),
-    /// A choice in New's filter menu.
-    NewPrefsChanged(ShowPrefs),
-    ShowPrefsChanged(ShowId, ShowPrefs),
-    /// Mark every episode of a show played (`true`) or unplayed.
-    MarkAll(ShowId, bool),
-    Unsubscribe(ShowId),
-    FeedAddressCopied,
-    Subscribe(Url),
-    /// Leave the page showing, as Back does.
-    GoBack,
-    /// What was chosen for the selected episodes.
-    Change(Vec<EpisodeId>, Bulk),
-    /// A podcast page's Download All Episodes.
-    DownloadAll(Vec<EpisodeId>),
-    /// The Queue's Clear, with the episodes it held.
-    ClearQueue(Vec<EpisodeId>),
-    /// Downloaded's Clear, with the downloaded episodes.
-    DeleteAllDownloads(Vec<EpisodeId>),
-}
 
 mod imp {
     use std::cell::{Cell, OnceCell};
@@ -102,6 +50,8 @@ mod imp {
         pub widgets: OnceCell<ContentWidgets>,
         /// New's sort and filters, as last set by the window.
         pub new_prefs: Cell<ShowPrefs>,
+        /// The section showing, under any search results.
+        pub section: Cell<Option<Location>>,
         pub inbox: Inbox<ContentInput>,
         pub output: Output<ContentOutput>,
     }
@@ -135,6 +85,9 @@ pub struct Parts {
     lists: lists::Lists,
     show_page: ShowPage,
     add_page: AddPage,
+    preview_page: PreviewPage,
+    /// The root page's search results.
+    search: SearchView,
     /// New's filter button, shown only in New.
     new_filter: page_filters::FilterButton,
     refresh_bar: sections::RefreshBar,
@@ -165,6 +118,11 @@ impl Content {
                 ShowsGridOutput::AddPodcast => input(ContentInput::OpenAdd),
             }
         });
+        let search = SearchView::default();
+        search.connect_output({
+            let (output, input) = (output.clone(), input.clone());
+            move |message| search_output(&output, &input, message)
+        });
         let lists = lists::Lists::new(&output);
         lists.connect_clear(&output);
         // The podcast page packs its details toggle itself, at the far end
@@ -172,34 +130,10 @@ impl Content {
         let show_toggle = new_details_toggle();
         let show_page = ShowPage::new(&show_toggle);
         show_page.connect_output({
-            let output = output.clone();
-            move |message| {
-                output.emit(match message {
-                    ShowPageOutput::Action(item, action) => {
-                        let source = Source::Show(item.episode.show_id);
-                        ContentOutput::Action(item, action, Some(source))
-                    }
-                    ShowPageOutput::PrefsChanged(id, prefs) => {
-                        ContentOutput::ShowPrefsChanged(id, prefs)
-                    }
-                    ShowPageOutput::MarkAll(id, played) => ContentOutput::MarkAll(id, played),
-                    ShowPageOutput::Unsubscribe(id) => ContentOutput::Unsubscribe(id),
-                    ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
-                    ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
-                    ShowPageOutput::DownloadAll(ids) => ContentOutput::DownloadAll(ids),
-                });
-            }
+            let (output, input) = (output.clone(), input.clone());
+            move |message| show_page_output(&output, &input, message)
         });
-        let add_page = AddPage::default();
-        add_page.connect_output({
-            let output = output.clone();
-            move |message| {
-                output.emit(match message {
-                    AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
-                    AddPageOutput::Back => ContentOutput::GoBack,
-                });
-            }
-        });
+        let (add_page, preview_page) = directory::pages(&output);
         let new_filter = page_filters::FilterButton::new({
             let input = input.clone();
             move |choice| input(ContentInput::ChooseNew(choice))
@@ -212,7 +146,9 @@ impl Content {
         // page's, which the window keeps in step with the pane.
         let add_toggle = new_details_toggle();
         add_page.header().pack_end(&add_toggle);
-        for toggle in [add_toggle, show_toggle] {
+        let preview_toggle = new_details_toggle();
+        preview_page.pack_end_buttons(&preview_toggle);
+        for toggle in [add_toggle, show_toggle, preview_toggle] {
             widgets
                 .details_toggle
                 .bind_property("active", &toggle, "active")
@@ -233,6 +169,15 @@ impl Content {
             .sync_create()
             .build();
         widgets.search_bar.connect_entry(&widgets.search_entry);
+        search::connect_query(&widgets.search_bar, &widgets.search_entry, {
+            let (output, content) = (output.clone(), self.downgrade());
+            move |query| {
+                if let Some(content) = content.upgrade() {
+                    content.show_search(query.is_some());
+                }
+                output.emit(ContentOutput::Search(SearchScope::Library, query));
+            }
+        });
 
         widgets
             .root_header
@@ -282,6 +227,7 @@ impl Content {
                 .unwrap_or_else(|| shows.clone().upcast());
             widgets.stack.add_named(&page, Some(section_id(location)));
         }
+        widgets.stack.add_named(&search, Some(search::RESULTS));
         self.set_child(Some(&widgets.navigation));
 
         let imp = self.imp();
@@ -291,6 +237,8 @@ impl Content {
             lists,
             show_page,
             add_page,
+            preview_page,
+            search,
             new_filter,
             refresh_bar,
         });
@@ -327,6 +275,28 @@ impl Content {
         (self.widgets().refresh.clone(), parts.lists.clear.clone())
     }
 
+    /// The root page shows the search results, or its section.
+    fn show_search(&self, searching: bool) {
+        let location = self.imp().section.get().unwrap_or(Location::Shows);
+        search::show_results(
+            self.widgets(),
+            searching,
+            section_id(location),
+            &labels::title(location),
+        );
+    }
+
+    /// Ctrl+F: open or close the search bar of the page showing.
+    pub fn toggle_search(&self) {
+        let widgets = self.widgets();
+        if widgets.navigation.visible_page_tag().as_deref() == Some(SHOW_TAG) {
+            let parts = self.imp().parts.get().expect("built when constructed");
+            parts.show_page.toggle_search();
+        } else {
+            widgets.toggle_search();
+        }
+    }
+
     pub fn widgets(&self) -> &ContentWidgets {
         self.imp().widgets.get().expect("built when constructed")
     }
@@ -338,6 +308,9 @@ impl Content {
         let navigation = &widgets.navigation;
         match message {
             ContentInput::ShowSection(location) => {
+                imp.section.set(Some(location));
+                // A section starts without a search, as in the mockup.
+                widgets.search_bar.set_search_mode(false);
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
                 parts.lists.show(location);
@@ -352,13 +325,13 @@ impl Content {
                     navigation.replace(std::slice::from_ref(&widgets.root_page));
                 }
             }
-            ContentInput::OpenAdd => {
-                parts.add_page.clear();
-                bring_forward(navigation, parts.add_page.upcast_ref(), ADD_TAG);
-            }
             ContentInput::OpenShow(data) => {
                 parts.show_page.send(ShowPageInput::Set(data));
                 bring_forward(navigation, parts.show_page.upcast_ref(), SHOW_TAG);
+                // Subscribed from its preview: Back skips the preview.
+                if navigation.find_page(PREVIEW_TAG).is_some() {
+                    navigation.remove(&parts.preview_page);
+                }
             }
             ContentInput::UpdateShow(data) => {
                 if navigation.find_page(SHOW_TAG).is_some() {
@@ -384,11 +357,18 @@ impl Content {
                     has_shows,
                 });
             }
-            ContentInput::SubscribeDone => parts.add_page.send(AddPageInput::Done),
             ContentInput::Refreshing(running) => parts.refresh_bar.set_running(running),
             ContentInput::SetQueue(data) => parts.lists.set_queue(data),
             ContentInput::SetFavorites(items) => parts.lists.set_favorites(items),
             ContentInput::SetDownloaded(items) => parts.lists.set_downloaded(items),
+            ContentInput::OpenAdd
+            | ContentInput::SubscribeDone
+            | ContentInput::DirectoryResults(..)
+            | ContentInput::DirectoryArt(..)
+            | ContentInput::OpenPreview(_)
+            | ContentInput::PreviewLoaded(..)
+            | ContentInput::SetSearch(_)
+            | ContentInput::SearchOnline(_) => self.update_directory(message),
             ContentInput::ChooseNew(choice) => {
                 let prefs = choice.apply(imp.new_prefs.get());
                 if prefs != imp.new_prefs.get() {

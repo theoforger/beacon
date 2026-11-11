@@ -4,7 +4,7 @@
 //! translated message; the core's `Display` text is for logs only.
 
 use beacon_core::error::{
-    DownloadError, FeedError, LibraryError, PlaybackError, StoreError, SyncError,
+    DownloadError, FeedError, ItunesError, LibraryError, PlaybackError, StoreError, SyncError,
 };
 use gettextrs::gettext;
 
@@ -14,6 +14,26 @@ pub fn library(error: &LibraryError) -> String {
         LibraryError::Store(store) => self::store(store),
         LibraryError::AlreadySubscribed(_) => gettext("You are already subscribed to this podcast"),
         LibraryError::ShowNotFound(_) => gettext("The podcast is no longer in your library"),
+    }
+}
+
+/// Why searching Apple's directory, or looking a show up in it, failed.
+pub fn itunes(error: &ItunesError) -> String {
+    match error {
+        ItunesError::Network(_) => {
+            gettext("Could not reach Apple Podcasts; check your internet connection")
+        }
+        ItunesError::RateLimited(_) => {
+            gettext("Too many searches in a short time; try again in a minute")
+        }
+        ItunesError::NoStore(_) => gettext(
+            "Apple Podcasts has no directory for this country or region; choose another in Preferences",
+        ),
+        // Translators: the number is an HTTP status code, such as 503.
+        ItunesError::Status(code) => gettext("Apple Podcasts answered with error {code}")
+            .replace("{code}", &code.to_string()),
+        ItunesError::Parse(_) => gettext("Could not read the answer from Apple Podcasts"),
+        ItunesError::NoFeed => gettext("Apple Podcasts lists no feed for this show"),
     }
 }
 

@@ -14,14 +14,19 @@ use gtk::glib;
 /// show's name, which a row's cover shows where it matters (asked by the
 /// user 2026-11-08).
 pub fn subtitle(episode: &Episode) -> String {
+    info_subtitle(&episode.info)
+}
+
+/// The same for an episode not stored, as a show's preview lists it.
+pub fn info_subtitle(info: &beacon_core::model::EpisodeInfo) -> String {
     let mut parts = Vec::new();
-    if let Some(numbers) = season_and_episode(episode) {
+    if let Some(numbers) = season_and_episode(info) {
         parts.push(numbers);
     }
-    if let Some(published) = episode.info.published {
+    if let Some(published) = info.published {
         parts.push(date(published));
     }
-    if let Some(duration) = episode.info.duration {
+    if let Some(duration) = info.duration {
         parts.push(length(duration));
     }
     // Translators: separates the parts of an episode's subtitle; a bullet,
@@ -81,9 +86,9 @@ pub fn long_subtitle(episode: &Episode) -> String {
     parts.join(&gettext(" • "))
 }
 
-fn season_and_episode(episode: &Episode) -> Option<String> {
-    let number = episode.info.number.map(number);
-    match (&episode.info.season, number) {
+fn season_and_episode(info: &beacon_core::model::EpisodeInfo) -> Option<String> {
+    let number = info.number.map(number);
+    match (&info.season, number) {
         (Some(season), Some(n)) => Some(
             // Translators: season and episode numbers, as in "S3 E2".
             gettext("S{season} E{episode}")

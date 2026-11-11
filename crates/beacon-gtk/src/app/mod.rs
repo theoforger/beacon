@@ -7,6 +7,7 @@
 
 mod actions;
 mod controls;
+mod directory;
 pub(crate) mod downloads;
 mod library;
 mod lists;
@@ -113,6 +114,18 @@ pub enum AppCommand {
     /// The episode last played, read back at launch.
     Restore(Option<Box<EpisodeItem>>),
     Sync(Box<sync::SyncCommand>),
+    /// Apple's directory answered the request with this key.
+    Directory(
+        String,
+        Result<Vec<crate::ui::directory_row::DirectoryItem>, beacon_core::ItunesError>,
+    ),
+    /// A directory result's thumbnail, if it could be fetched.
+    DirectoryArt(Url, Option<PathBuf>),
+    /// A directory result's feed, fetched for its preview.
+    Preview(
+        Url,
+        Box<Result<beacon_core::services::library::FeedPreview, LibraryError>>,
+    ),
 }
 
 /// The window's parts the app reaches into.
@@ -181,6 +194,12 @@ pub struct App {
     downloads: downloads::Active,
     /// The sync account and the syncs it runs.
     sync: sync::Sync,
+    /// Apple's directory, for the Add page.
+    directory: directory::Directory,
+    /// The library search showing, across the library (`search`) or on
+    /// the podcast page (`show_search`, This Show scope).
+    search: Option<String>,
+    show_search: Option<String>,
 }
 
 impl App {
@@ -203,7 +222,7 @@ impl App {
             }
             AppMsg::Details(output) => self.details_output(output),
             AppMsg::GoBack => self.go_back(),
-            AppMsg::ToggleSearch => self.content.widgets().toggle_search(),
+            AppMsg::ToggleSearch => self.content.toggle_search(),
             // The HIG's Utility Panes: "If utility pane visibility can be
             // toggled, assign the F9 key as a shortcut." The header toggle
             // follows, bound to the pane.
@@ -251,6 +270,12 @@ impl App {
             AppCommand::Downloaded(id, title, result) => self.downloaded(id, &title, result),
             AppCommand::Cleaned(result) => self.cleaned(result),
             AppCommand::Sync(command) => self.sync_command(*command),
+            AppCommand::Directory(key, result) => self.directory_answered(key, result),
+            AppCommand::DirectoryArt(url, Some(path)) => {
+                self.content.send(ContentInput::DirectoryArt(url, path));
+            }
+            AppCommand::DirectoryArt(_, None) => {}
+            AppCommand::Preview(url, result) => self.previewed(url, *result),
             AppCommand::Chapters(id, chapters) => {
                 self.bar
                     .send(PlayerBarInput::Chapters(id, chapters.clone()));

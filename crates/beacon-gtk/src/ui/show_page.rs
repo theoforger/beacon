@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use beacon_core::model::{DownloadFilter, EpisodeFilter, EpisodeId, ShowId, ShowPrefs};
+use beacon_core::model::{EpisodeId, ShowId, ShowPrefs};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
@@ -19,9 +19,13 @@ use crate::ui::format;
 use crate::ui::messages::{Inbox, Output};
 use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
+use crate::ui::search_data::SearchResults;
+use crate::ui::search_view::{SearchViewInput, SearchViewOutput};
 use crate::ui::selection::Selection;
 use crate::ui::selection_bar::{self, Bulk};
 use crate::ui::show_hero::ShowHero;
+use crate::ui::show_menu::{empty_message, more_button, more_menu};
+use crate::ui::show_search::{ShowQuery, ShowSearch};
 use crate::ui::widgets::episode_row::RowSetup;
 
 pub const SHOW_TAG: &str = "show";
@@ -38,6 +42,8 @@ pub enum ShowPageInput {
     Unsubscribe,
     /// A season was folded or unfolded.
     Refold,
+    /// The library's results for the Everywhere search.
+    SetSearch(Box<SearchResults>),
 }
 
 #[derive(Debug)]
@@ -52,6 +58,12 @@ pub enum ShowPageOutput {
     DownloadAll(Vec<EpisodeId>),
     /// A change to the selected episodes.
     Change(Vec<EpisodeId>, Bulk),
+    /// The search bar's query changed, or the bar closed.
+    Search(ShowId, ShowQuery),
+    /// Open another show, from the Everywhere results.
+    OpenShow(ShowId),
+    /// Search Online, from the Everywhere results.
+    SearchOnline(String),
 }
 
 mod imp {
@@ -98,6 +110,7 @@ pub struct Parts {
     list: EpisodeList,
     /// Folded seasons, kept while the app runs.
     folding: Folding,
+    search: ShowSearch,
 }
 
 impl ShowPage {
@@ -153,10 +166,33 @@ impl ShowPage {
         });
         let more = more_button();
 
+        let search = ShowSearch::new(list.widget(), {
+            let (output, page) = (output.clone(), page.downgrade());
+            move |query| {
+                let show = page
+                    .upgrade()
+                    .and_then(|p| p.imp().data.borrow().as_ref().map(|d| d.show.id));
+                if let Some(show) = show {
+                    output.emit(ShowPageOutput::Search(show, query));
+                }
+            }
+        });
+        search.view.connect_output({
+            let output = output.clone();
+            move |message| {
+                output.emit(match message {
+                    SearchViewOutput::Action(item, action) => ShowPageOutput::Action(item, action),
+                    SearchViewOutput::OpenShow(id) => ShowPageOutput::OpenShow(id),
+                    SearchViewOutput::SearchOnline(query) => ShowPageOutput::SearchOnline(query),
+                });
+            }
+        });
+
         let header = adw::HeaderBar::builder().show_title(false).build();
         let toolbar = adw::ToolbarView::new();
         toolbar.add_top_bar(&header);
-        toolbar.set_content(Some(list.widget()));
+        toolbar.add_top_bar(&search.bar);
+        toolbar.set_content(Some(&search.stack));
         page.set_child(Some(&toolbar));
 
         // The details toggle at the far end, as on every page; then the
@@ -166,6 +202,7 @@ impl ShowPage {
         header.pack_end(details_toggle);
         header.pack_end(&more);
         header.pack_end(filter.widget());
+        header.pack_end(&search.toggle);
         let select = selection_bar::select_button(&rows.selection);
         header.pack_end(&selection_bar::select_holder(&select));
         selection_bar::attach(
@@ -178,9 +215,13 @@ impl ShowPage {
                 move |ids, change| output.emit(ShowPageOutput::Change(ids, change))
             }),
         );
-        // Leaving the page leaves selection mode.
+        // Leaving the page leaves selection mode and the search.
         let selection = rows.selection.clone();
-        page.connect_hidden(move |_| selection.set_active(false));
+        let bar = search.bar.clone();
+        page.connect_hidden(move |_| {
+            selection.set_active(false);
+            bar.set_search_mode(false);
+        });
 
         let actions = gio::SimpleActionGroup::new();
         let mark_all = gio::SimpleAction::new("mark-all", None);
@@ -209,8 +250,20 @@ impl ShowPage {
             rows,
             list,
             folding,
+            search,
         });
         page
+    }
+
+    /// Ctrl+F: open or close the search bar.
+    pub fn toggle_search(&self) {
+        self.parts().search.toggle();
+    }
+
+    /// The page's search, for tests.
+    #[cfg(test)]
+    pub fn search(&self) -> &ShowSearch {
+        &self.parts().search
     }
 
     pub fn connect_output(&self, receive: impl Fn(ShowPageOutput) + 'static) {
@@ -239,11 +292,12 @@ impl ShowPage {
                     .map(|d| (d.show.id, d.all_played));
                 if shown.map(|(id, _)| id) != Some(data.show.id) {
                     parts.rows.selection.set_active(false);
+                    parts.search.close();
                     parts.list.set(Vec::new());
                 }
                 self.set_title(&data.show.info.title);
                 parts.header.set_show_title(true);
-                parts.hero.update(&data);
+                parts.hero.update(&(&*data).into());
                 if shown.map(|(_, all)| all) != Some(data.all_played) {
                     parts.more.set_menu_model(Some(&more_menu(data.all_played)));
                 }
@@ -285,6 +339,9 @@ impl ShowPage {
                 }
             }
             ShowPageInput::Refold => self.show_episodes(),
+            ShowPageInput::SetSearch(results) => {
+                parts.search.view.send(SearchViewInput::Set(results));
+            }
         }
     }
 
@@ -339,53 +396,14 @@ impl ShowPage {
             None => {}
         }
         if all.is_empty() {
-            entries.push(Entry::Message(empty_message(&data.prefs)));
+            entries.push(Entry::Message(empty_message(
+                &data.prefs,
+                data.query.is_some(),
+            )));
         }
         entries.push(Entry::Space(24));
         drop(shown);
         parts.rows.selection.set_items(all);
         parts.list.set(entries);
     }
-}
-
-fn empty_message(prefs: &ShowPrefs) -> String {
-    let only_unplayed =
-        prefs.played == EpisodeFilter::Unplayed && prefs.downloaded == DownloadFilter::All;
-    if only_unplayed {
-        gettext("No unplayed episodes: you are all caught up")
-    } else if prefs.is_filtered() {
-        gettext("No episodes match these filters")
-    } else {
-        gettext("This podcast has no episodes yet")
-    }
-}
-
-/// The page's More Options button, in its header bar.
-fn more_button() -> gtk::MenuButton {
-    let more = gtk::MenuButton::builder()
-        .icon_name("view-more-symbolic")
-        .tooltip_text(gettext("More Options"))
-        .menu_model(&more_menu(false))
-        .build();
-    more.update_property(&[gtk::accessible::Property::Label(&gettext("More Options"))]);
-    more
-}
-
-/// More Options, offering to mark every episode played, or unplayed when
-/// every one already is.
-fn more_menu(all_played: bool) -> gio::Menu {
-    let menu = gio::Menu::new();
-    let mark_all = if all_played {
-        gettext("Mark All as _Unplayed")
-    } else {
-        gettext("Mark All as _Played")
-    };
-    menu.append(Some(&mark_all), Some("show.mark-all"));
-    // Unavailable when every episode is downloaded.
-    menu.append(
-        Some(&gettext("_Download All Episodes…")),
-        Some("show.download-all"),
-    );
-    menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
-    menu
 }

@@ -194,7 +194,7 @@ fn tile_factory() -> gtk::SignalListItemFactory {
     factory
 }
 
-fn show_tile(card: &ShowCard) -> gtk::Box {
+pub(crate) fn show_tile(card: &ShowCard) -> gtk::Box {
     let cover = Cover::filling(COVER_MIN);
     cover.set(card.cover.as_deref());
     let art = cover.widget();

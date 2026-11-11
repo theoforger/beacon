@@ -13,7 +13,7 @@ use gettextrs::{gettext, ngettext};
 use url::Url;
 
 use super::{App, AppCommand, AppMsg, toast};
-use crate::ui::content::{ContentInput, ContentOutput};
+use crate::ui::content::{ContentInput, ContentOutput, SearchScope};
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
 use crate::ui::models::{EpisodeItem, RowAction};
@@ -70,14 +70,22 @@ impl App {
             ContentOutput::FeedAddressCopied => {
                 toast(&self.widgets.toasts, &gettext("Feed address copied"));
             }
-            ContentOutput::Subscribe(url) => {
-                let Some(library) = self.library.clone() else {
-                    return;
-                };
-                self.sender.spawn(async move {
-                    let result = library.subscribe(&url).await;
-                    AppCommand::Subscribed(url, result)
-                });
+            ContentOutput::Subscribe(url) => self.subscribe(url),
+            ContentOutput::SearchDirectory(words) => self.search_directory(words),
+            ContentOutput::LookupDirectory(id) => self.lookup_directory(id),
+            ContentOutput::Preview(item) => self.preview(*item),
+            ContentOutput::Search(SearchScope::Library, query) => {
+                let changed = self.search != query;
+                self.search = query;
+                if changed && self.search.is_some() {
+                    self.reload(Parts::SEARCH);
+                }
+            }
+            ContentOutput::Search(SearchScope::Show(_), query) => {
+                if self.show_search != query {
+                    self.show_search = query;
+                    self.reload(Parts::PAGE);
+                }
             }
         }
     }

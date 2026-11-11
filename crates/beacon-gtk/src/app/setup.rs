@@ -95,6 +95,9 @@ impl App {
             bar,
             sleep: controls::Sleep::default(),
             downloads: Rc::default(),
+            directory: super::directory::Directory::new(),
+            search: None,
+            show_search: None,
         };
 
         // The details toggle and the pane stay in step whichever side changes.

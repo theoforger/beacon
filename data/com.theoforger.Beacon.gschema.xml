@@ -86,5 +86,10 @@
       <summary>Only delete played episodes</summary>
       <description>Whether only played episodes are deleted, counting days from when each was played; otherwise days count from when the download finished.</description>
     </key>
+    <key name="directory-country" type="s">
+      <default>""</default>
+      <summary>Country or region of the podcast directory</summary>
+      <description>The two-letter code of the country or region whose Apple Podcasts directory the Add page searches, or empty to follow the system’s region.</description>
+    </key>
   </schema>
 </schemalist>

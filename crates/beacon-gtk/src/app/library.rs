@@ -23,6 +23,7 @@ use crate::ui::models::{self, EpisodeItem, ShowCard, ShowPageData};
 use crate::ui::page_filters;
 use crate::ui::player_bar::PlayerBarInput;
 use crate::ui::queue_data::{self, Lists, QueueData};
+use crate::ui::search_data::{self, SearchResults};
 use crate::ui::sidebar::{Counts, SidebarInput};
 
 /// Where New's filter menu choices are remembered, by menu group.
@@ -44,6 +45,8 @@ pub struct Parts {
     pub queue: bool,
     pub favorites: bool,
     pub downloaded: bool,
+    /// The library search's results, when one shows.
+    pub search: bool,
 }
 
 impl Parts {
@@ -56,6 +59,7 @@ impl Parts {
         queue: true,
         favorites: true,
         downloaded: true,
+        search: true,
     };
     pub(super) const NONE: Parts = Parts {
         shows: false,
@@ -66,6 +70,7 @@ impl Parts {
         queue: false,
         favorites: false,
         downloaded: false,
+        search: false,
     };
     /// Everything an episode's state shows up in.
     pub(super) const EPISODE: Parts = Parts::ALL;
@@ -78,6 +83,7 @@ impl Parts {
         queue: true,
         favorites: true,
         downloaded: true,
+        search: true,
         ..Parts::NONE
     };
     /// New's filters decide what follows an episode started from it.
@@ -88,6 +94,10 @@ impl Parts {
     };
     pub(super) const PAGE: Parts = Parts {
         page: true,
+        ..Parts::NONE
+    };
+    pub(super) const SEARCH: Parts = Parts {
+        search: true,
         ..Parts::NONE
     };
 }
@@ -102,6 +112,8 @@ struct Context {
     playing: Option<EpisodeId>,
     after: Option<EpisodeId>,
     source: Option<Source>,
+    search: Option<String>,
+    show_search: Option<String>,
 }
 
 /// Generation numbers: the latest request for each part.
@@ -116,6 +128,7 @@ pub struct Requests {
     queue: u64,
     favorites: u64,
     downloaded: u64,
+    search: u64,
 }
 
 #[derive(Debug, Default)]
@@ -129,6 +142,7 @@ pub struct Loaded {
     queue: Option<QueueData>,
     favorites: Option<Vec<EpisodeItem>>,
     downloaded: Option<Vec<EpisodeItem>>,
+    search: Option<SearchResults>,
     /// Push the loaded podcast page rather than only refresh it.
     open_page: bool,
 }
@@ -144,7 +158,7 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
     }
     if parts.page {
         loaded.page = Some(match context.page {
-            Some(id) => models::show_page(store, id)?,
+            Some(id) => models::show_page(store, id, context.show_search.as_deref())?,
             None => None,
         });
     }
@@ -162,6 +176,11 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
     }
     if parts.downloaded {
         loaded.downloaded = Some(models::downloaded_items(store)?);
+    }
+    if parts.search
+        && let Some(query) = &context.search
+    {
+        loaded.search = Some(search_data::search(store, query)?);
     }
     if parts.queue {
         let lists = Lists {
@@ -189,6 +208,8 @@ impl App {
             playing: self.now_playing.as_ref().map(|now| now.id),
             after: self.after,
             source: self.source,
+            search: self.search.clone(),
+            show_search: self.show_search.clone(),
         })
     }
 
@@ -231,6 +252,7 @@ impl App {
             (parts.queue, &mut requests.queue),
             (parts.favorites, &mut requests.favorites),
             (parts.downloaded, &mut requests.downloaded),
+            (parts.search, &mut requests.search),
         ] {
             if wanted {
                 *slot = generation;
@@ -317,6 +339,13 @@ impl App {
             .filter(|_| current(self.requests.downloaded))
         {
             self.content.send(ContentInput::SetDownloaded(items));
+        }
+        if let Some(results) = loaded.search.filter(|_| current(self.requests.search)) {
+            // A search that ended meanwhile shows nothing.
+            if self.search.as_ref() == Some(&results.query) {
+                self.content
+                    .send(ContentInput::SetSearch(Box::new(results)));
+            }
         }
         if let Some(queue) = loaded.queue.filter(|_| current(self.requests.queue)) {
             self.bar.send(PlayerBarInput::HasNext(queue.next.is_some()));

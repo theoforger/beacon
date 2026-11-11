@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The top of a podcast page, laid out as in the mockup: the cover, then
-//! the category, title, author, description and Unsubscribe beside it,
-//! stacked under it when the page is narrow. More Options is in the page's
+//! the category, title, author, description and Unsubscribe (or, on a
+//! show's preview, the accent Subscribe) beside it, stacked under it when
+//! the page is narrow. More Options is in the page's
 //! header bar; sorting and filtering are in its filter menu.
 
 use beacon_core::text;
@@ -17,6 +18,30 @@ use crate::ui::covers::Cover;
 use crate::ui::dialogs::description;
 use crate::ui::links;
 use crate::ui::models::ShowPageData;
+
+/// What the hero shows: a stored show's, or a previewed feed's.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct HeroData {
+    pub cover: Option<std::path::PathBuf>,
+    pub category: Option<String>,
+    pub title: String,
+    pub author: Option<String>,
+    /// The feed's description, HTML or text.
+    pub description: Option<String>,
+}
+
+impl From<&ShowPageData> for HeroData {
+    fn from(data: &ShowPageData) -> Self {
+        let info = &data.show.info;
+        Self {
+            cover: data.show.cover_path.clone(),
+            category: info.category.clone(),
+            title: info.title.clone(),
+            author: info.author.clone(),
+            description: info.description.clone(),
+        }
+    }
+}
 
 /// The cover beside the text, and above it when narrow: GNOME Music's large
 /// and medium album art (`ArtSize`), which gives the text room beside it.
@@ -46,6 +71,7 @@ struct Parts {
     description: gtk::Label,
     read_more: gtk::Label,
     unsubscribe: gtk::Button,
+    subscribe: gtk::Button,
     narrow: Cell<bool>,
     /// The layout last set up (stacked or not), and the width the
     /// description was last fitted to: re-aligning every label, or fitting
@@ -63,6 +89,7 @@ pub struct ShowHero {
     root: gtk::Overlay,
     parts: Rc<Parts>,
     pub unsubscribe: gtk::Button,
+    pub subscribe: gtk::Button,
 }
 
 impl ShowHero {
@@ -114,6 +141,16 @@ impl ShowHero {
             .halign(gtk::Align::Start)
             .margin_top(12)
             .build();
+        // The accent button, on a preview, where Unsubscribe is once
+        // subscribed.
+        let subscribe = gtk::Button::builder()
+            .label(gettext("_Subscribe"))
+            .use_underline(true)
+            .halign(gtk::Align::Start)
+            .margin_top(12)
+            .css_classes(["suggested-action"])
+            .visible(false)
+            .build();
 
         let text = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -127,6 +164,7 @@ impl ShowHero {
         }
         text.append(&read_more);
         text.append(&unsubscribe);
+        text.append(&subscribe);
 
         let row = gtk::Box::builder()
             .spacing(GAP)
@@ -159,6 +197,7 @@ impl ShowHero {
             description,
             read_more,
             unsubscribe: unsubscribe.clone(),
+            subscribe: subscribe.clone(),
             narrow: Cell::new(false),
             laid_out: Cell::new(None),
             fitted: Cell::new(0),
@@ -188,6 +227,7 @@ impl ShowHero {
             root,
             parts,
             unsubscribe,
+            subscribe,
         }
     }
 
@@ -207,10 +247,15 @@ impl ShowHero {
         &self.root
     }
 
-    pub fn update(&self, data: &ShowPageData) {
-        let info = &data.show.info;
+    /// Subscribe on a preview, Unsubscribe on a stored show's page.
+    pub fn set_subscribed(&self, subscribed: bool) {
+        self.unsubscribe.set_visible(subscribed);
+        self.subscribe.set_visible(!subscribed);
+    }
+
+    pub fn update(&self, info: &HeroData) {
         let parts = &self.parts;
-        parts.cover.set(data.show.cover_path.as_deref());
+        parts.cover.set(info.cover.as_deref());
         set_text(&parts.category, info.category.as_deref());
         parts.title.set_label(&info.title);
         set_text(&parts.author, info.author.as_deref());
@@ -265,6 +310,7 @@ impl Parts {
         }
         self.read_more.set_halign(align);
         self.unsubscribe.set_halign(align);
+        self.subscribe.set_halign(align);
     }
 
     /// Lay out for the width: beside the cover, the text keeps to the
@@ -342,7 +388,7 @@ impl Parts {
     /// Where each of the description's lines ends at `width`, in pixels.
     fn line_bottoms(&self, width: i32) -> Vec<i32> {
         let layout = self.description.create_pango_layout(None);
-        layout.set_markup(&without_links(&self.markup.borrow()));
+        layout.set_markup(&links::without_links(&self.markup.borrow()));
         layout.set_width(width * pango::SCALE);
         layout.set_wrap(pango::WrapMode::WordChar);
         let mut bottoms = Vec::new();
@@ -358,49 +404,8 @@ impl Parts {
     }
 }
 
-/// `markup` with its links as plain spans: a label handles `<a>`, but
-/// Pango's own markup, which measuring uses, rejects it and lays out
-/// nothing.
-fn without_links(markup: &str) -> String {
-    let mut out = String::with_capacity(markup.len());
-    let mut rest = markup;
-    while let Some(start) = rest.find("<a ") {
-        out.push_str(&rest[..start]);
-        match rest[start..].find('>') {
-            Some(end) => {
-                out.push_str("<span>");
-                rest = &rest[start + end + 1..];
-            }
-            None => {
-                rest = "";
-            }
-        }
-    }
-    out.push_str(rest);
-    out.replace("</a>", "</span>")
-}
-
 fn set_text(label: &gtk::Label, text: Option<&str>) {
     let text = text.unwrap_or_default();
     label.set_label(text);
     label.set_visible(!text.is_empty());
-}
-
-#[cfg(test)]
-mod tests {
-    use super::without_links;
-
-    #[test]
-    fn links_become_spans_for_measuring() {
-        assert_eq!(
-            without_links(
-                "Site <a href=\"https://a.example/?x=1&amp;y=2\">a.example</a> and <b>more</b>"
-            ),
-            "Site <span>a.example</span> and <b>more</b>"
-        );
-        assert!(
-            gtk::pango::parse_markup(&without_links("<a href=\"https://a.example\">a</a>"), '\0')
-                .is_ok()
-        );
-    }
 }

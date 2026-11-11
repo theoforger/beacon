@@ -22,6 +22,8 @@ use crate::ui::selection::Selection;
 use crate::ui::show_page::{ShowPage, ShowPageInput};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
 
+mod search;
+
 /// The narrowest window Beacon supports.
 const NARROWEST: i32 = 360;
 /// What New's list takes from the window's width around a row: its 12px
@@ -135,6 +137,10 @@ fn widgets_lay_out_as_designed() {
         &css,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+    search::narrow_search_headers_fit();
+    search::the_root_page_searches_the_library();
+    search::the_podcast_page_searches_both_scopes();
+    search::the_add_page_shows_the_directorys_answers();
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
     clear_sits_where_refresh_does();
@@ -229,6 +235,7 @@ fn seasons_fold_away_their_episodes() {
         episodes: Vec::new(),
         all_played: false,
         to_download: Vec::new(),
+        query: None,
     };
     page.send(ShowPageInput::Set(Box::new(data.clone())));
     let nav = adw::NavigationView::new();
@@ -709,20 +716,10 @@ fn the_podcast_header_fits_its_description() {
             ..Default::default()
         };
         info.description = Some(description.into());
-        hero.update(&ShowPageData {
-            show: beacon_core::model::Show {
-                id: ShowId(1),
-                feed_url: "https://example.com/feed.xml".parse().expect("a URL"),
-                info,
-                cover_path: None,
-                subscribed_at: Utc::now(),
-                last_refreshed_at: None,
-            },
-            prefs: Default::default(),
-            seasons: None,
-            episodes: Vec::new(),
-            all_played: false,
-            to_download: Vec::new(),
+        hero.update(&crate::ui::show_hero::HeroData {
+            title: info.title,
+            description: info.description,
+            ..Default::default()
         });
         // A window of the width: the header takes all it is given.
         let window = gtk::Window::builder()
@@ -1031,7 +1028,7 @@ fn progress_needs_a_length() {
 /// Delete Old Downloads are unavailable while it is off. Settings from
 /// the schema in `data/`, compiled for the test, in memory.
 fn preferences_follow_settings() {
-    use adw::prelude::{AdwDialogExt, PreferencesRowExt};
+    use adw::prelude::{AdwDialogExt, ComboRowExt, PreferencesRowExt};
 
     let schemas = std::env::temp_dir().join(format!("beacon-schemas-{}", std::process::id()));
     std::fs::create_dir_all(&schemas).unwrap();
@@ -1093,6 +1090,21 @@ fn preferences_follow_settings() {
     assert!(!settings.boolean("delete-only-played"));
     let policy = crate::app::downloads::cleanup_policy(&settings);
     assert!(policy.enabled && policy.after_days == 30 && !policy.only_played);
+
+    // The directory's country: Automatic first, then by name; choosing one
+    // keeps its code.
+    let country = first::<adw::ComboRow>(dialog.upcast_ref()).expect("Country or Region");
+    assert_eq!(country.selected(), 0, "automatic by default");
+    let countries = crate::ui::dialogs::preferences::countries();
+    assert!(countries[0].0.is_empty() && countries[0].1.starts_with("Automatic ("));
+    let germany = countries
+        .iter()
+        .position(|(code, _)| code == "DE")
+        .expect("Germany has a directory");
+    country.set_selected(germany as u32);
+    assert_eq!(settings.string("directory-country"), "DE");
+    country.set_selected(0);
+    assert_eq!(settings.string("directory-country"), "");
     let _ = std::fs::remove_dir_all(&schemas);
     dialog.force_close();
     host.destroy();
@@ -1282,6 +1294,7 @@ fn resize_cost() {
             episodes: items,
             all_played: false,
             to_download: Vec::new(),
+            query: None,
         };
         let page = ShowPage::new(&gtk::ToggleButton::new());
         page.send(ShowPageInput::Set(Box::new(data)));
