@@ -280,7 +280,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] Check Apple's terms, attribution rules and rate limits; confirm `feedUrl` in a live response (open question 1)
+- [x] Check Apple's terms, attribution rules and rate limits; confirm `feedUrl` in a live response (open question 1)
 - [ ] `GtkSearchBar` under the header, toggled from the header and by Ctrl+F; hidden on the Add page
 - [ ] On a podcast page, a This Show / Everywhere toggle; This Show filters the page in place
 - [ ] Results for matching shows and episodes (FTS5); with no results, a suggested Search Online button that opens Add with the query (not shown in the This Show scope)
