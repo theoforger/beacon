@@ -91,7 +91,7 @@ Never while signed out or with the Sync switch off.
 A Sync page in the Preferences dialog. GNOME Podcasts uses the same rows in a separate navigation page from its main menu; Beacon keeps every setting in one dialog (`docs/decisions.md`).
 
 - **Signed out:** the server (`AdwEntryRow`); Log In With, a Browser / Password `AdwToggleGroup`; for Password, the username (`AdwEntryRow`) and password (`AdwPasswordEntryRow`); and a suggested Log In button. While the browser flow waits it shows a spinner and Cancel.
-- **Signed in:** the account (server and user) with Log Out; Sync (`AdwSwitchRow`); Last Synced; and Sync Now.
+- **Signed in:** the account (server and user); Sync (`AdwSwitchRow`); Last Synced with Sync Now; and Log Out, a destructive `AdwButtonRow` at the end, which asks first when changes wait to be sent (changed 2026-11-12).
 
 ## Errors
 

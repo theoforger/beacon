@@ -61,6 +61,8 @@ pub(crate) fn the_sync_page_shows_each_state() {
         syncing: false,
     }));
     assert!(!w.signed_out.is_visible() && w.signed_in.is_visible());
+    // Log Out is the signed-in group's one coloured button, a warning.
+    assert!(w.log_out.has_css_class("destructive-action"));
     assert_eq!(w.account.title(), "ada");
     assert_eq!(
         w.last_synced.subtitle().as_deref(),

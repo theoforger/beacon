@@ -7,6 +7,7 @@
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
+use adw::prelude::*;
 use beacon_core::SyncError;
 use beacon_core::services::http_client;
 use beacon_core::store::SyncAccount;
@@ -14,7 +15,6 @@ use beacon_core::sync::keyring;
 use beacon_core::sync::nextcloud::{self, BrowserLogin, Credentials, NextcloudBackend};
 use gettextrs::gettext;
 use gtk::gio;
-use gtk::prelude::*;
 
 use super::{LoggingIn, POLL_EVERY, SyncCommand, SyncMsg, command};
 use crate::app::library::Parts;
@@ -54,7 +54,7 @@ impl App {
                 }
                 self.show_sync();
             }
-            SyncPageOutput::LogOut => self.log_out(),
+            SyncPageOutput::LogOut => self.ask_log_out(),
             SyncPageOutput::SetActive(active) => {
                 let Some(account) = &mut self.sync.account else {
                     return;
@@ -171,9 +171,47 @@ impl App {
         }
     }
 
+    /// Log Out was pressed: it goes ahead at once unless changes wait to be
+    /// sent, which it would drop; then it asks first.
+    fn ask_log_out(&self) {
+        let Some(library) = self.library.clone() else {
+            return;
+        };
+        self.sender.spawn_blocking(move || {
+            // Unknown counts as waiting: better to ask once too often.
+            let pending = library
+                .with_store(|store| store.has_pending_changes())
+                .unwrap_or(true);
+            command(SyncCommand::LogOutAsked(pending))
+        });
+    }
+
+    /// Ask before dropping changes not yet synced, as Unsubscribe asks:
+    /// Cancel or Escape keeps the account.
+    pub(super) fn confirm_log_out(&self) {
+        let dialog = adw::AlertDialog::new(
+            Some(&gettext("Log Out?")),
+            Some(&gettext(
+                "Changes made since the last sync will not reach the server",
+            )),
+        );
+        dialog.add_response("cancel", &gettext("_Cancel"));
+        dialog.add_response("log-out", &gettext("_Log Out"));
+        dialog.set_response_appearance("log-out", adw::ResponseAppearance::Destructive);
+        // No default: the HIG keeps Return off destructive buttons.
+        dialog.set_close_response("cancel");
+        let input = self.sender.clone();
+        dialog.connect_response(Some("log-out"), move |_, _| {
+            input.input(AppMsg::Sync(SyncMsg::ConfirmLogOut));
+        });
+        // Over Preferences, where Log Out was pressed.
+        let page = self.sync.page.upgrade().filter(|page| page.is_mapped());
+        dialog.present(page.as_ref());
+    }
+
     /// Log Out: revoke the app password, then forget the account and the
     /// keyring item even if that fails, as Nextcloud's docs advise.
-    fn log_out(&mut self) {
+    pub(super) fn log_out(&mut self) {
         let backend = self.sync.backend.take();
         self.sync.account = None;
         if let Some((source, _)) = self.sync.timer.take() {

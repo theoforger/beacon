@@ -453,3 +453,16 @@ fn logging_out_forgets_the_account_and_the_pending_changes() {
     assert_eq!(store.sync_account().unwrap(), None);
     assert_eq!(store.pending_mark().unwrap(), PendingMark::default());
 }
+
+#[test]
+fn pending_changes_are_known_until_a_sync_sends_them() {
+    let mut store = signed_in();
+    assert!(!store.has_pending_changes().unwrap());
+    let show = add_show(&mut store, FEED, &[episode(Some("g1"), "one", Some(600))]);
+    let id = episode_id(&store, show, "one");
+    store.set_position(id, Duration::from_secs(10)).unwrap();
+    assert!(store.has_pending_changes().unwrap());
+    let mark = store.pending_mark().unwrap();
+    store.finish_sync(mark, 100, 200, now()).unwrap();
+    assert!(!store.has_pending_changes().unwrap(), "all sent");
+}

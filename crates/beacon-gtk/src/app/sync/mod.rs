@@ -48,6 +48,8 @@ pub enum SyncMsg {
     Due,
     /// The window is closing: one last sync, then close.
     Closing,
+    /// Log Out, confirmed in its dialog.
+    ConfirmLogOut,
 }
 
 /// The account read at launch, with its app password or why the keyring
@@ -70,6 +72,9 @@ pub enum SyncCommand {
     BrowserLogin(Result<BrowserLogin, SyncError>),
     LoggedIn(Result<(SyncAccount, Credentials), SyncError>),
     LoggedOut(Result<(), SyncError>),
+    /// Log Out was asked for: whether changes wait to be sent, which it
+    /// would drop.
+    LogOutAsked(bool),
     /// The sync on closing ended, or ran out of time.
     Closed,
 }
@@ -215,6 +220,7 @@ impl App {
                 self.request_sync(false);
             }
             SyncMsg::Closing => self.sync_on_close(),
+            SyncMsg::ConfirmLogOut => self.log_out(),
         }
     }
 
@@ -349,6 +355,13 @@ impl App {
             }
             SyncCommand::BrowserLogin(result) => self.browser_login(result),
             SyncCommand::LoggedIn(result) => self.logged_in(result),
+            SyncCommand::LogOutAsked(pending) => {
+                if pending {
+                    self.confirm_log_out();
+                } else {
+                    self.log_out();
+                }
+            }
             SyncCommand::LoggedOut(result) => {
                 if let Err(err) = result {
                     self.sync_failed(&err, true);

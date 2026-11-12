@@ -3,8 +3,8 @@
 //! The Sync page of Preferences (`docs/specs/sync.md`, Preferences), with
 //! GNOME Podcasts' rows (`sync_preferences.ui`). Signed out: the server,
 //! Log In With (Browser or Password), the username and password, and Log
-//! In. Signed in: the account with Log Out, the Sync switch, Last Synced
-//! and Sync Now. The page only shows state; the window does the work.
+//! In. Signed in: the account, the Sync switch, Last Synced with Sync Now,
+//! and a destructive Log Out row. The page only shows state; the window does the work.
 
 use std::cell::Cell;
 
@@ -116,6 +116,7 @@ pub struct Widgets {
     active: adw::SwitchRow,
     last_synced: adw::ActionRow,
     sync_now: gtk::Button,
+    log_out: adw::ButtonRow,
 }
 
 impl SyncPage {
@@ -203,10 +204,14 @@ impl SyncPage {
         signed_out.add(&log_in);
         signed_out.add(&waiting);
 
-        // A button row, as Boxed Lists asks for buttons in a list.
+        // A button row, as Boxed Lists asks for buttons in a list, in
+        // destructive colours: it drops the changes not yet synced, and
+        // logging in again goes through the server (Buttons: "Destructive
+        // action is a warning").
         let log_out = adw::ButtonRow::builder()
             .title(gettext("Log _Out"))
             .use_underline(true)
+            .css_classes(["destructive-action"])
             .build();
         let account = adw::ActionRow::builder().subtitle_selectable(true).build();
         let active = adw::SwitchRow::builder()
@@ -253,12 +258,13 @@ impl SyncPage {
             active,
             last_synced,
             sync_now,
+            log_out,
         };
-        self.connect(&widgets, &output, &log_out);
+        self.connect(&widgets, &output);
         let _ = self.imp().widgets.set(widgets);
     }
 
-    fn connect(&self, w: &Widgets, output: &Output<SyncPageOutput>, log_out: &adw::ButtonRow) {
+    fn connect(&self, w: &Widgets, output: &Output<SyncPageOutput>) {
         let page = self.downgrade();
         let changed = move || {
             if let Some(page) = page.upgrade() {
@@ -317,7 +323,7 @@ impl SyncPage {
         };
         w.cancel
             .connect_clicked(emit(|| SyncPageOutput::CancelLogIn));
-        log_out.connect_activated({
+        w.log_out.connect_activated({
             let output = output.clone();
             move |_| output.emit(SyncPageOutput::LogOut)
         });

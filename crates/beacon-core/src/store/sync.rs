@@ -199,6 +199,11 @@ impl Store {
         Ok(())
     }
 
+    /// Whether any change waits to be sent: what Log Out would drop.
+    pub fn has_pending_changes(&self) -> Result<bool, StoreError> {
+        Ok(self.pending_mark()? != PendingMark::default())
+    }
+
     /// How far the pending changes go now.
     pub fn pending_mark(&self) -> Result<PendingMark, StoreError> {
         Ok(self.conn.query_row(
