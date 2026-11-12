@@ -14,7 +14,7 @@ use beacon_core::model::ShowPrefs;
 use gtk::glib;
 
 use crate::navigation::Location;
-use crate::ui::add_page::AddPage;
+use crate::ui::add_page::{AddPage, AddPageInput};
 use crate::ui::labels;
 use crate::ui::messages::{Inbox, Output};
 use crate::ui::new_view::NewViewInput;
@@ -332,6 +332,10 @@ impl Content {
                 }
             }
             ContentInput::OpenShow(data) => {
+                parts.add_page.send(AddPageInput::Subscribed(
+                    data.show.feed_url.clone(),
+                    Some(data.show.id),
+                ));
                 parts.show_page.send(ShowPageInput::Set(data));
                 if navigation.visible_page_tag().as_deref() == Some(PREVIEW_TAG) {
                     // Subscribed from its preview: the show's page takes
@@ -347,9 +351,17 @@ impl Content {
                     parts.show_page.send(ShowPageInput::Set(data));
                 }
             }
+            // The show is gone (unsubscribed): leave its page for the one
+            // under it, as Back does, such as the results it was subscribed
+            // from (found by the user 2026-11-12: it went to the section).
             ContentInput::CloseShow => {
-                if navigation.find_page(SHOW_TAG).is_some() {
-                    navigation.replace(std::slice::from_ref(&widgets.root_page));
+                if let Some(feed) = parts.show_page.feed() {
+                    parts.add_page.send(AddPageInput::Subscribed(feed, None));
+                }
+                if navigation.visible_page_tag().as_deref() == Some(SHOW_TAG) {
+                    navigation.pop();
+                } else if navigation.find_page(SHOW_TAG).is_some() {
+                    navigation.remove(&parts.show_page);
                 }
             }
             ContentInput::SetShows(cards) => parts.shows.send(ShowsGridInput::SetCards(cards)),

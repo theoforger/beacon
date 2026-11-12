@@ -475,3 +475,36 @@ pub(super) fn subscribing_swaps_the_preview_for_the_shows_page() {
     assert_eq!(page.as_deref(), Some(ADD_TAG));
     window.destroy();
 }
+
+/// Unsubscribing leaves the show's page for the page under it, such as
+/// the Add page's results it was subscribed from, not the section (found
+/// by the user 2026-11-12); those results no longer say Subscribed.
+pub(super) fn unsubscribing_returns_to_the_page_before() {
+    let content = Content::default();
+    let window = window(&content);
+    content.send(ContentInput::ShowSection(Location::Shows));
+    content.send(ContentInput::OpenAdd);
+    wait(400);
+    // A result for the show's feed, not yet subscribed.
+    let (_, add) = content.search_pages();
+    let mut item = directory_item("The Long Signal");
+    item.show.feed_url = page_data().show.feed_url;
+    add.send(AddPageInput::Search("signal".into()));
+    add.send(AddPageInput::Results("signal".into(), Ok(vec![item])));
+    let feed = page_data().show.feed_url;
+    assert_eq!(add.says_subscribed(&feed), Some(false));
+    content.send(ContentInput::OpenShow(Box::new(page_data())));
+    assert_eq!(add.says_subscribed(&feed), Some(true), "subscribed now");
+    wait(600);
+    let (_, _, page) = content.search_state();
+    assert_eq!(page.as_deref(), Some(crate::ui::show_page::SHOW_TAG));
+    content.send(ContentInput::CloseShow);
+    wait(600);
+    let (_, _, page) = content.search_state();
+    assert_eq!(
+        page.as_deref(),
+        Some(ADD_TAG),
+        "back where it was opened from"
+    );
+    window.destroy();
+}

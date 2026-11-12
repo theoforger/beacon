@@ -146,6 +146,7 @@ fn widgets_lay_out_as_designed() {
     search::the_podcast_title_waits_for_the_hero_to_scroll_away();
     search::a_preview_is_the_podcast_page_with_subscribe();
     search::subscribing_swaps_the_preview_for_the_shows_page();
+    search::unsubscribing_returns_to_the_page_before();
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
     clear_sits_where_refresh_does();
@@ -765,6 +766,26 @@ fn the_podcast_header_fits_its_description() {
     let (lines, read_more, _) = fit(long, 400);
     assert_eq!(lines, 4, "stacked, four lines");
     assert!(read_more);
+
+    // Many short paragraphs: the line limit is the whole text's, not each
+    // paragraph's (found by the user 2026-11-12, the text ran past the
+    // cover).
+    let paragraphs = "<p>The first paragraph of a show's description.</p>\
+        <p>A second one.</p><p>A third.</p><p>A fourth.</p><p>A fifth.</p>\
+        <p>A sixth.</p><p>A seventh.</p><p>An eighth.</p><p>A ninth.</p>";
+    let (_, read_more, height) = fit(paragraphs, 760);
+    assert!(read_more, "many paragraphs are cut, with Read More");
+    assert!(
+        height <= 256,
+        "beside the cover the text is {height}px tall"
+    );
+    let (_, read_more, height) = fit(paragraphs, 400);
+    assert!(read_more);
+    let (_, _, four_lines) = fit(long, 400);
+    assert!(
+        height <= four_lines,
+        "stacked, {height}px against {four_lines}px"
+    );
 }
 
 /// A favourite's row shows a star after its title and says "Favorite";

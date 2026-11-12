@@ -45,6 +45,9 @@ pub enum AddPageInput {
     Results(String, Result<Vec<DirectoryItem>, ItunesError>),
     /// A result's thumbnail arrived.
     Art(Url, std::path::PathBuf),
+    /// The feed was subscribed to (as this show) or unsubscribed from
+    /// elsewhere: its result says so.
+    Subscribed(Url, Option<ShowId>),
 }
 
 #[derive(Debug)]
@@ -189,6 +192,10 @@ impl AddPage {
                 }
                 return;
             }
+            AddPageInput::Subscribed(feed, show) => {
+                self.mark_subscribed(&feed, show);
+                return;
+            }
             AddPageInput::Art(url, path) => {
                 for item in imp.items.borrow_mut().iter_mut() {
                     if item.show.artwork.as_ref() == Some(&url) {
@@ -254,6 +261,36 @@ impl AddPage {
                 parts.stack.set_visible_child_name(ERROR);
             }
         }
+    }
+
+    /// Redraw the result for `feed` as subscribed (`show`) or not.
+    fn mark_subscribed(&self, feed: &Url, show: Option<ShowId>) {
+        let imp = self.imp();
+        let results = &self.parts().results;
+        let mut items = imp.items.borrow_mut();
+        let mut covers = imp.covers.borrow_mut();
+        for (index, item) in items.iter_mut().enumerate() {
+            if item.show.feed_url != *feed || item.subscribed == show {
+                continue;
+            }
+            item.subscribed = show;
+            let (row, cover) = directory_row::row(item);
+            if let Some(old) = results.row_at_index(index as i32) {
+                results.remove(&old);
+            }
+            results.insert(&row, index as i32);
+            if let Some(slot) = covers.get_mut(index) {
+                slot.1 = cover;
+            }
+        }
+    }
+
+    /// Whether the result for `feed` says Subscribed, for tests.
+    #[cfg(test)]
+    pub fn says_subscribed(&self, feed: &Url) -> Option<bool> {
+        let items = self.imp().items.borrow();
+        let item = items.iter().find(|i| i.show.feed_url == *feed)?;
+        Some(item.subscribed.is_some())
     }
 
     fn open(&self, index: i32) {
