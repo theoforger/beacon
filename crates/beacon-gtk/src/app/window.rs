@@ -123,36 +123,13 @@ impl App {
     /// top, and the details pane covers the window with its own Back. It
     /// starts closed and its header toggle is hidden.
     pub(super) fn narrow_breakpoint(&self) -> adw::Breakpoint {
-        let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
-            adw::BreakpointConditionLengthType::MaxWidth,
-            NARROW_BREAKPOINT_SP,
-            adw::LengthUnit::Sp,
-        ));
+        let breakpoint = adw::Breakpoint::new(narrow_condition());
         breakpoint.add_setter(
             &self.widgets.split_view,
             "collapsed",
             Some(&true.to_value()),
         );
-        breakpoint.add_setter(
-            &self.widgets.details_split,
-            "collapsed",
-            Some(&true.to_value()),
-        );
-        breakpoint.add_setter(
-            &self.widgets.details_split,
-            "show-sidebar",
-            Some(&false.to_value()),
-        );
-        breakpoint.add_setter(
-            &self.widgets.details_split,
-            "max-sidebar-width",
-            Some(&FULL_WIDTH.to_value()),
-        );
-        breakpoint.add_setter(
-            &self.widgets.details_split,
-            "sidebar-width-fraction",
-            Some(&1.0f64.to_value()),
-        );
+        add_details_setters(&breakpoint, &self.widgets.details_split);
         breakpoint.add_setter(
             self.content.widgets().details_toggle(),
             "visible",
@@ -223,6 +200,51 @@ impl App {
             window.maximize();
         }
     }
+}
+
+fn narrow_condition() -> adw::BreakpointCondition {
+    adw::BreakpointCondition::new_length(
+        adw::BreakpointConditionLengthType::MaxWidth,
+        NARROW_BREAKPOINT_SP,
+        adw::LengthUnit::Sp,
+    )
+}
+
+/// The details pane in the narrow layout: collapsed over the window, full
+/// width, and closed; widening puts back whether it was open, or keeps it
+/// open if it was opened while narrow. That is done
+/// by hand: a setter on `show-sidebar` was not put back when the
+/// breakpoint unapplied, so widening closed the pane (found by the user
+/// 2026-11-12, once the pane was pinned).
+fn add_details_setters(breakpoint: &adw::Breakpoint, split: &adw::OverlaySplitView) {
+    breakpoint.add_setter(split, "collapsed", Some(&true.to_value()));
+    breakpoint.add_setter(split, "max-sidebar-width", Some(&FULL_WIDTH.to_value()));
+    breakpoint.add_setter(split, "sidebar-width-fraction", Some(&1.0f64.to_value()));
+    let was_open = Rc::new(Cell::new(false));
+    breakpoint.connect_apply({
+        let (split, was_open) = (split.downgrade(), was_open.clone());
+        move |_| {
+            if let Some(split) = split.upgrade() {
+                was_open.set(split.shows_sidebar());
+                split.set_show_sidebar(false);
+            }
+        }
+    });
+    let split = split.downgrade();
+    breakpoint.connect_unapply(move |_| {
+        if let Some(split) = split.upgrade() {
+            // Opened while narrow, it stays open beside the content.
+            split.set_show_sidebar(was_open.get() || split.shows_sidebar());
+        }
+    });
+}
+
+/// A narrow breakpoint with only the details pane's setters, for tests.
+#[cfg(test)]
+pub(crate) fn details_breakpoint(split: &adw::OverlaySplitView) -> adw::Breakpoint {
+    let breakpoint = adw::Breakpoint::new(narrow_condition());
+    add_details_setters(&breakpoint, split);
+    breakpoint
 }
 
 pub(super) fn save_window_state(settings: &gio::Settings, window: &adw::ApplicationWindow) {

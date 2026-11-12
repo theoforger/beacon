@@ -373,16 +373,39 @@ pub(super) fn the_podcast_title_waits_for_the_hero_to_scroll_away() {
 }
 
 /// Narrowing and widening the window leaves the details pane as it was
-/// (found by the user 2026-11-12: widening always opened it).
+/// (found by the user 2026-11-12: widening always opened it, then, once
+/// pinned, always closed it), with the app's own breakpoint setters.
 pub(super) fn resizing_leaves_the_details_pane_as_it_was() {
     for open in [false, true] {
         let split = crate::app::details_split(&gtk::Label::new(None), &gtk::Label::new(None));
+        let window = adw::Window::builder()
+            .default_width(1000)
+            .default_height(600)
+            .content(&split)
+            .build();
+        adw::prelude::AdwWindowExt::add_breakpoint(&window, crate::app::details_breakpoint(&split));
+        window.present();
+        wait(200);
         split.set_show_sidebar(open);
-        // What the narrow breakpoint does, then undoes.
-        split.set_collapsed(true);
-        split.set_show_sidebar(false);
-        split.set_show_sidebar(open);
-        split.set_collapsed(false);
+        wait(100);
+        window.set_default_size(400, 600);
+        wait(300);
+        assert!(
+            split.is_collapsed() && !split.shows_sidebar(),
+            "narrow hides it"
+        );
+        window.set_default_size(1000, 600);
+        wait(300);
+        assert!(!split.is_collapsed());
         assert_eq!(split.shows_sidebar(), open, "open before: {open}");
+        // Opened while narrow, it stays open once wide.
+        split.set_show_sidebar(false);
+        window.set_default_size(400, 600);
+        wait(300);
+        split.set_show_sidebar(true);
+        window.set_default_size(1000, 600);
+        wait(300);
+        assert!(split.shows_sidebar(), "opened while narrow");
+        window.destroy();
     }
 }

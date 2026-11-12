@@ -23,6 +23,8 @@ pub use object::Window;
 use sender::AppSender;
 #[cfg(test)]
 pub(crate) use setup::details_split;
+#[cfg(test)]
+pub(crate) use window::details_breakpoint;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
