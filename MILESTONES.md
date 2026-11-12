@@ -285,7 +285,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Each search field searches only its own page (changed by the user 2026-11-11 from a This Show / Everywhere toggle); a podcast page's filters the page in place
 - [x] Results for matching shows (Shows) or episodes (the other sections), with FTS5; with no results in Shows, a suggested Search Online button that opens Add with the query
 - [x] Add page (over the current section): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
-- [x] iTunes client: search on Enter or after a pause, cached results, `country` from the locale and as a setting, about 20 calls per minute
+- [x] iTunes client: search on Enter or the Search button only (changed 2026-11-12 from Enter or a pause), cached results, `country` from the locale and as a setting, about 20 calls per minute
 - [x] Artwork-terms decision applied to the result covers
 - [x] Categories and charts stay out until there is a verified source
 - [x] Scheduled, non-blocking CI job that checks the live iTunes API assumptions

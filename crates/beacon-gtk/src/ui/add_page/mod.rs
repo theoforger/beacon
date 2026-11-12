@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The Add page, pushed over the current section (`docs/specs/
-//! add-and-itunes.md`). One rounded search field: words search Apple's
-//! directory, on Enter or after a pause, never per keystroke; a feed
-//! address shows an RSS Feed row with Add Feed; an Apple Podcasts link
-//! finds its show. Results are a boxed list, as in GNOME Podcasts; each
+//! add-and-itunes.md`). One rounded search field with a Search button, as
+//! in GNOME Podcasts: words search Apple's directory only on Enter or
+//! Search, never while typing (asked by the user 2026-11-12); a feed
+//! address shows an RSS Feed row with Add Feed as it is typed; an Apple
+//! Podcasts link finds its show, on Enter or Search too. Results are a boxed list, as in GNOME Podcasts; each
 //! opens a preview of the show.
 
 use std::cell::{Cell, OnceCell, RefCell};
@@ -27,14 +28,14 @@ mod typed;
 pub use typed::{Typed, classify, request_key};
 
 pub const ADD_TAG: &str = "add";
-/// How long typing pauses before a search goes out.
-const SEARCH_DELAY_MS: u32 = 800;
 
 #[derive(Debug)]
 pub enum AddPageInput {
     TextChanged,
-    /// Enter in the field: add the feed, or search now.
+    /// Enter in the field: add the feed, or search.
     Activate,
+    /// The Search button.
+    SearchPressed,
     AddFeed,
     /// From the window: the subscription finished, either way.
     Done,
@@ -105,6 +106,7 @@ glib::wrapper! {
 pub struct Parts {
     header: adw::HeaderBar,
     entry: gtk::SearchEntry,
+    search: gtk::Button,
     note: gtk::Label,
     feed_list: gtk::ListBox,
     feed_row: adw::ActionRow,
@@ -137,7 +139,16 @@ impl AddPage {
         let imp = self.imp();
         match input {
             AddPageInput::TextChanged if imp.setting.get() => return,
+            // Typing only says what the field holds: nothing goes online
+            // before Enter or Search.
             AddPageInput::TextChanged => {
+                let typed = classify(&self.parts().entry.text());
+                if typed == Typed::Empty {
+                    imp.pending.replace(None);
+                }
+                imp.typed.replace(Some(typed));
+            }
+            AddPageInput::SearchPressed => {
                 let typed = classify(&self.parts().entry.text());
                 imp.typed.replace(Some(typed.clone()));
                 self.request(&typed);
@@ -277,10 +288,19 @@ impl AddPage {
             gettext("Add Feed")
         });
         parts.add.set_sensitive(!adding);
+        parts
+            .search
+            .set_sensitive(matches!(typed, Typed::Apple(_) | Typed::Words(_)));
         match typed {
             Typed::Feed(_) => parts.stack.set_visible_child_name(FEED),
             Typed::Empty => parts.stack.set_visible_child_name(START),
-            Typed::Apple(_) | Typed::Words(_) => {}
+            // Words not searched yet leave the last results, or say how
+            // to search.
+            Typed::Apple(_) | Typed::Words(_) => {
+                if parts.stack.visible_child_name().as_deref() == Some(FEED) {
+                    parts.stack.set_visible_child_name(START);
+                }
+            }
         }
     }
 
@@ -298,6 +318,21 @@ impl AddPage {
         imp.typed.replace(None);
         imp.pending.replace(None);
         self.refresh();
+    }
+
+    /// Type into the field, for tests.
+    #[cfg(test)]
+    pub fn type_text(&self, text: &str) {
+        self.parts().entry.set_text(text);
+    }
+
+    /// Press Search, for tests.
+    #[cfg(test)]
+    pub fn press_search(&self) -> bool {
+        let search = &self.parts().search;
+        let sensitive = search.is_sensitive();
+        search.emit_clicked();
+        sensitive
     }
 
     /// The stack's page and the result titles, for tests.

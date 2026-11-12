@@ -200,13 +200,25 @@ pub(super) fn the_add_page_shows_the_directorys_answers() {
     content.connect_output(move |output| seen.borrow_mut().push(output));
     content.send(ContentInput::OpenAdd);
     let (_, add) = content.search_pages();
-    add.send(AddPageInput::Search("long signal".into()));
+    let searches = || {
+        outputs
+            .borrow()
+            .iter()
+            .filter(|o| matches!(o, ContentOutput::SearchDirectory(_)))
+            .count()
+    };
+    // Typing goes nowhere (asked by the user 2026-11-12), however long it
+    // pauses; Search sends it.
+    add.type_text("long signal");
+    wait(1200);
+    assert_eq!(searches(), 0, "typing alone does not search");
+    assert_eq!(add.showing().0, "start");
+    assert!(add.press_search(), "Search is available for words");
+    assert_eq!(searches(), 1);
+    // The same words again, from Enter or Search Online, ask nothing new.
+    add.send(AddPageInput::Activate);
     add.send(AddPageInput::Search("Long  Signal".into()));
-    let searches = outputs
-        .borrow()
-        .iter()
-        .filter(|o| matches!(o, ContentOutput::SearchDirectory(_)))
-        .count();
+    let searches = searches();
     assert_eq!(
         searches,
         1,
@@ -240,10 +252,11 @@ pub(super) fn the_add_page_shows_the_directorys_answers() {
     add.send(AddPageInput::Search("too many".into()));
     assert_eq!(add.showing().0, "searching");
 
-    // A feed address is not searched for.
-    add.send(AddPageInput::Search("https://example.com/feed.xml".into()));
-    wait(100);
+    // A feed address is not searched for, and Search is unavailable.
+    add.type_text("https://example.com/feed.xml");
+    wait(400);
     assert_eq!(add.showing().0, "feed");
+    assert!(!add.press_search());
     window.destroy();
 }
 

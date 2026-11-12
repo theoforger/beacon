@@ -7,7 +7,7 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 
-use super::{ADD_TAG, AddPage, AddPageInput, AddPageOutput, Parts, SEARCH_DELAY_MS};
+use super::{ADD_TAG, AddPage, AddPageInput, AddPageOutput, Parts};
 use super::{ERROR, FEED, NONE, RESULTS, SEARCHING, START};
 
 impl AddPage {
@@ -17,7 +17,7 @@ impl AddPage {
 
         let entry = gtk::SearchEntry::builder()
             .placeholder_text(gettext("Search or Paste a Feed Address"))
-            .search_delay(SEARCH_DELAY_MS)
+            .hexpand(true)
             .build();
         entry.update_property(&[gtk::accessible::Property::Label(&gettext(
             "Search podcasts or paste an RSS feed address",
@@ -48,6 +48,23 @@ impl AddPage {
                 entry.set_text("");
             }
         });
+        // Searching goes online only from here or Enter, as GNOME
+        // Podcasts' Search button beside its field (`discovery_page.ui`).
+        let search = gtk::Button::builder()
+            .icon_name("system-search-symbolic")
+            .tooltip_text(gettext("Search Apple Podcasts"))
+            .sensitive(false)
+            .build();
+        search.update_property(&[gtk::accessible::Property::Label(&gettext(
+            "Search Apple Podcasts",
+        ))]);
+        search.connect_clicked({
+            let input = input.clone();
+            move |_| input(AddPageInput::SearchPressed)
+        });
+        let field = gtk::Box::builder().spacing(6).build();
+        field.append(&entry);
+        field.append(&search);
         // Where searches go, as GNOME Podcasts says of its platforms; also
         // the results' attribution.
         let note = gtk::Label::builder()
@@ -77,7 +94,7 @@ impl AddPage {
             .orientation(gtk::Orientation::Vertical)
             .spacing(6)
             .build();
-        column.append(&entry);
+        column.append(&field);
         column.append(&note);
         feed_list.set_margin_top(12);
         column.append(&feed_list);
@@ -110,7 +127,7 @@ impl AddPage {
         let start = status(
             "system-search-symbolic",
             &gettext("Search for Podcasts"),
-            &gettext("Find a show by name, or paste the address of its feed"),
+            &gettext("Type a show's name and press Enter, or paste the address of its feed"),
         );
         let searching = adw::StatusPage::builder()
             .paintable(&adw::SpinnerPaintable::new(None::<&gtk::Widget>))
@@ -154,6 +171,7 @@ impl AddPage {
         let _ = self.imp().parts.set(Parts {
             header,
             entry,
+            search,
             note,
             feed_list,
             feed_row,
