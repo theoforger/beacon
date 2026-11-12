@@ -25,28 +25,10 @@ use crate::ui::models::{ShowCard, ShowPageData};
 use crate::ui::preview_page::PreviewPage;
 use crate::ui::search_data::SearchResults;
 use crate::ui::show_page::{ShowPage, ShowPageInput, ShowPageOutput};
-use crate::ui::show_search::ShowQuery;
 
 fn wait(ms: u64) {
     let until = std::time::Instant::now() + Duration::from_millis(ms);
     run_until(|| std::time::Instant::now() > until);
-}
-
-/// The first button in `widget` labelled `label`.
-fn button(widget: &gtk::Widget, label: &str) -> Option<gtk::Button> {
-    if let Some(button) = widget.downcast_ref::<gtk::Button>()
-        && button.label().as_deref() == Some(label)
-    {
-        return Some(button.clone());
-    }
-    let mut child = widget.first_child();
-    while let Some(widget) = child {
-        if let Some(found) = button(&widget, label) {
-            return Some(found);
-        }
-        child = widget.next_sibling();
-    }
-    None
 }
 
 fn card() -> ShowCard {
@@ -81,42 +63,69 @@ fn page_data() -> ShowPageData {
     }
 }
 
-/// Searching from the root page asks for the query, shows the results in
+/// Each section's search asks for its own list only, shows the results in
 /// place of the section under the title Search Results, and with nothing
-/// found offers Search Online, which opens Add searching Apple for it.
-pub(super) fn the_root_page_searches_the_library() {
+/// found offers Search Online in Shows alone, which opens Add searching
+/// Apple for it.
+pub(super) fn the_root_page_searches_its_section() {
     let content = Content::default();
     let outputs: Rc<RefCell<Vec<ContentOutput>>> = Rc::default();
     let seen = outputs.clone();
     content.connect_output(move |output| seen.borrow_mut().push(output));
     let window = window(&content);
+    let (results, add) = content.search_pages();
+
+    // New searches New, and offers nothing online.
     content.send(ContentInput::ShowSection(Location::New));
     content.toggle_search();
     let (entry, _, _) = content.search_state();
+    assert_eq!(
+        entry.placeholder_text().as_deref(),
+        Some("Search New Episodes")
+    );
     entry.set_text("signal");
-    run_until(|| {
-        outputs.borrow().iter().any(
-            |o| matches!(o, ContentOutput::Search(SearchScope::Library, Some(q)) if q == "signal"),
-        )
-    });
+    let asked = |section: Location| {
+        outputs.borrow().iter().any(|o| {
+            matches!(o, ContentOutput::Search(SearchScope::Section(s), Some(q)) if *s == section && q == "signal")
+        })
+    };
+    run_until(|| asked(Location::New));
+    assert!(asked(Location::New));
     let (_, title, _) = content.search_state();
     assert_eq!(title, "Search Results");
-
-    let (results, add) = content.search_pages();
-    content.send(ContentInput::SetSearch(Box::new(SearchResults {
-        query: "signal".into(),
-        shows: vec![card()],
-        episodes: vec![episode(1, None)],
-    })));
+    let mut found = SearchResults::new("signal", Location::New);
+    found.episodes = vec![episode(1, None)];
+    content.send(ContentInput::SetSearch(Box::new(found)));
     assert!(!results.showing_empty());
-    content.send(ContentInput::SetSearch(Box::new(SearchResults {
-        query: "signal".into(),
-        ..Default::default()
-    })));
+    content.send(ContentInput::SetSearch(Box::new(SearchResults::new(
+        "signal",
+        Location::New,
+    ))));
     assert!(results.showing_empty());
+    assert!(
+        !results.online_button().is_visible(),
+        "only Shows looks online"
+    );
 
-    let online = button(results.upcast_ref(), "_Search Online").expect("Search Online");
-    assert!(online.has_css_class("suggested-action"));
+    // Shows searches its shows; with none found, Search Online.
+    content.send(ContentInput::ShowSection(Location::Shows));
+    content.toggle_search();
+    let (entry, _, _) = content.search_state();
+    assert_eq!(entry.placeholder_text().as_deref(), Some("Search Shows"));
+    entry.set_text("signal");
+    run_until(|| asked(Location::Shows));
+    assert!(asked(Location::Shows));
+    let mut found = SearchResults::new("signal", Location::Shows);
+    found.shows = vec![card()];
+    content.send(ContentInput::SetSearch(Box::new(found)));
+    assert!(!results.showing_empty());
+    content.send(ContentInput::SetSearch(Box::new(SearchResults::new(
+        "signal",
+        Location::Shows,
+    ))));
+    assert!(results.showing_empty());
+    let online = results.online_button();
+    assert!(online.is_visible() && online.has_css_class("suggested-action"));
     online.emit_clicked();
     wait(400);
     let (_, _, page) = content.search_state();
@@ -125,29 +134,23 @@ pub(super) fn the_root_page_searches_the_library() {
         outputs
             .borrow()
             .iter()
-            .any(|o| { matches!(o, ContentOutput::SearchDirectory(q) if q == "signal") })
+            .any(|o| matches!(o, ContentOutput::SearchDirectory(q) if q == "signal"))
     );
-    // Leaving the root page ended the search.
-    assert!(matches!(
-        outputs.borrow().last(),
-        Some(ContentOutput::Search(SearchScope::Library, None))
-            | Some(ContentOutput::SearchDirectory(_))
-    ));
     let (showing, _) = add.showing();
     assert_eq!(showing, "searching");
 
-    // Closing the bar brings the section back.
+    // Choosing a section brings it back, without a search.
     content.send(ContentInput::ShowSection(Location::New));
     let (_, title, _) = content.search_state();
     assert_eq!(title, "New");
     window.destroy();
 }
 
-/// On a podcast page, This Show narrows the page and Everywhere searches
-/// the library, putting its results where the episodes were.
-pub(super) fn the_podcast_page_searches_both_scopes() {
+/// On a podcast page the search narrows the page's own episodes, and
+/// closing it ends the search.
+pub(super) fn the_podcast_page_searches_its_episodes() {
     let page = ShowPage::new(&gtk::ToggleButton::new());
-    let queries: Rc<RefCell<Vec<ShowQuery>>> = Rc::default();
+    let queries: Rc<RefCell<Vec<Option<String>>>> = Rc::default();
     let seen = queries.clone();
     page.connect_output(move |output| {
         if let ShowPageOutput::Search(_, query) = output {
@@ -158,31 +161,13 @@ pub(super) fn the_podcast_page_searches_both_scopes() {
     let nav = adw::NavigationView::new();
     nav.push(&page);
     let window = window(&nav);
-    let search = page.search();
-    search.type_text("episode");
+    page.search().type_text("episode");
     run_until(|| !queries.borrow().is_empty());
-    assert_eq!(
-        queries.borrow().last(),
-        Some(&ShowQuery {
-            this_show: Some("episode".into()),
-            everywhere: None,
-        })
-    );
-    assert!(!search.showing_results());
-    search.set_everywhere(true);
-    assert_eq!(
-        queries.borrow().last(),
-        Some(&ShowQuery {
-            this_show: None,
-            everywhere: Some("episode".into()),
-        })
-    );
-    assert!(search.showing_results());
-    // Back to This Show, then closed: no search at all.
-    search.set_everywhere(false);
-    assert!(!search.showing_results());
+    assert_eq!(queries.borrow().last(), Some(&Some("episode".into())));
+    // No scope to choose: the bar holds the field alone.
+    assert!(first::<adw::ToggleGroup>(page.upcast_ref()).is_none());
     page.toggle_search();
-    assert_eq!(queries.borrow().last(), Some(&ShowQuery::default()));
+    assert_eq!(queries.borrow().last(), Some(&None));
     window.destroy();
 }
 

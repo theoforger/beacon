@@ -74,7 +74,8 @@ impl App {
             ContentOutput::SearchDirectory(words) => self.search_directory(words),
             ContentOutput::LookupDirectory(id) => self.lookup_directory(id),
             ContentOutput::Preview(item) => self.preview(*item),
-            ContentOutput::Search(SearchScope::Library, query) => {
+            ContentOutput::Search(SearchScope::Section(section), query) => {
+                let query = query.map(|q| (q, section));
                 let changed = self.search != query;
                 self.search = query;
                 if changed && self.search.is_some() {

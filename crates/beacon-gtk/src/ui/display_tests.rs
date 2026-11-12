@@ -138,8 +138,8 @@ fn widgets_lay_out_as_designed() {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
     search::narrow_search_headers_fit();
-    search::the_root_page_searches_the_library();
-    search::the_podcast_page_searches_both_scopes();
+    search::the_root_page_searches_its_section();
+    search::the_podcast_page_searches_its_episodes();
     search::the_add_page_shows_the_directorys_answers();
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();

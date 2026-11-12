@@ -285,7 +285,7 @@ impl Store {
     pub fn search_episodes(&self, query: &str) -> Result<Vec<EpisodeId>, StoreError> {
         self.search_ids(
             "SELECT rowid FROM episodes_fts WHERE episodes_fts MATCH ?1
-             ORDER BY bm25(episodes_fts, 10.0, 1.0) LIMIT 500",
+             ORDER BY bm25(episodes_fts, 10.0, 1.0)",
             query,
             [],
         )

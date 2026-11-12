@@ -14,7 +14,6 @@ use crate::ui::messages::Output;
 use crate::ui::preview_page::{PREVIEW_TAG, PreviewPage, PreviewPageInput, PreviewPageOutput};
 use crate::ui::search_view::SearchViewInput;
 use crate::ui::show_hero::HeroData;
-use crate::ui::show_page::{SHOW_TAG, ShowPageInput};
 
 /// The Add page and the preview, reporting to `output`.
 pub(super) fn pages(output: &Output<ContentOutput>) -> (AddPage, PreviewPage) {
@@ -91,11 +90,7 @@ impl Content {
                 }
             }
             ContentInput::SetSearch(results) => {
-                if navigation.visible_page_tag().as_deref() == Some(SHOW_TAG) {
-                    parts.show_page.send(ShowPageInput::SetSearch(results));
-                } else {
-                    parts.search.send(SearchViewInput::Set(results));
-                }
+                parts.search.send(SearchViewInput::Set(results));
             }
             ContentInput::SearchOnline(query) => {
                 widgets.search_bar.set_search_mode(false);

@@ -130,8 +130,8 @@ impl Content {
         let show_toggle = new_details_toggle();
         let show_page = ShowPage::new(&show_toggle);
         show_page.connect_output({
-            let (output, input) = (output.clone(), input.clone());
-            move |message| show_page_output(&output, &input, message)
+            let output = output.clone();
+            move |message| show_page_output(&output, message)
         });
         let (add_page, preview_page) = directory::pages(&output);
         let new_filter = page_filters::FilterButton::new({
@@ -172,10 +172,12 @@ impl Content {
         search::connect_query(&widgets.search_bar, &widgets.search_entry, {
             let (output, content) = (output.clone(), self.downgrade());
             move |query| {
-                if let Some(content) = content.upgrade() {
-                    content.show_search(query.is_some());
-                }
-                output.emit(ContentOutput::Search(SearchScope::Library, query));
+                let Some(content) = content.upgrade() else {
+                    return;
+                };
+                content.show_search(query.is_some());
+                let section = content.imp().section.get().unwrap_or(Location::Shows);
+                output.emit(ContentOutput::Search(SearchScope::Section(section), query));
             }
         });
 
@@ -309,8 +311,12 @@ impl Content {
         match message {
             ContentInput::ShowSection(location) => {
                 imp.section.set(Some(location));
-                // A section starts without a search, as in the mockup.
+                // A section starts without a search, as in the mockup, and
+                // its field says what it searches.
                 widgets.search_bar.set_search_mode(false);
+                widgets
+                    .search_entry
+                    .set_placeholder_text(Some(&search::placeholder(location)));
                 widgets.stack.set_visible_child_name(section_id(location));
                 widgets.refresh.set_visible(location.has_refresh());
                 parts.lists.show(location);

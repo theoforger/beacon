@@ -16,6 +16,7 @@ use chrono::{DateTime, Utc};
 use gettextrs::gettext;
 
 use super::{App, AppCommand, toast};
+use crate::navigation::Location;
 use crate::ui::content::ContentInput;
 use crate::ui::details_pane::DetailsPaneInput;
 use crate::ui::errors;
@@ -112,7 +113,7 @@ struct Context {
     playing: Option<EpisodeId>,
     after: Option<EpisodeId>,
     source: Option<Source>,
-    search: Option<String>,
+    search: Option<(String, Location)>,
     show_search: Option<String>,
 }
 
@@ -178,9 +179,10 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
         loaded.downloaded = Some(models::downloaded_items(store)?);
     }
     if parts.search
-        && let Some(query) = &context.search
+        && let Some((query, section)) = &context.search
     {
-        loaded.search = Some(search_data::search(store, query)?);
+        let episodes = section_episodes(store, *section, context)?;
+        loaded.search = Some(search_data::search(store, query, *section, episodes)?);
     }
     if parts.queue {
         let lists = Lists {
@@ -196,6 +198,42 @@ fn load(store: &Store, parts: Parts, context: &Context) -> Result<Loaded, StoreE
         )?);
     }
     Ok(loaded)
+}
+
+/// A section's episodes, in the order its view shows them, for its search.
+fn section_episodes(
+    store: &Store,
+    section: Location,
+    context: &Context,
+) -> Result<Vec<EpisodeItem>, StoreError> {
+    Ok(match section {
+        Location::Shows => Vec::new(),
+        Location::New => models::new_items(store, context.now, context.new_prefs)?
+            .into_iter()
+            .map(|(_, item)| item)
+            .collect(),
+        Location::Favorites => models::favorite_items(store)?,
+        Location::Downloaded => models::downloaded_items(store)?,
+        Location::Queue => {
+            let lists = Lists {
+                now: context.now,
+                new_prefs: context.new_prefs,
+            };
+            let queue = queue_data::queue_data(
+                store,
+                context.playing,
+                context.playing.or(context.after),
+                context.source,
+                lists,
+            )?;
+            queue
+                .now_playing
+                .into_iter()
+                .chain(queue.queued)
+                .chain(queue.from_source)
+                .collect()
+        }
+    })
 }
 
 impl App {
@@ -342,7 +380,7 @@ impl App {
         }
         if let Some(results) = loaded.search.filter(|_| current(self.requests.search)) {
             // A search that ended meanwhile shows nothing.
-            if self.search.as_ref() == Some(&results.query) {
+            if self.search.as_ref() == Some(&(results.query.clone(), results.section)) {
                 self.content
                     .send(ContentInput::SetSearch(Box::new(results)));
             }

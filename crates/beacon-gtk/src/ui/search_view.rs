@@ -14,6 +14,7 @@ use beacon_core::model::ShowId;
 use gettextrs::{gettext, ngettext};
 use gtk::glib;
 
+use crate::navigation::Location;
 use crate::ui::covers::Cover;
 use crate::ui::episode_list::{Entry, EpisodeList};
 use crate::ui::messages::Output;
@@ -30,7 +31,8 @@ pub enum SearchViewInput {
 
 #[derive(Debug)]
 pub enum SearchViewOutput {
-    Action(Box<EpisodeItem>, RowAction),
+    /// A row's action, with the section searched, whose list it is from.
+    Action(Box<EpisodeItem>, RowAction, Location),
     OpenShow(ShowId),
     /// Search Online: look for the query in Apple's directory.
     SearchOnline(String),
@@ -74,7 +76,10 @@ glib::wrapper! {
 pub struct Parts {
     list: EpisodeList,
     shows: gtk::FlowBox,
+    shows_heading: gtk::Label,
     stack: gtk::Stack,
+    empty: adw::StatusPage,
+    online: gtk::Button,
 }
 
 impl Default for SearchView {
@@ -86,12 +91,21 @@ impl Default for SearchView {
 impl SearchView {
     fn build(&self) {
         let output = self.imp().output.clone();
-        // Rows name their show: results come from every show.
+        // Rows name their show, as in the sections' own lists.
         let rows = RowSetup {
             on_action: Rc::new({
                 let output = output.clone();
+                let this = self.downgrade();
                 move |item, action| {
-                    output.emit(SearchViewOutput::Action(Box::new(item.clone()), action));
+                    let Some(view) = this.upgrade() else {
+                        return;
+                    };
+                    let section = view.imp().results.borrow().section;
+                    output.emit(SearchViewOutput::Action(
+                        Box::new(item.clone()),
+                        action,
+                        section,
+                    ));
                 }
             }),
             show_identity: true,
@@ -126,7 +140,6 @@ impl SearchView {
             }
         });
         let shows_heading = gtk::Label::builder()
-            .label(gettext("Shows"))
             .xalign(0.0)
             .css_classes(["heading"])
             .accessible_role(gtk::AccessibleRole::Heading)
@@ -165,9 +178,6 @@ impl SearchView {
         let empty = adw::StatusPage::builder()
             .icon_name("system-search-symbolic")
             .title(gettext("No Results Found"))
-            .description(gettext(
-                "Try a different search term, or look for new podcasts online",
-            ))
             .child(&online)
             .build();
 
@@ -176,7 +186,14 @@ impl SearchView {
         stack.add_named(&empty, Some("empty"));
         stack.set_visible_child_name("empty");
         self.set_child(Some(&stack));
-        let _ = self.imp().parts.set(Parts { list, shows, stack });
+        let _ = self.imp().parts.set(Parts {
+            list,
+            shows,
+            shows_heading,
+            stack,
+            empty,
+            online,
+        });
     }
 
     pub fn connect_output(&self, receive: impl Fn(SearchViewOutput) + 'static) {
@@ -190,6 +207,19 @@ impl SearchView {
         if imp.results.borrow().shows != results.shows {
             set_tiles(&parts.shows, &results.shows);
         }
+        let count = results.shows.len();
+        parts.shows_heading.set_label(
+            &ngettext("{n} Show", "{n} Shows", count as u32).replace("{n}", &count.to_string()),
+        );
+        // Only Shows looks further, in Apple's directory: the other
+        // sections hold what is already subscribed.
+        let shows = results.section == Location::Shows;
+        parts.online.set_visible(shows);
+        parts.empty.set_description(Some(&if shows {
+            gettext("Try a different search term, or look for new podcasts online")
+        } else {
+            gettext("Try a different search term")
+        }));
         parts.stack.set_visible_child_name(if results.is_empty() {
             "empty"
         } else {
@@ -204,6 +234,13 @@ impl SearchView {
     pub fn showing_empty(&self) -> bool {
         let parts = self.imp().parts.get().expect("built when constructed");
         parts.stack.visible_child_name().as_deref() == Some("empty")
+    }
+
+    /// Search Online, for tests.
+    #[cfg(test)]
+    pub fn online_button(&self) -> gtk::Button {
+        let parts = self.imp().parts.get().expect("built when constructed");
+        parts.online.clone()
     }
 }
 
@@ -242,7 +279,7 @@ mod tests {
     use crate::ui::episode_actions::item;
 
     #[test]
-    fn shows_come_first_then_the_counted_episodes() {
+    fn shows_or_the_counted_episodes() {
         let card = ShowCard {
             id: ShowId(1),
             title: "The Long Signal".into(),
@@ -250,27 +287,21 @@ mod tests {
             cover: None,
             new_count: 0,
         };
-        let results = SearchResults {
-            query: "signal".into(),
-            shows: vec![card],
-            episodes: vec![item()],
-        };
-        let found = entries(&results);
-        assert_eq!(found[0], Entry::Header);
-        assert!(matches!(&found[1], Entry::Heading { title, .. } if title == "1 Episode"));
+        let mut shows = SearchResults::new("signal", Location::Shows);
+        shows.shows = vec![card];
+        assert_eq!(entries(&shows), [Entry::Header, Entry::Space(32)]);
+
+        let mut episodes = SearchResults::new("signal", Location::New);
+        episodes.episodes = vec![item()];
+        let found = entries(&episodes);
+        assert!(matches!(&found[0], Entry::Heading { title, .. } if title == "1 Episode"));
         assert!(matches!(
-            found[2],
+            found[1],
             Entry::Episode {
                 first: true,
                 last: true,
                 ..
             }
         ));
-
-        let only_shows = SearchResults {
-            episodes: Vec::new(),
-            ..results
-        };
-        assert_eq!(entries(&only_shows), [Entry::Header, Entry::Space(32)]);
     }
 }

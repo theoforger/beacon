@@ -42,4 +42,4 @@ Both show Apple's artwork in results, without a badge.
 
 ## Search in the library
 
-The search bar searches what is subscribed, with SQLite FTS5 (`shows_fts`, `episodes_fts`): matching shows as cover tiles under Shows, then matching episodes in one card. With no results, a status page with a suggested Search Online button that opens Add with the query. On a podcast page, a This Show / Everywhere toggle: This Show filters the page's own episodes in place (and has no Search Online); Everywhere shows the results as elsewhere.
+Each search field searches only its own page's content (decided by the user 2026-11-11, replacing a This Show / Everywhere toggle on podcast pages and library-wide results), with SQLite FTS5 (`shows_fts`, `episodes_fts`). Shows finds subscribed shows, as cover tiles; New, Queue, Favorites and Downloaded find episodes in their own list, in its own order, in one card; a podcast page narrows its own episodes in place. With no results, a status page; only in Shows does it have a suggested Search Online button, which opens Add with the query, since the other pages hold episodes of shows already subscribed.

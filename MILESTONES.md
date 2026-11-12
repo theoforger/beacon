@@ -282,8 +282,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 - [x] Check Apple's terms, attribution rules and rate limits; confirm `feedUrl` in a live response (open question 1)
 - [x] `GtkSearchBar` under the header, toggled from the header and by Ctrl+F; hidden on the Add page
-- [x] On a podcast page, a This Show / Everywhere toggle; This Show filters the page in place
-- [x] Results for matching shows and episodes (FTS5); with no results, a suggested Search Online button that opens Add with the query (not shown in the This Show scope)
+- [x] Each search field searches only its own page (changed by the user 2026-11-11 from a This Show / Everywhere toggle); a podcast page's filters the page in place
+- [x] Results for matching shows (Shows) or episodes (the other sections), with FTS5; with no results in Shows, a suggested Search Online button that opens Add with the query
 - [x] Add page (over the current section): one rounded search field that also accepts an RSS URL (RSS Feed card with Add Feed); a "Search for Podcasts" status page when empty; results from the iTunes Search API; a show preview with Subscribe
 - [x] iTunes client: search on Enter or after a pause, cached results, `country` from the locale and as a setting, about 20 calls per minute
 - [x] Artwork-terms decision applied to the result covers
@@ -293,7 +293,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Tests
 
 - [x] Unit: query building, URL detection, the rate limiter
-- [x] Integration (canned iTunes responses): search in This Show and Everywhere scope, the no-results page, Search Online, subscribe from iTunes results
+- [x] Integration (canned iTunes responses): search in a section and on a podcast page, the no-results page, Search Online, subscribe from iTunes results
 
 ### Exit gate
 

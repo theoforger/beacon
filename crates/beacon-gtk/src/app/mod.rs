@@ -196,9 +196,9 @@ pub struct App {
     sync: sync::Sync,
     /// Apple's directory, for the Add page.
     directory: directory::Directory,
-    /// The library search showing, across the library (`search`) or on
-    /// the podcast page (`show_search`, This Show scope).
-    search: Option<String>,
+    /// The search showing: of a section's own list, with the section
+    /// (`search`), or of the podcast page (`show_search`).
+    search: Option<(String, crate::navigation::Location)>,
     show_search: Option<String>,
 }
 

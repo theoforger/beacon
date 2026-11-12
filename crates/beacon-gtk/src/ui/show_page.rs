@@ -19,13 +19,11 @@ use crate::ui::format;
 use crate::ui::messages::{Inbox, Output};
 use crate::ui::models::{EpisodeItem, RowAction, ShowPageData};
 use crate::ui::page_filters;
-use crate::ui::search_data::SearchResults;
-use crate::ui::search_view::{SearchViewInput, SearchViewOutput};
 use crate::ui::selection::Selection;
 use crate::ui::selection_bar::{self, Bulk};
 use crate::ui::show_hero::ShowHero;
 use crate::ui::show_menu::{empty_message, more_button, more_menu};
-use crate::ui::show_search::{ShowQuery, ShowSearch};
+use crate::ui::show_search::ShowSearch;
 use crate::ui::widgets::episode_row::RowSetup;
 
 pub const SHOW_TAG: &str = "show";
@@ -42,8 +40,6 @@ pub enum ShowPageInput {
     Unsubscribe,
     /// A season was folded or unfolded.
     Refold,
-    /// The library's results for the Everywhere search.
-    SetSearch(Box<SearchResults>),
 }
 
 #[derive(Debug)]
@@ -58,12 +54,9 @@ pub enum ShowPageOutput {
     DownloadAll(Vec<EpisodeId>),
     /// A change to the selected episodes.
     Change(Vec<EpisodeId>, Bulk),
-    /// The search bar's query changed, or the bar closed.
-    Search(ShowId, ShowQuery),
-    /// Open another show, from the Everywhere results.
-    OpenShow(ShowId),
-    /// Search Online, from the Everywhere results.
-    SearchOnline(String),
+    /// What the search bar narrows the episodes to, or `None` when the
+    /// search ended.
+    Search(ShowId, Option<String>),
 }
 
 mod imp {
@@ -166,7 +159,7 @@ impl ShowPage {
         });
         let more = more_button();
 
-        let search = ShowSearch::new(list.widget(), {
+        let search = ShowSearch::new({
             let (output, page) = (output.clone(), page.downgrade());
             move |query| {
                 let show = page
@@ -177,22 +170,11 @@ impl ShowPage {
                 }
             }
         });
-        search.view.connect_output({
-            let output = output.clone();
-            move |message| {
-                output.emit(match message {
-                    SearchViewOutput::Action(item, action) => ShowPageOutput::Action(item, action),
-                    SearchViewOutput::OpenShow(id) => ShowPageOutput::OpenShow(id),
-                    SearchViewOutput::SearchOnline(query) => ShowPageOutput::SearchOnline(query),
-                });
-            }
-        });
-
         let header = adw::HeaderBar::builder().show_title(false).build();
         let toolbar = adw::ToolbarView::new();
         toolbar.add_top_bar(&header);
         toolbar.add_top_bar(&search.bar);
-        toolbar.set_content(Some(&search.stack));
+        toolbar.set_content(Some(list.widget()));
         page.set_child(Some(&toolbar));
 
         // The details toggle at the far end, as on every page; then the
@@ -339,9 +321,6 @@ impl ShowPage {
                 }
             }
             ShowPageInput::Refold => self.show_episodes(),
-            ShowPageInput::SetSearch(results) => {
-                parts.search.view.send(SearchViewInput::Set(results));
-            }
         }
     }
 

@@ -60,8 +60,8 @@ pub enum ContentInput {
 /// Where a search looks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchScope {
-    /// Every subscribed show and its episodes.
-    Library,
+    /// One section's own list: Shows' shows, or a section's episodes.
+    Section(Location),
     /// One show's episodes, filtering its page in place.
     Show(ShowId),
 }

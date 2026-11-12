@@ -11,6 +11,7 @@ use adw::prelude::*;
 use gettextrs::gettext;
 
 use super::build::ContentWidgets;
+use crate::navigation::Location;
 
 /// What the field holds while the bar is open, trimmed; `None` when there
 /// is nothing to search for.
@@ -64,6 +65,17 @@ pub(super) fn show_results(
     } else {
         widgets.stack.set_visible_child_name(section_id);
         widgets.root_page.set_title(section_title);
+    }
+}
+
+/// What the search field says it searches: only the section's own list.
+pub(super) fn placeholder(section: Location) -> String {
+    match section {
+        Location::Shows => gettext("Search Shows"),
+        Location::New => gettext("Search New Episodes"),
+        Location::Queue => gettext("Search the Queue"),
+        Location::Favorites => gettext("Search Favorites"),
+        Location::Downloaded => gettext("Search Downloads"),
     }
 }
 
