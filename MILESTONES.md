@@ -252,7 +252,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] Migration `004_sync.sql`: the sync account, pending show and episode changes, and triggers that record every local change while sync is on, without echoing changes applied from the server
 - [x] `SyncBackend` trait with shared gpodder types; `NextcloudBackend` for nextcloud-gpodder's subscriptions and episode actions
 - [x] Login: Nextcloud Login Flow v2 through the browser (OpenURI portal), or a password turned into an app password; Log Out revokes the app password
-- [ ] App password kept in the keyring through `oo7` (Secret portal); no new sandbox permission
+- [x] App password kept in the keyring through `oo7` (Secret portal); no new sandbox permission
 - [x] `SyncService`: pull subscriptions, then episode actions, then push pending changes; the first sync merges both sides with nothing removed; `since` comes from the server's timestamps
 - [x] Merge rules: a newer local change wins, a finished play marks the episode played, a partial play never un-plays one; an unmatched episode refreshes its show once, then is dropped
 - [x] Sync runs after refreshing feeds, after subscribing and unsubscribing, after pausing (debounced), on Sync Now and once on close
@@ -266,9 +266,9 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty
-- [ ] Accessibility and translation checks pass
-- [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
+- [x] HIG: gate clean, full screenshot set taken, pending list empty
+- [x] Accessibility and translation checks pass
+- [x] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
 - [ ] Human review of the running app
 
