@@ -50,10 +50,17 @@ pub enum SyncMsg {
     Closing,
 }
 
+/// The account read at launch, with its app password or why the keyring
+/// could not give it.
+type LoadedAccount =
+    Result<Option<(SyncAccount, Result<Option<Credentials>, SyncError>)>, SyncError>;
+
 #[derive(Debug)]
 pub enum SyncCommand {
     /// The account and its app password, read at launch.
-    Loaded(Result<Option<(SyncAccount, Option<Credentials>)>, SyncError>),
+    /// The account and its app password, read at launch. The account
+    /// stands even when the keyring cannot be read.
+    Loaded(LoadedAccount),
     /// A sync ended; `manual` for Sync Now and the first one after login.
     Synced {
         result: Result<SyncSummary, SyncError>,
@@ -93,6 +100,8 @@ pub struct Sync {
     on_close: Rc<Cell<bool>>,
     /// The last sync before closing has started.
     closing: bool,
+    /// The keyring could not be read at launch.
+    keyring_failed: bool,
 }
 
 impl Sync {
@@ -111,6 +120,37 @@ impl Sync {
     fn ready(&self) -> Option<(Arc<SyncService>, NextcloudBackend)> {
         self.account.as_ref().filter(|account| account.active)?;
         Some((self.service.clone()?, self.backend.clone()?))
+    }
+
+    /// Take in the account read at launch. Returns what to report: the
+    /// keyring failing leaves the account signed in, without its password.
+    fn apply_loaded(&mut self, result: LoadedAccount) -> Option<SyncError> {
+        self.loaded = true;
+        let (account, credentials) = match result {
+            Ok(Some(loaded)) => loaded,
+            Ok(None) => return None,
+            Err(err) => return Some(err),
+        };
+        self.account = Some(account);
+        match credentials {
+            Ok(credentials) => {
+                self.backend = credentials.map(|c| NextcloudBackend::new(http_client(), c));
+                None
+            }
+            Err(err) => {
+                self.keyring_failed = true;
+                Some(err)
+            }
+        }
+    }
+
+    /// Why a signed-in account cannot sync: its password is missing.
+    fn missing_password(&self) -> SyncError {
+        if self.keyring_failed {
+            SyncError::Keyring("the keyring could not be read at launch".to_owned())
+        } else {
+            SyncError::Unauthorized
+        }
     }
 
     fn view(&self) -> SyncView {
@@ -141,7 +181,7 @@ impl App {
                 let Some(account) = library.with_store(|store| store.sync_account())? else {
                     return Ok(None);
                 };
-                let credentials = keyring::load(&account.server, &account.user).await?;
+                let credentials = keyring::load(&account.server, &account.user).await;
                 Ok(Some((account, credentials)))
             }
             .await;
@@ -191,8 +231,14 @@ impl App {
             return;
         }
         if sync.account.as_ref().is_some_and(|a| a.active) && sync.backend.is_none() {
-            // Signed in, but the keyring had no app password.
-            self.sync_failed(&SyncError::Unauthorized, manual);
+            // Signed in, but without the app password. Launch already said
+            // so; only Sync Now says it again.
+            let error = sync.missing_password();
+            if manual {
+                self.sync_failed(&error, true);
+            } else {
+                tracing::debug!("not syncing: {error}");
+            }
             return;
         }
         let Some((service, backend)) = sync.ready() else {
@@ -241,22 +287,32 @@ impl App {
         if (manual || errors::sync_needs_attention(error))
             && let Some(message) = errors::sync(error)
         {
-            toast(&self.widgets.toasts, &message);
+            self.sync_toast(&message);
+        }
+    }
+
+    /// Show `message` in Preferences while it is open, or else in the
+    /// window: a narrow window's Preferences is a bottom sheet over the
+    /// window's toasts.
+    pub(super) fn sync_toast(&self, message: &str) {
+        let dialog = self
+            .sync
+            .page
+            .upgrade()
+            .filter(WidgetExt::is_mapped)
+            .and_then(|page| page.ancestor(adw::PreferencesDialog::static_type()))
+            .and_then(|dialog| dialog.downcast::<adw::PreferencesDialog>().ok());
+        match dialog {
+            Some(dialog) => dialog.add_toast(adw::Toast::new(message)),
+            None => toast(&self.widgets.toasts, message),
         }
     }
 
     pub(super) fn sync_command(&mut self, command: SyncCommand) {
         match command {
             SyncCommand::Loaded(result) => {
-                self.sync.loaded = true;
-                match result {
-                    Ok(Some((account, credentials))) => {
-                        self.sync.account = Some(account);
-                        self.sync.backend =
-                            credentials.map(|c| NextcloudBackend::new(http_client(), c));
-                    }
-                    Ok(None) => {}
-                    Err(err) => self.sync_failed(&err, false),
+                if let Some(err) = self.sync.apply_loaded(result) {
+                    self.sync_failed(&err, false);
                 }
                 self.show_sync();
                 if std::mem::take(&mut self.sync.wanted) {
@@ -338,4 +394,50 @@ impl App {
 
 fn command(command: SyncCommand) -> AppCommand {
     AppCommand::Sync(Box::new(command))
+}
+
+#[cfg(test)]
+mod tests {
+    use url::Url;
+
+    use super::*;
+
+    fn account() -> SyncAccount {
+        SyncAccount {
+            server: Url::parse("https://cloud.example.com/").unwrap(),
+            user: "ada".to_owned(),
+            active: true,
+            subscriptions_since: None,
+            actions_since: None,
+            last_synced: None,
+        }
+    }
+
+    #[test]
+    fn an_unreadable_keyring_leaves_the_account_signed_in() {
+        let mut sync = Sync::default();
+        let error = sync.apply_loaded(Ok(Some((
+            account(),
+            Err(SyncError::Keyring("locked".to_owned())),
+        ))));
+        assert!(matches!(error, Some(SyncError::Keyring(_))));
+        assert!(matches!(sync.view(), SyncView::SignedIn { .. }));
+        assert!(sync.ready().is_none(), "nothing to sync with");
+        assert!(matches!(sync.missing_password(), SyncError::Keyring(_)));
+    }
+
+    #[test]
+    fn a_missing_password_asks_to_log_in_again() {
+        let mut sync = Sync::default();
+        assert!(sync.apply_loaded(Ok(Some((account(), Ok(None))))).is_none());
+        assert!(matches!(sync.view(), SyncView::SignedIn { .. }));
+        assert!(matches!(sync.missing_password(), SyncError::Unauthorized));
+    }
+
+    #[test]
+    fn no_account_is_signed_out() {
+        let mut sync = Sync::default();
+        assert!(sync.apply_loaded(Ok(None)).is_none());
+        assert_eq!(sync.view(), SyncView::SignedOut);
+    }
 }

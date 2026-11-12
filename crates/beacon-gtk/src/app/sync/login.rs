@@ -18,7 +18,7 @@ use gtk::prelude::*;
 
 use super::{LoggingIn, POLL_EVERY, SyncCommand, SyncMsg, command};
 use crate::app::library::Parts;
-use crate::app::{App, AppMsg, toast};
+use crate::app::{App, AppMsg};
 use crate::ui::dialogs::sync_page::SyncPageOutput;
 
 impl App {
@@ -157,10 +157,7 @@ impl App {
         }
         match result {
             Ok((account, credentials)) => {
-                toast(
-                    &self.widgets.toasts,
-                    &gettext("Logged in as {user}").replace("{user}", &account.user),
-                );
+                self.sync_toast(&gettext("Logged in as {user}").replace("{user}", &account.user));
                 self.sync.account = Some(account);
                 self.sync.backend = Some(NextcloudBackend::new(http_client(), credentials));
                 self.show_sync();
