@@ -249,6 +249,7 @@ impl App {
             AppMsg::NetworkChanged => {
                 self.buffer_restored();
                 self.preload_next();
+                self.sync_on_network_change();
             }
             AppMsg::Sync(message) => self.sync_message(message),
         }

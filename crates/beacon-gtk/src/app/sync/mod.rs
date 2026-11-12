@@ -37,6 +37,7 @@ pub(super) const AFTER_SUBSCRIBING: Duration = Duration::from_secs(1);
 /// How long closing the window waits for its last sync.
 const ON_CLOSE: Duration = Duration::from_secs(5);
 mod login;
+mod triggers;
 
 /// How often a browser login asks whether it was approved.
 const POLL_EVERY: Duration = Duration::from_secs(3);
@@ -48,6 +49,8 @@ pub enum SyncMsg {
     Due,
     /// The window is closing: one last sync, then close.
     Closing,
+    /// The 15-minute sync is due.
+    Periodic,
     /// Log Out, confirmed in its dialog.
     ConfirmLogOut,
 }
@@ -107,6 +110,8 @@ pub struct Sync {
     closing: bool,
     /// The keyring could not be read at launch.
     keyring_failed: bool,
+    /// Whether the network was there, to sync when it comes back.
+    connectivity: triggers::Connectivity,
 }
 
 impl Sync {
@@ -220,6 +225,7 @@ impl App {
                 self.request_sync(false);
             }
             SyncMsg::Closing => self.sync_on_close(),
+            SyncMsg::Periodic => self.periodic_sync(),
             SyncMsg::ConfirmLogOut => self.log_out(),
         }
     }

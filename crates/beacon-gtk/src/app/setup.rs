@@ -166,6 +166,7 @@ impl App {
                 model.reload(library::Parts::ALL);
                 model.restore_last_episode();
                 model.load_sync();
+                model.sync_periodically();
                 // New episodes since last time, as GNOME Podcasts looks for
                 // them (`refresh-on-startup`).
                 if model.settings.boolean("refresh-on-startup") {

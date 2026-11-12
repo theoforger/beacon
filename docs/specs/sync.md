@@ -82,7 +82,11 @@ Outside the first sync, a pending local subscription change wins over the server
 - after subscribing or unsubscribing;
 - about 30 seconds after playback pauses or stops (debounced);
 - on Sync Now;
+- every 15 minutes while Beacon is open, when there is a network (added 2026-11-12);
+- when the network comes back after it was lost (added 2026-11-12);
 - once when the window closes, for at most 5 seconds.
+
+A sync nobody asked for (all but Sync Now, logging in and turning Sync on) says it failed only when the account needs attention.
 
 Never while signed out or with the Sync switch off.
 
