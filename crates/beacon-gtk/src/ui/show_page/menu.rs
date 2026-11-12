@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! A podcast page's More Options menu, and what its list says when no
-//! episode shows.
+//! A podcast page's More Options menu, a preview's, and what its list says
+//! when no episode shows.
 
 use beacon_core::model::{DownloadFilter, EpisodeFilter, ShowPrefs};
 use gettextrs::gettext;
@@ -9,7 +9,7 @@ use gtk::gio;
 use gtk::prelude::*;
 
 /// What the list says in place of episodes: why none show.
-pub fn empty_message(prefs: &ShowPrefs, searching: bool) -> String {
+pub(super) fn empty_message(prefs: &ShowPrefs, searching: bool) -> String {
     if searching {
         return gettext("No episodes match your search");
     }
@@ -25,7 +25,7 @@ pub fn empty_message(prefs: &ShowPrefs, searching: bool) -> String {
 }
 
 /// The page's More Options button, in its header bar.
-pub fn more_button() -> gtk::MenuButton {
+pub(super) fn more_button() -> gtk::MenuButton {
     let more = gtk::MenuButton::builder()
         .icon_name("view-more-symbolic")
         .tooltip_text(gettext("More Options"))
@@ -37,7 +37,7 @@ pub fn more_button() -> gtk::MenuButton {
 
 /// More Options, offering to mark every episode played, or unplayed when
 /// every one already is.
-pub fn more_menu(all_played: bool) -> gio::Menu {
+pub(super) fn more_menu(all_played: bool) -> gio::Menu {
     let menu = gio::Menu::new();
     let mark_all = if all_played {
         gettext("Mark All as _Unplayed")
@@ -49,6 +49,19 @@ pub fn more_menu(all_played: bool) -> gio::Menu {
     menu.append(
         Some(&gettext("_Download All Episodes…")),
         Some("show.download-all"),
+    );
+    menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
+    menu
+}
+
+/// A preview's More Options: the show's page on Apple Podcasts, the link
+/// to the store its result came from (unavailable when there is none),
+/// and its feed's address.
+pub(super) fn preview_menu() -> gio::Menu {
+    let menu = gio::Menu::new();
+    menu.append(
+        Some(&gettext("_View on Apple Podcasts")),
+        Some("show.view-in-store"),
     );
     menu.append(Some(&gettext("_Copy Feed Address")), Some("show.copy-feed"));
     menu

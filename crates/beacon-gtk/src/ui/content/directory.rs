@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The pages for finding shows: the Add page and a directory result's
-//! preview, pushed over the current section, and the library search's
-//! results, routed to the page that searched.
+//! preview (a podcast page in preview mode), pushed over the current
+//! section, and the search results.
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -11,37 +11,25 @@ use super::sections::bring_forward;
 use super::{Content, ContentInput, ContentOutput};
 use crate::ui::add_page::{ADD_TAG, AddPage, AddPageInput, AddPageOutput};
 use crate::ui::messages::Output;
-use crate::ui::preview_page::{PREVIEW_TAG, PreviewPage, PreviewPageInput, PreviewPageOutput};
+use crate::ui::preview_data;
 use crate::ui::search_view::SearchViewInput;
-use crate::ui::show_hero::HeroData;
+use crate::ui::show_page::{PREVIEW_TAG, ShowPageInput};
 
-/// The Add page and the preview, reporting to `output`.
-pub(super) fn pages(output: &Output<ContentOutput>) -> (AddPage, PreviewPage) {
+/// The Add page, reporting to `output`.
+pub(super) fn add_page(output: &Output<ContentOutput>) -> AddPage {
     let add_page = AddPage::default();
-    add_page.connect_output({
-        let output = output.clone();
-        move |message| {
-            output.emit(match message {
-                AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
-                AddPageOutput::Back => ContentOutput::GoBack,
-                AddPageOutput::Search(words) => ContentOutput::SearchDirectory(words),
-                AddPageOutput::Lookup(id) => ContentOutput::LookupDirectory(id),
-                AddPageOutput::OpenShow(id) => ContentOutput::OpenShow(id),
-                AddPageOutput::Open(item) => ContentOutput::Preview(item),
-            });
-        }
+    let output = output.clone();
+    add_page.connect_output(move |message| {
+        output.emit(match message {
+            AddPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
+            AddPageOutput::Back => ContentOutput::GoBack,
+            AddPageOutput::Search(words) => ContentOutput::SearchDirectory(words),
+            AddPageOutput::Lookup(id) => ContentOutput::LookupDirectory(id),
+            AddPageOutput::OpenShow(id) => ContentOutput::OpenShow(id),
+            AddPageOutput::Open(item) => ContentOutput::Preview(item),
+        });
     });
-    let preview_page = PreviewPage::default();
-    preview_page.connect_output({
-        let output = output.clone();
-        move |message| {
-            output.emit(match message {
-                PreviewPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
-                PreviewPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
-            });
-        }
-    });
-    (add_page, preview_page)
+    add_page
 }
 
 impl Content {
@@ -57,7 +45,7 @@ impl Content {
             }
             ContentInput::SubscribeDone => {
                 parts.add_page.send(AddPageInput::Done);
-                parts.preview_page.send(PreviewPageInput::Done);
+                parts.preview_page.send(ShowPageInput::SubscribeDone);
             }
             ContentInput::DirectoryResults(key, result) => {
                 parts.add_page.send(AddPageInput::Results(key, result));
@@ -66,27 +54,18 @@ impl Content {
                 parts.add_page.send(AddPageInput::Art(url, path));
             }
             ContentInput::OpenPreview(item) => {
-                let show = &item.show;
-                let hero = HeroData {
-                    cover: item.art.clone(),
-                    category: show.genre.clone(),
-                    title: show.title.clone(),
-                    author: show.author.clone(),
-                    description: None,
-                };
-                parts.preview_page.send(PreviewPageInput::Start {
-                    hero: Box::new(hero),
-                    feed: show.feed_url.clone(),
-                    store: show.store_url.clone(),
-                });
+                let data = preview_data::directory_page(&item);
+                let store = item.show.store_url.clone();
+                parts
+                    .preview_page
+                    .send(ShowPageInput::Preview(Box::new(data), store));
                 bring_forward(navigation, parts.preview_page.upcast_ref(), PREVIEW_TAG);
             }
             ContentInput::PreviewLoaded(url, result) => {
                 if parts.preview_page.feed().as_ref() == Some(&url) {
-                    parts.preview_page.send(match result {
-                        Ok(data) => PreviewPageInput::Loaded(data),
-                        Err(message) => PreviewPageInput::Failed(message),
-                    });
+                    parts
+                        .preview_page
+                        .send(ShowPageInput::PreviewLoaded(result));
                 }
             }
             ContentInput::SetSearch(results) => {

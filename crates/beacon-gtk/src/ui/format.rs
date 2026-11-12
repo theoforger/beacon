@@ -14,11 +14,7 @@ use gtk::glib;
 /// show's name, which a row's cover shows where it matters (asked by the
 /// user 2026-11-08).
 pub fn subtitle(episode: &Episode) -> String {
-    info_subtitle(&episode.info)
-}
-
-/// The same for an episode not stored, as a show's preview lists it.
-pub fn info_subtitle(info: &beacon_core::model::EpisodeInfo) -> String {
+    let info = &episode.info;
     let mut parts = Vec::new();
     if let Some(numbers) = season_and_episode(info) {
         parts.push(numbers);

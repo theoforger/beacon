@@ -82,6 +82,7 @@ impl EpisodesView {
             show_identity: true,
             selection: selection.clone(),
             selectable: true,
+            actions: true,
         };
         let list = EpisodeList::new(&rows, &labels::title(section), None, None);
         let (title, description) = empty_page(section);

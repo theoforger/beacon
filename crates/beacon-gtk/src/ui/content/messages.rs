@@ -11,7 +11,6 @@ use crate::navigation::Location;
 use crate::ui::directory_row::DirectoryItem;
 use crate::ui::models::{EpisodeItem, RowAction, ShowCard, ShowPageData};
 use crate::ui::page_filters;
-use crate::ui::preview_page::PreviewData;
 use crate::ui::queue_data::QueueData;
 use crate::ui::search_data::SearchResults;
 use crate::ui::selection_bar::Bulk;
@@ -54,7 +53,7 @@ pub enum ContentInput {
     /// Slide a directory result's preview in over the Add page.
     OpenPreview(Box<DirectoryItem>),
     /// The previewed feed loaded, or why it did not.
-    PreviewLoaded(Url, Result<Box<PreviewData>, String>),
+    PreviewLoaded(Url, Result<Box<ShowPageData>, String>),
 }
 
 /// Where a search looks.

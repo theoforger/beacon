@@ -19,7 +19,7 @@ use crate::ui::models::{EpisodeItem, SeasonItems, ShowPageData};
 use crate::ui::play_button;
 use crate::ui::player_bar::PlayerBar;
 use crate::ui::selection::Selection;
-use crate::ui::show_page::{ShowPage, ShowPageInput};
+use crate::ui::show_page::{PageKind, ShowPage, ShowPageInput};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
 
 mod search;
@@ -67,6 +67,7 @@ fn setup() -> RowSetup {
         show_identity: true,
         selection: Selection::default(),
         selectable: true,
+        actions: true,
     }
 }
 
@@ -143,6 +144,8 @@ fn widgets_lay_out_as_designed() {
     search::the_podcast_page_searches_its_episodes();
     search::the_add_page_shows_the_directorys_answers();
     search::the_podcast_title_waits_for_the_hero_to_scroll_away();
+    search::a_preview_is_the_podcast_page_with_subscribe();
+    search::subscribing_swaps_the_preview_for_the_shows_page();
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
     clear_sits_where_refresh_does();
@@ -218,7 +221,7 @@ fn long_lists_make_rows_only_for_the_screen() {
 /// Folding a season takes its episodes out of the list; unfolding brings
 /// them back.
 fn seasons_fold_away_their_episodes() {
-    let page = ShowPage::new(&gtk::ToggleButton::new());
+    let page = ShowPage::new(&gtk::ToggleButton::new(), PageKind::Library);
     let season = |number: u32, ids: std::ops::RangeInclusive<i64>| SeasonItems {
         season: Some(Season { number, name: None }),
         episodes: ids.map(|id| episode(id, Some(number))).collect(),
@@ -718,10 +721,21 @@ fn the_podcast_header_fits_its_description() {
             ..Default::default()
         };
         info.description = Some(description.into());
-        hero.update(&crate::ui::show_hero::HeroData {
-            title: info.title,
-            description: info.description,
-            ..Default::default()
+        hero.update(&ShowPageData {
+            show: beacon_core::model::Show {
+                id: ShowId(1),
+                feed_url: "https://example.com/feed.xml".parse().expect("a URL"),
+                info,
+                cover_path: None,
+                subscribed_at: Utc::now(),
+                last_refreshed_at: None,
+            },
+            prefs: Default::default(),
+            seasons: None,
+            episodes: Vec::new(),
+            all_played: false,
+            to_download: Vec::new(),
+            query: None,
         });
         // A window of the width: the header takes all it is given.
         let window = gtk::Window::builder()
@@ -1298,7 +1312,7 @@ fn resize_cost() {
             to_download: Vec::new(),
             query: None,
         };
-        let page = ShowPage::new(&gtk::ToggleButton::new());
+        let page = ShowPage::new(&gtk::ToggleButton::new(), PageKind::Library);
         page.send(ShowPageInput::Set(Box::new(data)));
         let nav = adw::NavigationView::new();
         nav.push(&page);

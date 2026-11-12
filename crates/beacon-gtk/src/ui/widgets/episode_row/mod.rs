@@ -45,6 +45,9 @@ pub struct RowSetup {
     pub show_identity: bool,
     pub selection: Selection,
     pub selectable: bool,
+    /// Whether the row acts: Play, its menu and its details. A show's
+    /// preview lists episodes not in the library, which have none.
+    pub actions: bool,
 }
 
 thread_local! {
@@ -283,8 +286,10 @@ impl EpisodeRow {
         }
         content.append(&text);
         let play_holder = play_button::with_spinner(&play);
-        content.append(&play_holder);
-        content.append(&menu);
+        if setup.actions {
+            content.append(&play_holder);
+            content.append(&menu);
+        }
 
         let episode: Rc<RefCell<Option<EpisodeItem>>> = Rc::default();
         // A popover menu builds a widget per item, too much for every row of

@@ -49,6 +49,7 @@ pub(super) fn show_page_output(output: &Output<ContentOutput>, message: ShowPage
         ShowPageOutput::FeedAddressCopied => ContentOutput::FeedAddressCopied,
         ShowPageOutput::Change(ids, change) => ContentOutput::Change(ids, change),
         ShowPageOutput::DownloadAll(ids) => ContentOutput::DownloadAll(ids),
+        ShowPageOutput::Subscribe(url) => ContentOutput::Subscribe(url),
         ShowPageOutput::Search(show, query) => {
             ContentOutput::Search(SearchScope::Show(show), query)
         }

@@ -21,9 +21,7 @@ use super::{App, AppCommand};
 use crate::ui::content::ContentInput;
 use crate::ui::directory_row::DirectoryItem;
 use crate::ui::errors;
-use crate::ui::format;
-use crate::ui::preview_page::{PREVIEW_EPISODES, PreviewData};
-use crate::ui::show_hero::HeroData;
+use crate::ui::preview_data;
 
 /// The setting that names the directory's country; empty for automatic.
 pub(super) const COUNTRY_KEY: &str = "directory-country";
@@ -63,28 +61,6 @@ fn mark_subscribed(library: &Library, shows: Vec<DirectoryShow>) -> Vec<Director
             art: None,
         })
         .collect()
-}
-
-/// What the preview shows of a fetched feed: the feed's own cover and
-/// text, and its newest episodes.
-pub(super) fn preview_data(preview: &FeedPreview) -> PreviewData {
-    let show = &preview.feed.show;
-    let mut episodes: Vec<_> = preview.feed.episodes.iter().map(|e| &e.info).collect();
-    episodes.sort_by_key(|info| std::cmp::Reverse(info.published));
-    PreviewData {
-        hero: HeroData {
-            cover: preview.cover.clone(),
-            category: show.category.clone(),
-            title: show.title.clone(),
-            author: show.author.clone(),
-            description: show.description.clone(),
-        },
-        episodes: episodes
-            .into_iter()
-            .take(PREVIEW_EPISODES)
-            .map(|info| (info.title.clone(), format::info_subtitle(info)))
-            .collect(),
-    }
 }
 
 impl App {
@@ -174,7 +150,7 @@ impl App {
     pub(super) fn previewed(&mut self, url: Url, result: Result<FeedPreview, LibraryError>) {
         let shown = match result {
             Ok(preview) => {
-                let data = preview_data(&preview);
+                let data = preview_data::preview_page(&preview);
                 self.directory.previewed = Some(preview);
                 Ok(Box::new(data))
             }

@@ -22,9 +22,8 @@ use crate::ui::add_page::{ADD_TAG, AddPageInput};
 use crate::ui::content::{Content, ContentInput, ContentOutput, SearchScope};
 use crate::ui::directory_row::DirectoryItem;
 use crate::ui::models::{ShowCard, ShowPageData};
-use crate::ui::preview_page::PreviewPage;
 use crate::ui::search_data::SearchResults;
-use crate::ui::show_page::{ShowPage, ShowPageInput, ShowPageOutput};
+use crate::ui::show_page::{PageKind, ShowPage, ShowPageInput, ShowPageOutput};
 
 fn wait(ms: u64) {
     let until = std::time::Instant::now() + Duration::from_millis(ms);
@@ -149,7 +148,7 @@ pub(super) fn the_root_page_searches_its_section() {
 /// On a podcast page the search narrows the page's own episodes, and
 /// closing it ends the search.
 pub(super) fn the_podcast_page_searches_its_episodes() {
-    let page = ShowPage::new(&gtk::ToggleButton::new());
+    let page = ShowPage::new(&gtk::ToggleButton::new(), PageKind::Library);
     let queries: Rc<RefCell<Vec<Option<String>>>> = Rc::default();
     let seen = queries.clone();
     page.connect_output(move |output| {
@@ -269,13 +268,12 @@ pub(super) fn narrow_search_headers_fit() {
     let details = gtk::ToggleButton::new();
     // The narrow layout hides the details toggle.
     details.set_visible(false);
-    let page = ShowPage::new(&details);
+    let page = ShowPage::new(&details, PageKind::Library);
     page.send(ShowPageInput::Set(Box::new(page_data())));
     crate::ui::selection_bar::set_narrow(true);
-    let preview = PreviewPage::default();
     let preview_details = gtk::ToggleButton::new();
     preview_details.set_visible(false);
-    preview.pack_end_buttons(&preview_details);
+    let preview = ShowPage::new(&preview_details, PageKind::Preview);
     let mut needed = Vec::new();
     for (name, page) in [
         (
@@ -320,7 +318,7 @@ pub(super) fn narrow_search_headers_fit() {
 /// large title has scrolled away, and typing opens its search while the
 /// page shows.
 pub(super) fn the_podcast_title_waits_for_the_hero_to_scroll_away() {
-    let page = ShowPage::new(&gtk::ToggleButton::new());
+    let page = ShowPage::new(&gtk::ToggleButton::new(), PageKind::Library);
     let mut data = page_data();
     data.episodes = (1..=40).map(|id| episode(id, None)).collect();
     page.send(ShowPageInput::Set(Box::new(data)));
@@ -408,4 +406,72 @@ pub(super) fn resizing_leaves_the_details_pane_as_it_was() {
         assert!(split.shows_sidebar(), "opened while narrow");
         window.destroy();
     }
+}
+
+/// A show's preview is its podcast page with Subscribe: its feed's
+/// episodes as rows that cannot act (no Play, no menu, no details), and
+/// Subscribe only once the feed has loaded. Nothing it does reaches the
+/// library but Subscribe.
+pub(super) fn a_preview_is_the_podcast_page_with_subscribe() {
+    use crate::ui::preview_data;
+    use crate::ui::widgets::episode_row::EpisodeRow;
+
+    let page = ShowPage::new(&gtk::ToggleButton::new(), PageKind::Preview);
+    let outputs: Rc<RefCell<Vec<String>>> = Rc::default();
+    let seen = outputs.clone();
+    page.connect_output(move |output| seen.borrow_mut().push(format!("{output:?}")));
+    let item = directory_item("Seasons");
+    page.send(ShowPageInput::Preview(
+        Box::new(preview_data::directory_page(&item)),
+        None,
+    ));
+    let nav = adw::NavigationView::new();
+    nav.push(&page);
+    let window = window(&nav);
+    wait(300);
+    assert!(!page.can_subscribe(), "not before the feed loads");
+    let loaded = preview_data::preview_page(&preview_data::tests::preview("seasons.xml"));
+    page.send(ShowPageInput::PreviewLoaded(Ok(Box::new(loaded))));
+    wait(300);
+    assert!(page.can_subscribe());
+    let rows = super::count::<EpisodeRow>(page.upcast_ref());
+    assert!(rows > 0, "the feed's episodes show");
+    // No row control, no filter, search or selection on a preview.
+    assert!(first::<gtk::SearchBar>(page.upcast_ref()).is_none());
+    let row = first::<EpisodeRow>(page.upcast_ref()).expect("a row");
+    assert!(first::<gtk::MenuButton>(row.upcast_ref()).is_none());
+    assert!(first::<gtk::Button>(row.upcast_ref()).is_none());
+    page.press_subscribe();
+    assert!(!page.can_subscribe(), "once, while it subscribes");
+    assert_eq!(
+        outputs.borrow().as_slice(),
+        [
+            r#"Subscribe(Url { scheme: "https", cannot_be_a_base: false, username: "", password: None, host: Some(Domain("example.com")), port: None, path: "/feed.xml", query: None, fragment: None })"#
+        ]
+    );
+    page.send(ShowPageInput::SubscribeDone);
+    assert!(page.can_subscribe());
+    window.destroy();
+}
+
+/// Subscribing from a preview puts the show's page in its place, so Back
+/// returns to the results rather than to the preview.
+pub(super) fn subscribing_swaps_the_preview_for_the_shows_page() {
+    let content = Content::default();
+    let window = window(&content);
+    content.send(ContentInput::OpenAdd);
+    content.send(ContentInput::OpenPreview(Box::new(directory_item(
+        "Seasons",
+    ))));
+    wait(600);
+    let (_, _, page) = content.search_state();
+    assert_eq!(page.as_deref(), Some(crate::ui::show_page::PREVIEW_TAG));
+    content.send(ContentInput::OpenShow(Box::new(page_data())));
+    let (_, _, page) = content.search_state();
+    assert_eq!(page.as_deref(), Some(crate::ui::show_page::SHOW_TAG));
+    content.widgets().go_back();
+    wait(600);
+    let (_, _, page) = content.search_state();
+    assert_eq!(page.as_deref(), Some(ADD_TAG));
+    window.destroy();
 }

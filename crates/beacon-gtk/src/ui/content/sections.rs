@@ -53,6 +53,28 @@ pub(super) fn bring_forward(
     }
 }
 
+/// Put `page` where `old` is in the navigation stack, without a slide,
+/// leaving out any other place `page` had further down.
+pub(super) fn swap_in(
+    navigation: &adw::NavigationView,
+    old: &impl IsA<adw::NavigationPage>,
+    page: &impl IsA<adw::NavigationPage>,
+) {
+    let stack = navigation.navigation_stack();
+    let pages: Vec<adw::NavigationPage> = (0..stack.n_items())
+        .filter_map(|i| stack.item(i).and_downcast::<adw::NavigationPage>())
+        .filter(|p| p != page.upcast_ref())
+        .map(|p| {
+            if p == *old.upcast_ref() {
+                page.clone().upcast()
+            } else {
+                p
+            }
+        })
+        .collect();
+    navigation.replace(&pages);
+}
+
 /// New's selection mode, on the root page, entered from `select`. The
 /// search bar closes and stops catching typing meanwhile.
 pub(super) fn attach_new_selection(

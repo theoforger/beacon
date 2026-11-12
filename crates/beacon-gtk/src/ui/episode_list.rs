@@ -299,7 +299,7 @@ fn factory(
         // Only episodes are rows to focus and open; the others are text,
         // or hold their own controls.
         let is_episode = matches!(entry.entry(), Entry::Episode { .. });
-        item.set_activatable(is_episode);
+        item.set_activatable(is_episode && setup.actions);
         item.set_focusable(is_episode);
         item.set_selectable(false);
         match entry.entry() {

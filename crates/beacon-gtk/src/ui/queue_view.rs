@@ -82,6 +82,7 @@ impl QueueView {
             show_identity: true,
             selection: selection.clone(),
             selectable: true,
+            actions: true,
         };
         // Translators: how a screen reader names the Queue section's list.
         let list = EpisodeList::new(&rows, &gettext("Queue"), None, None);

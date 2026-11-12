@@ -111,6 +111,7 @@ impl SearchView {
             show_identity: true,
             selection: Selection::default(),
             selectable: false,
+            actions: true,
         };
 
         // The shows, as on the Shows grid, 2 to 7 to a line.

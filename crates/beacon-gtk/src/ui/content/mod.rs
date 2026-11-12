@@ -19,10 +19,9 @@ use crate::ui::labels;
 use crate::ui::messages::{Inbox, Output};
 use crate::ui::new_view::NewViewInput;
 use crate::ui::page_filters;
-use crate::ui::preview_page::{PREVIEW_TAG, PreviewPage};
 use crate::ui::search_view::SearchView;
 use crate::ui::selection_bar;
-use crate::ui::show_page::{SHOW_TAG, ShowPage, ShowPageInput};
+use crate::ui::show_page::{PREVIEW_TAG, PageKind, SHOW_TAG, ShowPage, ShowPageInput};
 use crate::ui::shows_grid::{ShowsGrid, ShowsGridInput, ShowsGridOutput};
 
 mod build;
@@ -35,7 +34,7 @@ mod sections;
 pub use build::ContentWidgets;
 pub use messages::{ContentInput, ContentOutput, SearchScope};
 use routes::{search_output, show_page_output};
-use sections::{bring_forward, new_details_toggle, section_id};
+use sections::{bring_forward, new_details_toggle, section_id, swap_in};
 
 const ROOT_TAG: &str = "root";
 
@@ -85,7 +84,8 @@ pub struct Parts {
     lists: lists::Lists,
     show_page: ShowPage,
     add_page: AddPage,
-    preview_page: PreviewPage,
+    /// A directory result's preview: a podcast page in preview mode.
+    preview_page: ShowPage,
     /// The root page's search results.
     search: SearchView,
     /// New's filter button, shown only in New.
@@ -128,12 +128,14 @@ impl Content {
         // The podcast page packs its details toggle itself, at the far end
         // of its header like the root page's, before its filter button.
         let show_toggle = new_details_toggle();
-        let show_page = ShowPage::new(&show_toggle);
-        show_page.connect_output({
+        let show_page = ShowPage::new(&show_toggle, PageKind::Library);
+        let preview_toggle = new_details_toggle();
+        let preview_page = ShowPage::new(&preview_toggle, PageKind::Preview);
+        for page in [&show_page, &preview_page] {
             let output = output.clone();
-            move |message| show_page_output(&output, message)
-        });
-        let (add_page, preview_page) = directory::pages(&output);
+            page.connect_output(move |message| show_page_output(&output, message));
+        }
+        let add_page = directory::add_page(&output);
         let new_filter = page_filters::FilterButton::new({
             let input = input.clone();
             move |choice| input(ContentInput::ChooseNew(choice))
@@ -146,8 +148,6 @@ impl Content {
         // page's, which the window keeps in step with the pane.
         let add_toggle = new_details_toggle();
         add_page.header().pack_end(&add_toggle);
-        let preview_toggle = new_details_toggle();
-        preview_page.pack_end_buttons(&preview_toggle);
         for toggle in [add_toggle, show_toggle, preview_toggle] {
             widgets
                 .details_toggle
@@ -333,10 +333,13 @@ impl Content {
             }
             ContentInput::OpenShow(data) => {
                 parts.show_page.send(ShowPageInput::Set(data));
-                bring_forward(navigation, parts.show_page.upcast_ref(), SHOW_TAG);
-                // Subscribed from its preview: Back skips the preview.
-                if navigation.find_page(PREVIEW_TAG).is_some() {
-                    navigation.remove(&parts.preview_page);
+                if navigation.visible_page_tag().as_deref() == Some(PREVIEW_TAG) {
+                    // Subscribed from its preview: the show's page takes
+                    // the preview's place without a slide, so the page
+                    // seems to turn into it, and Back skips the preview.
+                    swap_in(navigation, &parts.preview_page, &parts.show_page);
+                } else {
+                    bring_forward(navigation, parts.show_page.upcast_ref(), SHOW_TAG);
                 }
             }
             ContentInput::UpdateShow(data) => {

@@ -85,6 +85,7 @@ impl NewView {
             show_identity: true,
             selection,
             selectable: true,
+            actions: true,
         };
         // Translators: how a screen reader names the New section's list.
         let list = EpisodeList::new(&rows, &gettext("New Episodes"), None, None);

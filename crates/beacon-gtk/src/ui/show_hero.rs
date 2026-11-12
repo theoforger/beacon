@@ -19,30 +19,6 @@ use crate::ui::dialogs::description;
 use crate::ui::links;
 use crate::ui::models::ShowPageData;
 
-/// What the hero shows: a stored show's, or a previewed feed's.
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct HeroData {
-    pub cover: Option<std::path::PathBuf>,
-    pub category: Option<String>,
-    pub title: String,
-    pub author: Option<String>,
-    /// The feed's description, HTML or text.
-    pub description: Option<String>,
-}
-
-impl From<&ShowPageData> for HeroData {
-    fn from(data: &ShowPageData) -> Self {
-        let info = &data.show.info;
-        Self {
-            cover: data.show.cover_path.clone(),
-            category: info.category.clone(),
-            title: info.title.clone(),
-            author: info.author.clone(),
-            description: info.description.clone(),
-        }
-    }
-}
-
 /// The cover beside the text, and above it when narrow: GNOME Music's large
 /// and medium album art (`ArtSize`), which gives the text room beside it.
 const COVER_SIZE: i32 = 256;
@@ -259,9 +235,10 @@ impl ShowHero {
         self.subscribe.set_visible(!subscribed);
     }
 
-    pub fn update(&self, info: &HeroData) {
+    pub fn update(&self, data: &ShowPageData) {
         let parts = &self.parts;
-        parts.cover.set(info.cover.as_deref());
+        let info = &data.show.info;
+        parts.cover.set(data.show.cover_path.as_deref());
         set_text(&parts.category, info.category.as_deref());
         parts.title.set_label(&info.title);
         set_text(&parts.author, info.author.as_deref());

@@ -178,31 +178,12 @@ pub fn show_page(
         Some(query) => Some(store.search_show_episodes(id, query)?.into_iter().collect()),
         None => None,
     };
-    let mut episodes: Vec<Episode> = all
+    let episodes: Vec<Episode> = all
         .into_iter()
         .filter(|e| prefs.accepts(e))
         .filter(|e| matches.as_ref().is_none_or(|m| m.contains(&e.id)))
         .collect();
-
-    let seasons = browse::group_by_season(episodes.clone(), prefs.order).map(|groups| {
-        groups
-            .into_iter()
-            .map(|group| SeasonItems {
-                season: group.season,
-                episodes: group
-                    .episodes
-                    .into_iter()
-                    .map(|e| context.item(e))
-                    .collect(),
-            })
-            .collect()
-    });
-    let episodes = if seasons.is_some() {
-        Vec::new()
-    } else {
-        browse::sort_episodes(&mut episodes, prefs.order);
-        episodes.into_iter().map(|e| context.item(e)).collect()
-    };
+    let (seasons, episodes) = arrange(episodes, prefs, |e| context.item(e));
     Ok(Some(ShowPageData {
         show,
         prefs,
@@ -212,6 +193,28 @@ pub fn show_page(
         to_download,
         query: query.map(str::to_owned),
     }))
+}
+
+/// A page's episodes in seasons when the feed tags them, or else sorted.
+pub(crate) fn arrange(
+    mut episodes: Vec<Episode>,
+    prefs: ShowPrefs,
+    item: impl Fn(Episode) -> EpisodeItem,
+) -> (Option<Vec<SeasonItems>>, Vec<EpisodeItem>) {
+    let seasons = browse::group_by_season(episodes.clone(), prefs.order).map(|groups| {
+        groups
+            .into_iter()
+            .map(|group| SeasonItems {
+                season: group.season,
+                episodes: group.episodes.into_iter().map(&item).collect(),
+            })
+            .collect()
+    });
+    if seasons.is_some() {
+        return (seasons, Vec::new());
+    }
+    browse::sort_episodes(&mut episodes, prefs.order);
+    (None, episodes.into_iter().map(item).collect())
 }
 
 /// The Favorites section, newest first.
