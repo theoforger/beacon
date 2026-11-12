@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 
-use beacon_core::model::{Episode, EpisodeId, Show, ShowId, ShowInfo, ShowPrefs};
+use beacon_core::model::{Episode, EpisodeId, EpisodeState, Show, ShowId, ShowInfo, ShowPrefs};
 use beacon_core::services::library::FeedPreview;
 use chrono::Utc;
 use url::Url;
@@ -50,7 +50,12 @@ pub fn preview_page(preview: &FeedPreview) -> ShowPageData {
             id: EpisodeId(-n),
             show_id: PREVIEW_SHOW,
             info: parsed.info.clone(),
-            state: Default::default(),
+            // Seen: a show not subscribed to has nothing new, so no row
+            // shows the blue dot or is read as New.
+            state: EpisodeState {
+                seen: true,
+                ..Default::default()
+            },
             added_at: now,
         })
         .collect();
@@ -124,6 +129,9 @@ pub(crate) mod tests {
         let items: Vec<_> = seasons.iter().flat_map(|s| &s.episodes).collect();
         assert_eq!(items.len(), preview.feed.episodes.len());
         assert!(items.iter().all(|i| i.episode.id.0 < 0 && !i.in_queue));
+        // Nothing is new in a show not subscribed to: no blue dots (found
+        // by the user 2026-11-12).
+        assert!(items.iter().all(|i| !i.episode.state.is_new()));
         let mut ids: Vec<_> = items.iter().map(|i| i.episode.id).collect();
         ids.sort();
         ids.dedup();
