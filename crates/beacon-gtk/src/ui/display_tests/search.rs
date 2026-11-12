@@ -332,6 +332,17 @@ pub(super) fn the_podcast_title_waits_for_the_hero_to_scroll_away() {
     adjustment.set_value(0.0);
     wait(300);
     assert!(!header.shows_title(), "back at the top");
+    // Straight from the bottom to near the top, as a fast scroll goes: the
+    // hero is laid out again only after the jump (found by the user
+    // 2026-11-12, the title stayed).
+    for near_top in [0.0, 1.0, 20.0] {
+        adjustment.set_value(adjustment.upper());
+        wait(300);
+        assert!(header.shows_title());
+        adjustment.set_value(near_top);
+        wait(300);
+        assert!(!header.shows_title(), "jumped back to {near_top}");
+    }
 
     let bar = first::<gtk::SearchBar>(page.upcast_ref()).expect("a search bar");
     assert_eq!(
@@ -346,4 +357,19 @@ pub(super) fn the_podcast_title_waits_for_the_hero_to_scroll_away() {
         "not once the page has gone"
     );
     window.destroy();
+}
+
+/// Narrowing and widening the window leaves the details pane as it was
+/// (found by the user 2026-11-12: widening always opened it).
+pub(super) fn resizing_leaves_the_details_pane_as_it_was() {
+    for open in [false, true] {
+        let split = crate::app::details_split(&gtk::Label::new(None), &gtk::Label::new(None));
+        split.set_show_sidebar(open);
+        // What the narrow breakpoint does, then undoes.
+        split.set_collapsed(true);
+        split.set_show_sidebar(false);
+        split.set_show_sidebar(open);
+        split.set_collapsed(false);
+        assert_eq!(split.shows_sidebar(), open, "open before: {open}");
+    }
 }

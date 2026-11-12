@@ -21,6 +21,8 @@ mod window;
 
 pub use object::Window;
 use sender::AppSender;
+#[cfg(test)]
+pub(crate) use setup::details_split;
 
 use std::cell::RefCell;
 use std::collections::HashMap;

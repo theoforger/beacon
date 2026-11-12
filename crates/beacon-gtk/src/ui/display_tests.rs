@@ -137,6 +137,7 @@ fn widgets_lay_out_as_designed() {
         &css,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+    search::resizing_leaves_the_details_pane_as_it_was();
     search::narrow_search_headers_fit();
     search::the_root_page_searches_its_section();
     search::the_podcast_page_searches_its_episodes();

@@ -239,18 +239,31 @@ fn widgets(
         )
         .content(&content_page)
         .build();
-    let details_split = adw::OverlaySplitView::builder()
-        .sidebar_position(gtk::PackType::End)
-        .show_sidebar(false)
-        .max_sidebar_width(DETAILS_WIDTH)
-        .sidebar_width_fraction(0.3)
-        .content(&split_view)
-        .sidebar(details)
-        .build();
+    let details_split = details_split(&split_view, details);
     AppWidgets {
         toasts,
         details_split,
         split_view,
         content_page,
     }
+}
+
+/// The details pane beside the rest, closed at first. Pinned: unpinned,
+/// the split view shows its sidebar whenever it stops being collapsed, so
+/// widening the window always opened the pane (found by the user
+/// 2026-11-12); the narrow breakpoint hides it itself, and puts back what
+/// it was.
+pub(crate) fn details_split(
+    content: &impl IsA<gtk::Widget>,
+    details: &impl IsA<gtk::Widget>,
+) -> adw::OverlaySplitView {
+    adw::OverlaySplitView::builder()
+        .sidebar_position(gtk::PackType::End)
+        .show_sidebar(false)
+        .pin_sidebar(true)
+        .max_sidebar_width(DETAILS_WIDTH)
+        .sidebar_width_fraction(0.3)
+        .content(content)
+        .sidebar(details)
+        .build()
 }

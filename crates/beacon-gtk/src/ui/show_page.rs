@@ -204,23 +204,43 @@ impl ShowPage {
         // GNOME Podcasts (`show.rs`), except in selection mode. The window
         // catches the typing, as the root page's does: the page alone lost
         // the second letter while the field took focus.
-        let bar = search.bar.clone();
-        let selecting = rows.selection.clone();
-        page.connect_map(move |page| {
-            let window = page.root().filter(|_| !selecting.is_active());
-            bar.set_key_capture_widget(window.as_ref());
+        // On screen from when it maps until it starts to leave: during
+        // Back's slide it is still mapped, and leaving selection mode then
+        // gave it the typing back (found in the tests).
+        let on_screen = Rc::new(std::cell::Cell::new(false));
+        let capture = Rc::new({
+            let (bar, weak) = (search.bar.clone(), page.downgrade());
+            let (selecting, on_screen) = (rows.selection.clone(), on_screen.clone());
+            move || {
+                let window = weak
+                    .upgrade()
+                    .and_then(|page| page.root())
+                    .filter(|_| on_screen.get() && !selecting.is_active());
+                bar.set_key_capture_widget(window.as_ref());
+            }
         });
-        let bar = search.bar.clone();
-        page.connect_unmap(move |_| bar.set_key_capture_widget(None::<&gtk::Widget>));
-        let (bar, weak) = (search.bar.clone(), page.downgrade());
-        rows.selection.connect_changed(move |selection| {
-            let Some(page) = weak.upgrade() else {
-                return;
-            };
-            let shown = page.is_mapped() && !selection.is_active();
-            let window = page.root().filter(|_| shown);
-            bar.set_key_capture_widget(window.as_ref());
+        page.connect_map({
+            let (on_screen, capture) = (on_screen.clone(), capture.clone());
+            move |_| {
+                on_screen.set(true);
+                capture();
+            }
         });
+        page.connect_hiding({
+            let (on_screen, capture) = (on_screen.clone(), capture.clone());
+            move |_| {
+                on_screen.set(false);
+                capture();
+            }
+        });
+        page.connect_unmap({
+            let capture = capture.clone();
+            move |_| {
+                on_screen.set(false);
+                capture();
+            }
+        });
+        rows.selection.connect_changed(move |_| capture());
         // Leaving the page leaves selection mode and the search.
         let selection = rows.selection.clone();
         let bar = search.bar.clone();
