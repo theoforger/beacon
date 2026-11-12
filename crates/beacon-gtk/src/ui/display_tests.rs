@@ -141,6 +141,7 @@ fn widgets_lay_out_as_designed() {
     search::the_root_page_searches_its_section();
     search::the_podcast_page_searches_its_episodes();
     search::the_add_page_shows_the_directorys_answers();
+    search::the_podcast_title_waits_for_the_hero_to_scroll_away();
     the_narrow_layout_fits_the_narrowest_window();
     narrow_headers_fit_three_window_buttons();
     clear_sits_where_refresh_does();

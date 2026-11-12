@@ -243,6 +243,12 @@ impl ShowHero {
         )
     }
 
+    /// The large title, which the page's header title stands in for once
+    /// it has scrolled away.
+    pub fn title(&self) -> &gtk::Label {
+        &self.parts.title
+    }
+
     pub fn widget(&self) -> &gtk::Overlay {
         &self.root
     }

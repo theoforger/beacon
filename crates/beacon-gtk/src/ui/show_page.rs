@@ -91,7 +91,6 @@ glib::wrapper! {
 }
 
 pub struct Parts {
-    header: adw::HeaderBar,
     hero: ShowHero,
     /// The filter menu's radio groups, by action name.
     filter: page_filters::FilterButton,
@@ -104,6 +103,8 @@ pub struct Parts {
     /// Folded seasons, kept while the app runs.
     folding: Folding,
     search: ShowSearch,
+    /// Shows the header's title once the hero's has scrolled away.
+    title_check: std::rc::Rc<dyn Fn()>,
 }
 
 impl ShowPage {
@@ -197,6 +198,29 @@ impl ShowPage {
                 move |ids, change| output.emit(ShowPageOutput::Change(ids, change))
             }),
         );
+        let title_check =
+            crate::ui::show_title::follow_scroll(&header, list.widget(), hero.title());
+        // Type to search while the page shows, as on the root page and in
+        // GNOME Podcasts (`show.rs`), except in selection mode. The window
+        // catches the typing, as the root page's does: the page alone lost
+        // the second letter while the field took focus.
+        let bar = search.bar.clone();
+        let selecting = rows.selection.clone();
+        page.connect_map(move |page| {
+            let window = page.root().filter(|_| !selecting.is_active());
+            bar.set_key_capture_widget(window.as_ref());
+        });
+        let bar = search.bar.clone();
+        page.connect_unmap(move |_| bar.set_key_capture_widget(None::<&gtk::Widget>));
+        let (bar, weak) = (search.bar.clone(), page.downgrade());
+        rows.selection.connect_changed(move |selection| {
+            let Some(page) = weak.upgrade() else {
+                return;
+            };
+            let shown = page.is_mapped() && !selection.is_active();
+            let window = page.root().filter(|_| shown);
+            bar.set_key_capture_widget(window.as_ref());
+        });
         // Leaving the page leaves selection mode and the search.
         let selection = rows.selection.clone();
         let bar = search.bar.clone();
@@ -224,7 +248,6 @@ impl ShowPage {
             .connect_clicked(move |_| input(ShowPageInput::Unsubscribe));
 
         let _ = page.imp().parts.set(Parts {
-            header,
             hero,
             filter,
             more,
@@ -233,6 +256,7 @@ impl ShowPage {
             list,
             folding,
             search,
+            title_check,
         });
         page
     }
@@ -278,7 +302,7 @@ impl ShowPage {
                     parts.list.set(Vec::new());
                 }
                 self.set_title(&data.show.info.title);
-                parts.header.set_show_title(true);
+                crate::ui::show_title::check_later(&parts.title_check);
                 parts.hero.update(&(&*data).into());
                 if shown.map(|(_, all)| all) != Some(data.all_played) {
                     parts.more.set_menu_model(Some(&more_menu(data.all_played)));

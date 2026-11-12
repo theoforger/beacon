@@ -302,3 +302,48 @@ pub(super) fn narrow_search_headers_fit() {
         assert!(needed <= NARROWEST, "the {name} needs {needed}px");
     }
 }
+
+/// A podcast page's header shows the show's name only once the hero's
+/// large title has scrolled away, and typing opens its search while the
+/// page shows.
+pub(super) fn the_podcast_title_waits_for_the_hero_to_scroll_away() {
+    let page = ShowPage::new(&gtk::ToggleButton::new());
+    let mut data = page_data();
+    data.episodes = (1..=40).map(|id| episode(id, None)).collect();
+    page.send(ShowPageInput::Set(Box::new(data)));
+    let nav = adw::NavigationView::new();
+    nav.add(&adw::NavigationPage::new(&gtk::Label::new(None), "Root"));
+    nav.push(&page);
+    let window = gtk::Window::builder()
+        // Wide rows, as this window is not the narrow layout.
+        .default_width(480)
+        .default_height(640)
+        .child(&nav)
+        .build();
+    window.present();
+    wait(500);
+    let header = first::<adw::HeaderBar>(page.upcast_ref()).expect("a header");
+    let scrolled = first::<gtk::ScrolledWindow>(page.upcast_ref()).expect("the list");
+    assert!(!header.shows_title(), "the hero's title is in view");
+    let adjustment = scrolled.vadjustment();
+    adjustment.set_value(adjustment.upper());
+    wait(300);
+    assert!(header.shows_title(), "scrolled past the hero");
+    adjustment.set_value(0.0);
+    wait(300);
+    assert!(!header.shows_title(), "back at the top");
+
+    let bar = first::<gtk::SearchBar>(page.upcast_ref()).expect("a search bar");
+    assert_eq!(
+        bar.key_capture_widget().as_ref(),
+        Some(window.upcast_ref::<gtk::Widget>()),
+        "typing opens the search"
+    );
+    nav.pop();
+    wait(500);
+    assert!(
+        bar.key_capture_widget().is_none(),
+        "not once the page has gone"
+    );
+    window.destroy();
+}

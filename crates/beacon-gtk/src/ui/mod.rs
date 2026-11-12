@@ -35,6 +35,7 @@ pub mod show_hero;
 pub mod show_menu;
 pub mod show_page;
 pub mod show_search;
+pub mod show_title;
 pub mod shows_grid;
 pub mod sidebar;
 pub mod widgets;
