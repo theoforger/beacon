@@ -211,8 +211,10 @@ impl SyncPage {
         let log_out = adw::ButtonRow::builder()
             .title(gettext("Log _Out"))
             .use_underline(true)
-            .css_classes(["destructive-action"])
             .build();
+        // Added, not set: setting the classes dropped the row's own
+        // `.button`, which drew it plain and cramped.
+        log_out.add_css_class("destructive-action");
         let account = adw::ActionRow::builder().subtitle_selectable(true).build();
         let active = adw::SwitchRow::builder()
             .title(gettext("_Sync"))

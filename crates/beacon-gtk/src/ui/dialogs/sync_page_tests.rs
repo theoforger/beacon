@@ -63,6 +63,11 @@ pub(crate) fn the_sync_page_shows_each_state() {
     assert!(!w.signed_out.is_visible() && w.signed_in.is_visible());
     // Log Out is the signed-in group's one coloured button, a warning.
     assert!(w.log_out.has_css_class("destructive-action"));
+    // Added to the row's own classes, not in place of them: replacing them
+    // drew Log Out plain and cramped (found in the M7 review).
+    for class in adw::ButtonRow::new().css_classes() {
+        assert!(w.log_out.has_css_class(&class), "Log Out lost .{class}");
+    }
     assert_eq!(w.account.title(), "ada");
     assert_eq!(
         w.last_synced.subtitle().as_deref(),
