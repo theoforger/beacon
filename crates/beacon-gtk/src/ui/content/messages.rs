@@ -39,6 +39,11 @@ pub enum ContentInput {
     ChooseNew(page_filters::Choice),
     /// Whether feeds are refreshing.
     Refreshing(bool),
+    /// An OPML import's progress (done of total), or `None` once it ends.
+    ImportProgress(Option<(usize, usize)>),
+    /// How many podcasts the last import could not add, for the banner;
+    /// 0 hides it.
+    ImportFailures(usize),
     SetQueue(Box<QueueData>),
     SetFavorites(Vec<EpisodeItem>),
     SetDownloaded(Vec<EpisodeItem>),
@@ -97,4 +102,8 @@ pub enum ContentOutput {
     LookupDirectory(u64),
     /// Load the feed of a directory result for its preview.
     Preview(Box<DirectoryItem>),
+    /// Import the subscriptions in this file, dropped on the Add page.
+    Import(gtk::gio::File),
+    /// The import banner's Show: list the podcasts it could not add.
+    ShowImportFailures,
 }

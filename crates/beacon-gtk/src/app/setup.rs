@@ -46,7 +46,7 @@ impl App {
         let bar = PlayerBar::default();
         let s = sender.clone();
         bar.connect_output(move |output| s.input(AppMsg::Bar(output)));
-        let refresh_action = add_actions(root, sender);
+        let (refresh_action, import_action, export_action) = add_actions(root, sender);
 
         let library = Library::open(
             &glib::user_data_dir().join("beacon"),
@@ -98,6 +98,8 @@ impl App {
             directory: super::directory::Directory::new(),
             search: None,
             show_search: None,
+            import: None,
+            export: export_action,
         };
 
         // The details toggle and the pane stay in step whichever side changes.
@@ -160,6 +162,8 @@ impl App {
         });
 
         model.refresh.set_enabled(model.library.is_some());
+        import_action.set_enabled(model.library.is_some());
+        model.export.set_enabled(false);
         match open_error {
             Some(message) => toast(&model.widgets.toasts, &message),
             None => {
@@ -182,8 +186,13 @@ impl App {
 }
 
 /// The window's actions: About, Preferences, Search, Back, Refresh Feeds
-/// and the details pane. Returns Refresh Feeds, which is unavailable without a library.
-fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::SimpleAction {
+/// the details pane, and Import and Export Subscriptions. Returns Refresh
+/// Feeds, Import and Export, which are unavailable without a library (and
+/// Export without shows).
+fn add_actions(
+    root: &adw::ApplicationWindow,
+    sender: &AppSender,
+) -> (gio::SimpleAction, gio::SimpleAction, gio::SimpleAction) {
     let window = root.downgrade();
     let about = gio::ActionEntry::builder("about")
         .activate(move |_: &adw::ApplicationWindow, _, _| {
@@ -209,7 +218,16 @@ fn add_actions(root: &adw::ApplicationWindow, sender: &AppSender) -> gio::Simple
     let s = sender.clone();
     refresh.connect_activate(move |_, _| s.input(AppMsg::Refresh));
     root.add_action(&refresh);
-    refresh
+    let opml = |name: &str, message: fn() -> super::opml::OpmlMsg| {
+        let action = gio::SimpleAction::new(name, None);
+        let s = sender.clone();
+        action.connect_activate(move |_, _| s.input(AppMsg::Opml(message())));
+        root.add_action(&action);
+        action
+    };
+    let import = opml("import", || super::opml::OpmlMsg::ChooseImport);
+    let export = opml("export", || super::opml::OpmlMsg::Export);
+    (refresh, import, export)
 }
 
 /// The main view: sidebar, content and details. `build_frame` sets it into

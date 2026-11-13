@@ -143,6 +143,10 @@ impl Content {
         new_filter.widget().set_visible(false);
         let refresh_bar = sections::RefreshBar::new();
         let widgets = build::widgets(new_filter.widget(), &refresh_bar);
+        widgets.import_banner.connect_button_clicked({
+            let output = output.clone();
+            move |_| output.emit(ContentOutput::ShowImportFailures)
+        });
 
         // Every page has its own details toggle; they all follow the root
         // page's, which the window keeps in step with the pane.
@@ -254,6 +258,26 @@ impl Content {
         self.imp()
             .inbox
             .deliver(input, |message| self.update(message));
+    }
+
+    /// The refresh bar (showing, fraction, tooltip) and the import
+    /// banner (revealed, title), for tests.
+    #[cfg(test)]
+    pub fn import_state(&self) -> ((bool, f64, Option<String>), (bool, String)) {
+        let parts = self.imp().parts.get().expect("built");
+        let banner = &self.widgets().import_banner;
+        (
+            parts.refresh_bar.state(),
+            (banner.is_revealed(), banner.title().to_string()),
+        )
+    }
+
+    /// Press the import banner's Show, for tests.
+    #[cfg(test)]
+    pub fn press_import_banner(&self) {
+        self.widgets()
+            .import_banner
+            .emit_by_name::<()>("button-clicked", &[]);
     }
 
     /// The header's Select, for tests.
@@ -379,6 +403,14 @@ impl Content {
                 });
             }
             ContentInput::Refreshing(running) => parts.refresh_bar.set_running(running),
+            ContentInput::ImportProgress(progress) => parts.refresh_bar.set_import(progress),
+            ContentInput::ImportFailures(failed) => {
+                let banner = &widgets.import_banner;
+                if failed > 0 {
+                    banner.set_title(&crate::ui::dialogs::import::banner_title(failed));
+                }
+                banner.set_revealed(failed > 0);
+            }
             ContentInput::SetQueue(data) => parts.lists.set_queue(data),
             ContentInput::SetFavorites(items) => parts.lists.set_favorites(items),
             ContentInput::SetDownloaded(items) => parts.lists.set_downloaded(items),

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hand-written: what other exporters do that the four apps' files do not. -->
+<opml>
+  <body>
+    <outline text="A folder with no feed of its own">
+      <outline text="Small Hours" xmlurl="  {{BASE}}/small-hours.xml  " />
+    </outline>
+    <outline TYPE="rss" TEXT="The Long Signal" XMLURL="{{BASE}}/long-signal.xml">
+      <outline type="podcast-episode" title="A dish in the desert" url="https://long-signal.example/1" enclosureUrl="https://long-signal.example/1.mp3" />
+    </outline>
+    <outline text="Small Hours, again" xmlUrl="{{BASE}}/small-hours.xml/" />
+    <outline text="Gone Quiet" type="rss" xmlUrl="{{BASE}}/gone-quiet.xml" />
+    <outline text="Paper Trails &amp; Friends" title="" type="rss" xmlUrl="{{BASE}}/paper-trails.xml#latest" />
+    <outline type="link" text="A website" url="https://example.com/" />
+    <outline text="Not a feed" xmlUrl="mailto:someone@example.com" />
+  </body>
+</opml>

@@ -328,6 +328,7 @@ impl App {
 
         if let Some(cards) = loaded.cards.filter(|_| current(self.requests.shows)) {
             self.has_shows = !cards.is_empty();
+            self.export.set_enabled(self.has_shows);
             self.titles = cards.iter().map(|c| (c.id, c.title.clone())).collect();
             self.content.send(ContentInput::SetShows(cards));
         }

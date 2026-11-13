@@ -10,8 +10,8 @@ Offer it from the main menu (Import Subscriptions) and by dropping a file onto t
 2. Parse with the `opml` crate. Walk nested outlines and flatten them. Read `xmlUrl` (tolerate attribute-case differences), and use `title` or `text` as the name. Skip outlines with no feed URL.
 3. Normalise each URL (trim, lower-case the host) and remove duplicates within the file and against existing subscriptions.
 4. Subscribe in the background, about four feeds at a time, each fetch validating that the URL is a real feed.
-5. Show progress in a dialog, then a summary toast such as "Imported 41 of 44 podcasts". Failures stay listed with the reason and a Retry button.
-6. Bad XML shows an error status page. It never crashes the app.
+5. Show Shows, and the progress in the thin bar under the content header ("12 of 44 podcasts"), the new shows appearing as they arrive; then a summary toast such as "Imported 41 of 44 podcasts". While some podcasts are not added, a banner says how many, and its Show lists each with the reason, with Try Again and Dismiss (changed 2026-11-12 from a progress dialog, which the HIG advises against: "In general, progress windows are not recommended").
+6. Bad XML, a file that is not OPML, and a file with nothing new are toasts. It never crashes the app.
 
 ## Export
 

@@ -27,6 +27,7 @@ pub(super) fn add_page(output: &Output<ContentOutput>) -> AddPage {
             AddPageOutput::Lookup(id) => ContentOutput::LookupDirectory(id),
             AddPageOutput::OpenShow(id) => ContentOutput::OpenShow(id),
             AddPageOutput::Open(item) => ContentOutput::Preview(item),
+            AddPageOutput::Import(file) => ContentOutput::Import(file),
         });
     });
     add_page

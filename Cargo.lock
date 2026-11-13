@@ -141,6 +141,7 @@ dependencies = [
  "httpmock",
  "linkify",
  "oo7",
+ "quick-xml 0.42.0",
  "reqwest",
  "rss",
  "rusqlite",
@@ -2322,6 +2323,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quinn"
 version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2562,7 +2572,7 @@ version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fdc977a288e79bfacb4faeaba370da8aef9893ac38b68ae1df6a30d4224a2f9"
 dependencies = [
- "quick-xml",
+ "quick-xml 0.41.0",
 ]
 
 [[package]]

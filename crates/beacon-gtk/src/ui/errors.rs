@@ -4,7 +4,8 @@
 //! translated message; the core's `Display` text is for logs only.
 
 use beacon_core::error::{
-    DownloadError, FeedError, ItunesError, LibraryError, PlaybackError, StoreError, SyncError,
+    DownloadError, FeedError, ItunesError, LibraryError, OpmlError, PlaybackError, StoreError,
+    SyncError,
 };
 use gettextrs::gettext;
 
@@ -112,4 +113,15 @@ pub fn sync_needs_attention(error: &SyncError) -> bool {
         error,
         SyncError::Unauthorized | SyncError::AppMissing | SyncError::Keyring(_)
     )
+}
+
+/// Why an OPML file could not be imported (`exporting` false) or exported.
+pub fn opml(error: &OpmlError, exporting: bool) -> String {
+    match error {
+        OpmlError::Io(_) if exporting => gettext("Could not save the file"),
+        OpmlError::Io(_) => gettext("Could not open the file"),
+        OpmlError::Xml(_) => gettext("The file is damaged, or is not a list of subscriptions"),
+        OpmlError::NotOpml => gettext("The file is not a list of subscriptions (OPML)"),
+        OpmlError::Store(store) => self::store(store),
+    }
 }

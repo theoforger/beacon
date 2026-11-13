@@ -7,6 +7,7 @@ pub mod downloads;
 pub mod feeds;
 pub mod itunes;
 pub mod library;
+pub mod opml;
 
 /// User agent for every request Beacon makes.
 pub const USER_AGENT: &str = concat!(

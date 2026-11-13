@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<opml version="2.0">
+  <head>
+    <title>GNOME Podcasts Subscriptions</title>
+  </head>
+  <body>
+    <outline text="Paper Trails" title="Paper Trails" type="rss" xmlUrl="{{BASE}}/paper-trails.xml" htmlUrl="https://paper-trails.example/" />
+    <outline text="Small Hours" title="Small Hours" type="rss" xmlUrl="{{BASE}}/small-hours.xml" htmlUrl="https://small-hours.example/" />
+    <outline text="The Long Signal" title="The Long Signal" type="rss" xmlUrl="{{BASE}}/long-signal.xml" htmlUrl="https://long-signal.example/" />
+  </body>
+</opml>

@@ -13,6 +13,7 @@ mod library;
 mod lists;
 mod media;
 mod object;
+mod opml;
 mod playback;
 mod sender;
 mod setup;
@@ -90,6 +91,8 @@ pub enum AppMsg {
     /// The connection came or went, or became metered or not.
     NetworkChanged,
     Sync(sync::SyncMsg),
+    /// Import and Export Subscriptions.
+    Opml(opml::OpmlMsg),
 }
 
 #[derive(Debug)]
@@ -118,6 +121,7 @@ pub enum AppCommand {
     /// The episode last played, read back at launch.
     Restore(Option<Box<EpisodeItem>>),
     Sync(Box<sync::SyncCommand>),
+    Opml(opml::OpmlCommand),
     /// Apple's directory answered the request with this key.
     Directory(
         String,
@@ -200,6 +204,10 @@ pub struct App {
     sync: sync::Sync,
     /// Apple's directory, for the Add page.
     directory: directory::Directory,
+    /// The OPML import under way, or the last one.
+    import: Option<opml::Import>,
+    /// Export Subscriptions, available once there is something to export.
+    export: gio::SimpleAction,
     /// The search showing: of a section's own list, with the section
     /// (`search`), or of the podcast page (`show_search`).
     search: Option<(String, crate::navigation::Location)>,
@@ -252,6 +260,7 @@ impl App {
                 self.sync_on_network_change();
             }
             AppMsg::Sync(message) => self.sync_message(message),
+            AppMsg::Opml(message) => self.opml_message(message, root),
         }
     }
 
@@ -275,6 +284,7 @@ impl App {
             AppCommand::Downloaded(id, title, result) => self.downloaded(id, &title, result),
             AppCommand::Cleaned(result) => self.cleaned(result),
             AppCommand::Sync(command) => self.sync_command(*command),
+            AppCommand::Opml(command) => self.opml_command(command),
             AppCommand::Directory(key, result) => self.directory_answered(key, result),
             AppCommand::DirectoryArt(url, Some(path)) => {
                 self.content.send(ContentInput::DirectoryArt(url, path));

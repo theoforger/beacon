@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use futures_util::StreamExt;
 use url::Url;
 
-use crate::error::{DownloadError, LibraryError, StoreError};
+use crate::error::{DownloadError, LibraryError, OpmlError, StoreError};
 use crate::model::{Chapter, EpisodeId, ParsedFeed, ShowId};
 use crate::services::cleanup::CleanupPolicy;
 use crate::services::clock::Clock;
@@ -19,6 +19,7 @@ use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
 use crate::services::downloads::{Downloader, Progress};
 use crate::services::feeds::FeedClient;
+use crate::services::opml::{self, ImportPlan, OpmlFeed};
 use crate::services::{download_client, http_client};
 use crate::store::{Store, SyncStats};
 
@@ -45,6 +46,9 @@ pub struct RefreshSummary {
 /// Feeds fetched at once by a refresh of everything: enough to overlap the
 /// waiting, few enough to be polite to the network and to podcast hosts.
 const REFRESH_AT_ONCE: usize = 4;
+
+/// Feeds subscribed to at once by an OPML import, as a refresh fetches.
+const IMPORT_AT_ONCE: usize = REFRESH_AT_ONCE;
 
 /// Episodes downloaded at once; the others wait their turn, in the order
 /// asked, so Download All Episodes does not open a connection per episode.
@@ -214,6 +218,56 @@ impl Library {
             }
         }
         summary
+    }
+
+    /// The OPML file at `path`: its feeds, less those already subscribed
+    /// to and those it repeats.
+    pub fn read_opml(&self, path: &Path) -> Result<ImportPlan, OpmlError> {
+        let bytes = std::fs::read(path)?;
+        let feeds = opml::parse(&String::from_utf8_lossy(&bytes))?;
+        let subscribed: Vec<Url> = self
+            .lock()
+            .shows()?
+            .into_iter()
+            .map(|s| s.feed_url)
+            .collect();
+        Ok(opml::plan(feeds, &subscribed))
+    }
+
+    /// Subscribe to `feeds`, a few at a time, telling `done` about each as
+    /// it finishes, in the order they finish. One that fails does not stop
+    /// the others.
+    pub async fn import(
+        &self,
+        feeds: Vec<OpmlFeed>,
+        mut done: impl FnMut(OpmlFeed, Result<ShowId, LibraryError>),
+    ) {
+        let mut results = futures_util::stream::iter(feeds)
+            .map(|feed| async move {
+                let result = self.subscribe(&feed.url).await;
+                (feed, result)
+            })
+            .buffer_unordered(IMPORT_AT_ONCE);
+        while let Some((feed, result)) = results.next().await {
+            done(feed, result);
+        }
+    }
+
+    /// Write every subscription to `path` as OPML. Returns how many.
+    pub fn export_opml(&self, path: &Path) -> Result<usize, OpmlError> {
+        let shows = self.lock().shows()?;
+        std::fs::write(path, opml::write(&shows, self.clock.now()))?;
+        Ok(shows.len())
+    }
+
+    /// Whether any subscription's address may hold a secret, which an
+    /// exported file would give away (`opml::may_hold_secret`).
+    pub fn has_secret_feeds(&self) -> Result<bool, StoreError> {
+        Ok(self
+            .lock()
+            .shows()?
+            .iter()
+            .any(|show| opml::may_hold_secret(&show.feed_url)))
     }
 
     /// Download the show's cover. A missing cover is not an error worth

@@ -126,3 +126,17 @@ pub enum ItunesError {
     #[error("Apple's directory has no feed for this show")]
     NoFeed,
 }
+
+/// Why an OPML file could not be imported or exported
+/// (`docs/specs/opml.md`). The UI has a message for each.
+#[derive(Debug, thiserror::Error)]
+pub enum OpmlError {
+    #[error("could not read or write the file: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("the file is not well-formed XML: {0}")]
+    Xml(String),
+    #[error("the file is XML, but not OPML")]
+    NotOpml,
+    #[error(transparent)]
+    Store(#[from] StoreError),
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Cut off part way</title>
+  </head>
+  <body>
+    <outline text="Small Hours" type="rss" xmlUrl="https://small-hours.example/feed" />
+    <outline text="Paper Trails" type="rss" xmlUrl="https://paper-trails.example/f

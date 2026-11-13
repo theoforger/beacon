@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<opml version="1.0">
+  <head>
+    <title>Pocket Casts Feeds</title>
+  </head>
+  <body>
+    <outline text="feeds">
+      <outline type="rss" text="Small Hours" xmlUrl="{{BASE}}/small-hours.xml" />
+      <outline type="rss" text="Paper Trails" xmlUrl="{{BASE}}/paper-trails.xml" />
+      <outline type="rss" text="The Long Signal" xmlUrl="{{BASE}}/long-signal.xml" />
+    </outline>
+  </body>
+</opml>

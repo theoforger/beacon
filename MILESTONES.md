@@ -311,23 +311,23 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Deliverables
 
-- [ ] `OpmlService` using the `opml` crate (confirm that it parses and writes)
-- [ ] Import from the main menu and by dropping a file on Add; `GtkFileDialog` (portal)
-- [ ] Flatten nested outlines, accept `xmlUrl` in any letter case, take the name from `title` or `text`, skip outlines with no URL
-- [ ] Normalise URLs and remove duplicates within the file and against existing subscriptions
-- [ ] Subscribe in the background about four at a time, with a progress dialog, a summary toast and failures listed with Retry
-- [ ] Bad XML shows an error status page
-- [ ] Export: a save dialog defaulting to `podcasts.opml`; OPML 2.0 with a head and `outline type="rss"` entries; a warning about private feed tokens
-- [ ] Fixture OPML files from at least three other podcast apps
+- [x] `OpmlService` using the `opml` crate (confirm that it parses and writes): it does, but drops `xmlurl` and rejects files without a version or with an empty body, so `services/opml.rs` uses `quick-xml` (`docs/decisions.md`)
+- [x] Import from the main menu and by dropping a file on Add; `GtkFileDialog` (portal)
+- [x] Flatten nested outlines, accept `xmlUrl` in any letter case, take the name from `title` or `text`, skip outlines with no URL
+- [x] Normalise URLs and remove duplicates within the file and against existing subscriptions
+- [x] Subscribe in the background about four at a time, with progress in the refresh bar, a summary toast and failures listed with Retry from a banner (changed 2026-11-12 from a progress dialog)
+- [x] Bad XML shows an error toast (changed 2026-11-12 from a status page)
+- [x] Export: a save dialog defaulting to `podcasts.opml`; OPML 2.0 with a head and `outline type="rss"` entries; a warning about private feed tokens
+- [x] Fixture OPML files from at least three other podcast apps
 
 ### Tests
 
-- [ ] Unit: OPML mapping, normalisation, de-duplication
-- [ ] Integration: import a fixture file, export, re-import with no loss; bad XML handled
+- [x] Unit: OPML mapping, normalisation, de-duplication
+- [x] Integration: import a fixture file, export, re-import with no loss; bad XML handled
 
 ### Exit gate
 
-- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m4.md`)
+- [ ] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m8.md`)
 - [ ] Accessibility and translation checks pass
 - [ ] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date

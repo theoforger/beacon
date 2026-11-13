@@ -44,6 +44,11 @@ impl AppSender {
         let _ = self.0.send_blocking(Event::Message(message));
     }
 
+    /// Hand `result` to the window, from work still under way.
+    pub fn command(&self, result: AppCommand) {
+        let _ = self.0.try_send(Event::Command(result));
+    }
+
     /// Run `work` on the runtime and hand its result to the window.
     pub fn spawn(&self, work: impl Future<Output = AppCommand> + Send + 'static) {
         let send = self.0.clone();

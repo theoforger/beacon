@@ -2,7 +2,7 @@
 
 //! The content pane's section pages and header toggles.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::time::Duration;
 
 use adw::prelude::*;
@@ -10,6 +10,7 @@ use gettextrs::gettext;
 use gtk::glib;
 
 use crate::navigation::Location;
+use crate::ui::dialogs::import;
 use crate::ui::selection::Selection;
 use crate::ui::selection_bar::{self, OnChange};
 
@@ -101,10 +102,17 @@ pub(super) fn attach_new_selection(
 
 /// While feeds refresh, a thin bar pulses along the top of the content,
 /// under the header bar, as in GNOME Podcasts (`content_stack.rs`, an
-/// overlaid progress bar pulsed every 100ms).
+/// overlaid progress bar pulsed every 100ms). While an OPML import runs
+/// it fills instead, as far as the import has got: the HIG's Progress
+/// Bars page, "For situations where task progress happens in the
+/// background, and accompanying text isn't as important … a thin progress
+/// bar can be used".
 pub(super) struct RefreshBar {
     bar: gtk::ProgressBar,
     pulse: RefCell<Option<glib::SourceId>>,
+    refreshing: Cell<bool>,
+    /// The import's progress: done of total.
+    import: Cell<Option<(usize, usize)>>,
 }
 
 impl RefreshBar {
@@ -112,15 +120,17 @@ impl RefreshBar {
         let bar = gtk::ProgressBar::builder()
             .valign(gtk::Align::Start)
             .visible(false)
-            .tooltip_text(gettext("Fetching feeds…"))
             .build();
         // Added, not set: setting the classes would drop `horizontal`.
         bar.add_css_class("refresh-progress");
-        bar.update_property(&[gtk::accessible::Property::Label(&gettext("Fetching feeds"))]);
-        Self {
+        let this = Self {
             bar,
             pulse: RefCell::default(),
-        }
+            refreshing: Cell::new(false),
+            import: Cell::new(None),
+        };
+        this.update();
+        this
     }
 
     pub(super) fn widget(&self) -> &gtk::ProgressBar {
@@ -128,18 +138,45 @@ impl RefreshBar {
     }
 
     pub(super) fn set_running(&self, running: bool) {
+        self.refreshing.set(running);
+        self.update();
+    }
+
+    /// An import's progress, or `None` once it has ended.
+    pub(super) fn set_import(&self, progress: Option<(usize, usize)>) {
+        self.import.set(progress);
+        self.update();
+    }
+
+    fn update(&self) {
+        let bar = &self.bar;
         let mut pulse = self.pulse.borrow_mut();
-        if running == pulse.is_some() {
-            return;
+        let pulsing = self.import.get().is_none() && self.refreshing.get();
+        if let Some((done, total)) = self.import.get() {
+            let label = gettext("Importing podcasts");
+            let count = import::progress_message(done, total);
+            bar.set_fraction(if total == 0 {
+                0.0
+            } else {
+                done as f64 / total as f64
+            });
+            bar.set_tooltip_text(Some(&format!("{label}: {count}")));
+            bar.update_property(&[
+                gtk::accessible::Property::Label(&label),
+                gtk::accessible::Property::ValueText(&count),
+            ]);
+        } else {
+            bar.set_tooltip_text(Some(&gettext("Fetching feeds…")));
+            bar.update_property(&[gtk::accessible::Property::Label(&gettext("Fetching feeds"))]);
+            gtk::prelude::AccessibleExt::reset_property(bar, gtk::AccessibleProperty::ValueText);
         }
-        self.bar.set_visible(running);
-        match pulse.take() {
-            Some(source) => source.remove(),
-            None => {
-                let bar = self.bar.downgrade();
+        bar.set_visible(pulsing || self.import.get().is_some());
+        match (pulsing, pulse.is_some()) {
+            (true, false) => {
+                let weak = bar.downgrade();
                 *pulse = Some(glib::timeout_add_local(
                     Duration::from_millis(100),
-                    move || match bar.upgrade() {
+                    move || match weak.upgrade() {
                         Some(bar) => {
                             bar.pulse();
                             glib::ControlFlow::Continue
@@ -148,6 +185,22 @@ impl RefreshBar {
                     },
                 ));
             }
+            (false, true) => {
+                if let Some(source) = pulse.take() {
+                    source.remove();
+                }
+            }
+            _ => {}
         }
+    }
+
+    /// Whether the bar shows, its fraction and its label, for tests.
+    #[cfg(test)]
+    pub(super) fn state(&self) -> (bool, f64, Option<String>) {
+        (
+            self.bar.is_visible(),
+            self.bar.fraction(),
+            self.bar.tooltip_text().map(|t| t.to_string()),
+        )
     }
 }

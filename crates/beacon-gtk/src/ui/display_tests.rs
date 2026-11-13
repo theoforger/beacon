@@ -22,6 +22,7 @@ use crate::ui::selection::Selection;
 use crate::ui::show_page::{PageKind, ShowPage, ShowPageInput};
 use crate::ui::widgets::episode_row::{EpisodeRow, RowSetup};
 
+mod import;
 mod search;
 
 /// The narrowest window Beacon supports.
@@ -159,6 +160,8 @@ fn widgets_lay_out_as_designed() {
     progress_needs_a_length();
     preferences_follow_settings();
     crate::ui::dialogs::sync_page::the_sync_page_shows_each_state();
+    import::an_import_shows_in_the_bar_and_the_banner();
+    import::the_failures_list_offers_try_again();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();
