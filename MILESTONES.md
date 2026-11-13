@@ -272,7 +272,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green; docs up to date
 - [x] Human review of the running app
 
-## M7 Search and Add
+## M7 Search and Add ✓
 
 **Done when:** you can find a show and subscribe.
 
@@ -300,8 +300,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m7.md`)
 - [x] Accessibility and translation checks pass
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario
-- [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] CI and docs: CI green (2026-11-12, on `94d4736`); docs up to date
+- [x] Human review of the running app (2026-11-12)
 
 ## M8 OPML
 
