@@ -2,6 +2,7 @@
 
 pub mod about;
 pub mod description;
+pub mod export;
 pub mod import;
 pub mod preferences;
 pub mod sync_page;

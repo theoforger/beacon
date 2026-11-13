@@ -160,8 +160,9 @@ fn widgets_lay_out_as_designed() {
     progress_needs_a_length();
     preferences_follow_settings();
     crate::ui::dialogs::sync_page::the_sync_page_shows_each_state();
-    import::an_import_shows_in_the_bar_and_the_banner();
-    import::the_failures_list_offers_try_again();
+    import::an_import_shows_its_progress_in_the_bar();
+    import::the_import_dialog_asks_for_a_file_then_lists_its_podcasts();
+    import::the_export_dialog_lists_every_show_checked();
     the_podcast_header_fits_its_description();
     selection_shortcuts_work_in_selection_mode();
     rows_word_their_titles_and_subtitles();

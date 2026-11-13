@@ -19,7 +19,7 @@ use crate::services::clock::SystemClock;
 use crate::services::covers::CoverCache;
 use crate::services::downloads::{Downloader, Progress};
 use crate::services::feeds::FeedClient;
-use crate::services::opml::{self, ImportPlan, OpmlFeed};
+use crate::services::opml::{self, ImportPlan};
 use crate::services::{download_client, http_client};
 use crate::store::{Store, SyncStats};
 
@@ -33,6 +33,13 @@ pub struct FeedPreview {
     pub cover: Option<PathBuf>,
     /// The show, when the feed is already subscribed to.
     pub subscribed: Option<ShowId>,
+}
+
+/// A feed to import: fetched already for its preview, or not yet.
+#[derive(Debug)]
+pub enum ToImport {
+    Previewed(Box<FeedPreview>),
+    Feed(Url),
 }
 
 /// What a refresh of every show did.
@@ -234,40 +241,59 @@ impl Library {
         Ok(opml::plan(feeds, &subscribed))
     }
 
-    /// Subscribe to `feeds`, a few at a time, telling `done` about each as
-    /// it finishes, in the order they finish. One that fails does not stop
-    /// the others.
-    pub async fn import(
+    /// Fetch `feeds` to show them before importing, a few at a time,
+    /// telling `done` about each by its place in `feeds`, in the order they
+    /// finish. One that fails does not stop the others.
+    pub async fn preview_feeds(
         &self,
-        feeds: Vec<OpmlFeed>,
-        mut done: impl FnMut(OpmlFeed, Result<ShowId, LibraryError>),
+        feeds: Vec<Url>,
+        mut done: impl FnMut(usize, Result<FeedPreview, LibraryError>),
     ) {
-        let mut results = futures_util::stream::iter(feeds)
-            .map(|feed| async move {
-                let result = self.subscribe(&feed.url).await;
-                (feed, result)
-            })
+        let mut results = futures_util::stream::iter(feeds.into_iter().enumerate())
+            .map(|(i, url)| async move { (i, self.preview(&url).await) })
             .buffer_unordered(IMPORT_AT_ONCE);
-        while let Some((feed, result)) = results.next().await {
-            done(feed, result);
+        while let Some((i, result)) = results.next().await {
+            done(i, result);
         }
     }
 
-    /// Write every subscription to `path` as OPML. Returns how many.
-    pub fn export_opml(&self, path: &Path) -> Result<usize, OpmlError> {
-        let shows = self.lock().shows()?;
-        std::fs::write(path, opml::write(&shows, self.clock.now()))?;
-        Ok(shows.len())
+    /// Subscribe to `feeds`, a few at a time, telling `done` about each as
+    /// it finishes. A feed already fetched for its preview is not fetched
+    /// again. One that fails does not stop the others.
+    pub async fn import(
+        &self,
+        feeds: Vec<ToImport>,
+        mut done: impl FnMut(Result<ShowId, LibraryError>),
+    ) {
+        let mut results = futures_util::stream::iter(feeds)
+            .map(|feed| async move {
+                match feed {
+                    ToImport::Previewed(preview) => self.subscribe_preview(&preview).await,
+                    ToImport::Feed(url) => self.subscribe(&url).await,
+                }
+            })
+            .buffer_unordered(IMPORT_AT_ONCE);
+        while let Some(result) = results.next().await {
+            done(result);
+        }
     }
 
-    /// Whether any subscription's address may hold a secret, which an
-    /// exported file would give away (`opml::may_hold_secret`).
-    pub fn has_secret_feeds(&self) -> Result<bool, StoreError> {
-        Ok(self
+    /// Every subscription, for choosing which to export.
+    pub fn shows(&self) -> Result<Vec<crate::model::Show>, StoreError> {
+        self.lock().shows()
+    }
+
+    /// Write the subscriptions `ids` names to `path` as OPML, in the
+    /// library's order. Returns how many.
+    pub fn export_opml(&self, path: &Path, ids: &[ShowId]) -> Result<usize, OpmlError> {
+        let shows: Vec<_> = self
             .lock()
             .shows()?
-            .iter()
-            .any(|show| opml::may_hold_secret(&show.feed_url)))
+            .into_iter()
+            .filter(|show| ids.contains(&show.id))
+            .collect();
+        std::fs::write(path, opml::write(&shows, self.clock.now()))?;
+        Ok(shows.len())
     }
 
     /// Download the show's cover. A missing cover is not an error worth

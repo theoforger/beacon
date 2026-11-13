@@ -223,51 +223,6 @@ fn write_document(
     Ok(())
 }
 
-/// Whether a feed address may hold a secret: a login, a query parameter
-/// named like a key (`?auth=…`, `?token=…`), or a path segment that says
-/// what follows is one (`/private/…`, `/token/…`). The shape of a value is
-/// no clue: networks name public shows by UUID, and tracking parameters
-/// are long and random too. Exporting warns before such a file is shared.
-pub fn may_hold_secret(url: &Url) -> bool {
-    if !url.username().is_empty() || url.password().is_some() {
-        return true;
-    }
-    if url.query_pairs().any(|(name, _)| names_a_secret(&name)) {
-        return true;
-    }
-    // Only a segment with something after it: `/feeds/private` alone is
-    // a name, not a key.
-    let segments: Vec<_> = url.path_segments().into_iter().flatten().collect();
-    segments
-        .iter()
-        .take(segments.len().saturating_sub(1))
-        .any(|segment| names_a_secret(segment))
-}
-
-/// Whether a query parameter or path segment names a credential: as a
-/// whole word (`key`, `api_key`, `access-token`), so `monkey` or
-/// `keynote` do not count.
-fn names_a_secret(name: &str) -> bool {
-    const WORDS: [&str; 13] = [
-        "auth",
-        "authkey",
-        "authorization",
-        "apikey",
-        "key",
-        "pass",
-        "passwd",
-        "password",
-        "private",
-        "secret",
-        "sig",
-        "signature",
-        "token",
-    ];
-    let name = name.to_ascii_lowercase();
-    name.split(['_', '-', '.'])
-        .any(|word| WORDS.contains(&word) || word.ends_with("token"))
-}
-
 #[cfg(test)]
 #[path = "opml_tests.rs"]
 mod tests;

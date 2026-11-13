@@ -98,7 +98,7 @@ impl App {
             directory: super::directory::Directory::new(),
             search: None,
             show_search: None,
-            import: None,
+            opml: Default::default(),
             export: export_action,
         };
 
@@ -225,7 +225,7 @@ fn add_actions(
         root.add_action(&action);
         action
     };
-    let import = opml("import", || super::opml::OpmlMsg::ChooseImport);
+    let import = opml("import", || super::opml::OpmlMsg::Import);
     let export = opml("export", || super::opml::OpmlMsg::Export);
     (refresh, import, export)
 }

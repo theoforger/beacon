@@ -115,13 +115,14 @@ pub fn sync_needs_attention(error: &SyncError) -> bool {
     )
 }
 
-/// Why an OPML file could not be imported (`exporting` false) or exported.
+/// Why an OPML file could not be imported (`exporting` false) or exported:
+/// short, as a toast does not wrap and is cut at 360px.
 pub fn opml(error: &OpmlError, exporting: bool) -> String {
     match error {
         OpmlError::Io(_) if exporting => gettext("Could not save the file"),
         OpmlError::Io(_) => gettext("Could not open the file"),
-        OpmlError::Xml(_) => gettext("The file is damaged, or is not a list of subscriptions"),
-        OpmlError::NotOpml => gettext("The file is not a list of subscriptions (OPML)"),
+        OpmlError::Xml(_) => gettext("The file is damaged"),
+        OpmlError::NotOpml => gettext("Not a list of subscriptions"),
         OpmlError::Store(store) => self::store(store),
     }
 }

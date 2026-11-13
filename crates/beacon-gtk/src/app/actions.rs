@@ -74,12 +74,6 @@ impl App {
             ContentOutput::SearchDirectory(words) => self.search_directory(words),
             ContentOutput::LookupDirectory(id) => self.lookup_directory(id),
             ContentOutput::Preview(item) => self.preview(*item),
-            ContentOutput::Import(file) => {
-                self.opml_message(super::opml::OpmlMsg::Import(file), root);
-            }
-            ContentOutput::ShowImportFailures => {
-                self.opml_message(super::opml::OpmlMsg::ShowFailures, root);
-            }
             ContentOutput::Search(SearchScope::Section(section), query) => {
                 let query = query.map(|q| (q, section));
                 let changed = self.search != query;

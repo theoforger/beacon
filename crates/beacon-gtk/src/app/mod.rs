@@ -204,8 +204,9 @@ pub struct App {
     sync: sync::Sync,
     /// Apple's directory, for the Add page.
     directory: directory::Directory,
-    /// The OPML import under way, or the last one.
-    import: Option<opml::Import>,
+    /// The Import and Export Subscriptions dialogs, and the import under
+    /// way.
+    opml: opml::Opml,
     /// Export Subscriptions, available once there is something to export.
     export: gio::SimpleAction,
     /// The search showing: of a section's own list, with the section

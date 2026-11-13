@@ -305,35 +305,3 @@ fn an_export_reads_back_with_nothing_lost() {
 fn an_empty_library_exports_a_file_that_reads_back() {
     assert_eq!(parse(&write(&[], Utc::now())).unwrap(), []);
 }
-
-#[test]
-fn addresses_that_may_hold_a_secret_are_noticed() {
-    for secret in [
-        "https://user:pass@a.example/feed",
-        "https://www.patreon.com/rss/show?auth=abc123",
-        "https://a.example/feed?api_key=x",
-        "https://a.example/feed?accessToken=x",
-        "https://a.example/feed?format=rss&Token=x",
-        "https://a.example/private/0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d/feed",
-        "https://a.example/token/8f3k2j9d0s7a6h5g4f3d.rss",
-    ] {
-        assert!(may_hold_secret(&url(secret)), "{secret}");
-    }
-    for public in [
-        "https://feeds.simplecast.com/cYQVc__c",
-        "https://rss.art19.com/hello-from-magic-tavern",
-        "https://feeds.megaphone.fm/ADV1234567890",
-        // Shows named by UUID.
-        "https://a.example/show/0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d/feed.xml",
-        "https://a.example/8f3k2j9d0s7a6h5g4f3d.rss",
-        // Tracking and format parameters.
-        "https://a.example/feed?utm_source=opml&utm_campaign=x7Hq2kLm9Pz",
-        "https://a.example/rss?format=xml&show=2",
-        // Words that only contain a credential's name.
-        "https://a.example/authors/jane/feed?monkey=1",
-        "https://a.example/keynotes/feed",
-        "https://a.example/feeds/private",
-    ] {
-        assert!(!may_hold_secret(&url(public)), "{public}");
-    }
-}

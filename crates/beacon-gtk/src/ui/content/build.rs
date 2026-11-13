@@ -24,8 +24,6 @@ pub struct ContentWidgets {
     pub(super) search_toggle: gtk::ToggleButton,
     pub(super) search_bar: gtk::SearchBar,
     pub(super) search_entry: gtk::SearchEntry,
-    /// Says an OPML import left some podcasts out, with Show for the list.
-    pub(super) import_banner: adw::Banner,
     pub(super) stack: gtk::Stack,
 }
 
@@ -88,14 +86,6 @@ pub(super) fn widgets(
     let root_toolbar = adw::ToolbarView::new();
     root_toolbar.add_top_bar(&root_header);
     root_toolbar.add_top_bar(&search_bar);
-    // The HIG's Banners page: "used to communicate persistent states", "a
-    // strip along the top of a view". Failed feeds stay failed until tried
-    // again or dismissed.
-    let import_banner = adw::Banner::builder()
-        .button_label(gettext("Show"))
-        .revealed(false)
-        .build();
-    root_toolbar.add_top_bar(&import_banner);
     root_toolbar.set_content(Some(&overlay));
     let root_page = adw::NavigationPage::builder()
         .tag(ROOT_TAG)
@@ -128,7 +118,6 @@ pub(super) fn widgets(
         search_toggle,
         search_bar,
         search_entry,
-        import_banner,
         stack,
     }
 }

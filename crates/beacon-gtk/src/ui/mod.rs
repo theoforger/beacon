@@ -15,6 +15,7 @@ pub mod episode_actions;
 pub mod episode_list;
 pub mod episodes_view;
 pub mod errors;
+pub mod feed_picker;
 pub mod format;
 pub mod labels;
 pub mod links;

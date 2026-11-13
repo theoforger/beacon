@@ -49,12 +49,18 @@ impl AppSender {
         let _ = self.0.try_send(Event::Command(result));
     }
 
-    /// Run `work` on the runtime and hand its result to the window.
-    pub fn spawn(&self, work: impl Future<Output = AppCommand> + Send + 'static) {
+    /// Run `work` on the runtime and hand its result to the window. The
+    /// handle stops it, for work no longer wanted.
+    pub fn spawn(
+        &self,
+        work: impl Future<Output = AppCommand> + Send + 'static,
+    ) -> tokio::task::AbortHandle {
         let send = self.0.clone();
-        runtime().spawn(async move {
-            let _ = send.send(Event::Command(work.await)).await;
-        });
+        runtime()
+            .spawn(async move {
+                let _ = send.send(Event::Command(work.await)).await;
+            })
+            .abort_handle()
     }
 
     /// Run blocking `work` (the database) off the main thread and hand its

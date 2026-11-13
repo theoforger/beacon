@@ -63,8 +63,6 @@ pub enum AddPageOutput {
     OpenShow(ShowId),
     /// Escape in the empty search field: leave the page.
     Back,
-    /// A file dropped on the page: import its subscriptions.
-    Import(gtk::gio::File),
 }
 
 mod imp {

@@ -13,8 +13,9 @@ use beacon_core::services::clock::SystemClock;
 use beacon_core::services::covers::CoverCache;
 use beacon_core::services::downloads::Downloader;
 use beacon_core::services::feeds::FeedClient;
+use beacon_core::services::library::{Library, ToImport};
 use beacon_core::services::opml::OpmlFeed;
-use beacon_core::services::{download_client, http_client, library::Library};
+use beacon_core::services::{download_client, http_client};
 use beacon_core::store::Store;
 use beacon_core::{LibraryError, OpmlError};
 use httpmock::prelude::*;
@@ -81,12 +82,23 @@ impl Setup {
         path
     }
 
-    async fn import(&self, feeds: Vec<OpmlFeed>) -> Vec<(OpmlFeed, Result<ShowId, LibraryError>)> {
+    /// Import `feeds` without previewing them first.
+    async fn import(&self, feeds: Vec<OpmlFeed>) -> Vec<Result<ShowId, LibraryError>> {
+        let feeds = feeds.into_iter().map(|f| ToImport::Feed(f.url)).collect();
         let mut results = Vec::new();
         self.library
-            .import(feeds, |feed, result| results.push((feed, result)))
+            .import(feeds, |result| results.push(result))
             .await;
         results
+    }
+
+    fn ids(&self) -> Vec<ShowId> {
+        self.library
+            .shows()
+            .unwrap()
+            .into_iter()
+            .map(|s| s.id)
+            .collect()
     }
 
     /// Every show's feed address and title, in title order.
@@ -123,7 +135,7 @@ async fn files_from_other_podcast_apps_import() {
         assert_eq!((plan.subscribed, plan.repeated), (0, 0), "{app}");
 
         let results = setup.import(plan.feeds).await;
-        assert!(results.iter().all(|(_, r)| r.is_ok()), "{app}: {results:?}");
+        assert!(results.iter().all(Result::is_ok), "{app}: {results:?}");
         let titles: Vec<_> = setup.shows().into_iter().map(|(_, t)| t).collect();
         assert_eq!(titles, SHOWS, "{app}");
     }
@@ -141,7 +153,10 @@ async fn an_export_imports_again_with_nothing_lost() {
     assert_eq!(before.len(), 3);
 
     let exported = first.dir.path().join("podcasts.opml");
-    assert_eq!(first.library.export_opml(&exported).unwrap(), 3);
+    assert_eq!(
+        first.library.export_opml(&exported, &first.ids()).unwrap(),
+        3
+    );
 
     // Into an empty library: the same feeds, under the same names.
     let second = library();
@@ -163,7 +178,7 @@ async fn an_export_imports_again_with_nothing_lost() {
 }
 
 #[tokio::test]
-async fn an_import_goes_on_past_a_feed_that_fails() {
+async fn a_preview_shows_each_feed_and_the_import_uses_it() {
     let server = MockServer::start_async().await;
     serve_feeds(&server).await;
     let setup = library();
@@ -181,19 +196,75 @@ async fn an_import_goes_on_past_a_feed_that_fails() {
     );
     assert_eq!(plan.repeated, 1);
 
-    let results = setup.import(plan.feeds).await;
-    let failed: Vec<_> = results
+    // Each feed's own title, by its place in the file; the one that is gone
+    // fails without stopping the others.
+    let urls = plan.feeds.iter().map(|f| f.url.clone()).collect();
+    let mut previews: Vec<_> = (0..plan.feeds.len()).map(|_| None).collect();
+    setup
+        .library
+        .preview_feeds(urls, |i, result| previews[i] = Some(result))
+        .await;
+    let titles: Vec<_> = previews
         .iter()
-        .filter_map(|(feed, r)| r.as_ref().err().map(|e| (feed.name(), e)))
+        .map(|p| match p.as_ref().unwrap() {
+            Ok(preview) => preview.feed.show.title.clone(),
+            Err(err) => format!("{err:?}"),
+        })
         .collect();
-    assert_eq!(failed.len(), 1);
-    assert_eq!(failed[0].0, "Gone Quiet");
+    assert_eq!(titles[0], "Small Hours");
+    assert_eq!(titles[3], "Paper Trails");
     assert!(matches!(
-        failed[0].1,
+        previews[2],
+        Some(Err(LibraryError::Feed(FeedError::Status(404))))
+    ));
+    assert!(setup.shows().is_empty(), "a preview stores nothing");
+
+    // Import the previews, and the failed one by its address: only that
+    // one fails again.
+    let feeds = previews
+        .into_iter()
+        .zip(&plan.feeds)
+        .map(|(preview, feed)| match preview.unwrap() {
+            Ok(preview) => ToImport::Previewed(Box::new(preview)),
+            Err(_) => ToImport::Feed(feed.url.clone()),
+        })
+        .collect();
+    let mut results = Vec::new();
+    setup.library.import(feeds, |r| results.push(r)).await;
+    let failed: Vec<_> = results.iter().filter_map(|r| r.as_ref().err()).collect();
+    assert_eq!(failed.len(), 1);
+    assert!(matches!(
+        failed[0],
         LibraryError::Feed(FeedError::Status(404))
     ));
     let titles: Vec<_> = setup.shows().into_iter().map(|(_, t)| t).collect();
     assert_eq!(titles, SHOWS);
+}
+
+#[tokio::test]
+async fn an_export_holds_only_the_shows_chosen() {
+    let server = MockServer::start_async().await;
+    serve_feeds(&server).await;
+    let setup = library();
+    let path = setup.file("in.opml", &fixture("opml/gpodder.opml", &server));
+    let plan = setup.library.read_opml(&path).unwrap();
+    setup.import(plan.feeds).await;
+    let shows = setup.library.shows().unwrap();
+    let chosen: Vec<_> = shows
+        .iter()
+        .filter(|s| s.info.title != "Small Hours")
+        .map(|s| s.id)
+        .collect();
+    let exported = setup.dir.path().join("some.opml");
+    assert_eq!(setup.library.export_opml(&exported, &chosen).unwrap(), 2);
+    let mut names: Vec<_> =
+        beacon_core::services::opml::parse(&std::fs::read_to_string(&exported).unwrap())
+            .unwrap()
+            .into_iter()
+            .map(|f| f.title.unwrap())
+            .collect();
+    names.sort();
+    assert_eq!(names, ["Paper Trails", "The Long Signal"]);
 }
 
 #[tokio::test]

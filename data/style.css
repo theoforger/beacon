@@ -43,6 +43,18 @@
   border-radius: 8px;
 }
 
+/* The Import dialog's drop box: dashed as the Add Podcast tile, and in the
+ * accent colour while a file is dragged over it. */
+.drop-area {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+}
+
+.drop-area:drop(active) {
+  border-color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 10%, transparent);
+}
+
 /* The Shows grid sits on the window background, as in the mockup, rather
  * than on its own view background. Every tile has the same spacing, so the
  * gaps stay the same while covers grow with the window. GNOME Podcasts puts

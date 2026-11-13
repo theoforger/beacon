@@ -163,19 +163,6 @@ impl AddPage {
         toolbar.set_content(Some(&content));
         self.set_child(Some(&toolbar));
 
-        // An OPML file dropped anywhere on the page is imported, as Import
-        // Subscriptions in the main menu does (`docs/specs/opml.md`).
-        let drop = gtk::DropTarget::new(gtk::gio::File::static_type(), gtk::gdk::DragAction::COPY);
-        let output = self.imp().output.clone();
-        drop.connect_drop(move |_, value, _, _| {
-            let Ok(file) = value.get::<gtk::gio::File>() else {
-                return false;
-            };
-            output.emit(AddPageOutput::Import(file));
-            true
-        });
-        toolbar.add_controller(drop);
-
         // The page is one search field: type into it as soon as it opens.
         let focus = entry.clone();
         self.connect_shown(move |_| {

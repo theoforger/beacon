@@ -312,12 +312,12 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 ### Deliverables
 
 - [x] `OpmlService` using the `opml` crate (confirm that it parses and writes): it does, but drops `xmlurl` and rejects files without a version or with an empty body, so `services/opml.rs` uses `quick-xml` (`docs/decisions.md`)
-- [x] Import from the main menu and by dropping a file on Add; `GtkFileDialog` (portal)
+- [x] Import from the main menu into a dialog that takes a dropped file or one chosen with `GtkFileDialog` (portal), then lists the podcasts to choose, each with cover, title and feed address (changed 2026-11-13 from a drop target on Add)
 - [x] Flatten nested outlines, accept `xmlUrl` in any letter case, take the name from `title` or `text`, skip outlines with no URL
 - [x] Normalise URLs and remove duplicates within the file and against existing subscriptions
-- [x] Subscribe in the background about four at a time, with progress in the refresh bar, a summary toast and failures listed with Retry from a banner (changed 2026-11-12 from a progress dialog)
-- [x] Bad XML shows an error toast (changed 2026-11-12 from a status page)
-- [x] Export: a save dialog defaulting to `podcasts.opml`; OPML 2.0 with a head and `outline type="rss"` entries; a warning about private feed tokens
+- [x] Load each feed for the list and subscribe in the background about four at a time, with progress in the refresh bar and a summary toast; feeds that fail are shown in the list, unchecked (changed 2026-11-13 from failures listed with Retry from a banner, itself changed 2026-11-12 from a progress dialog)
+- [x] Bad XML shows an error toast on the dialog (changed 2026-11-12 from a status page)
+- [x] Export: a dialog listing every show to choose, then a save dialog defaulting to `podcasts.opml`; OPML 2.0 with a head and `outline type="rss"` entries (the private-feed warning dropped 2026-11-13: the list shows each address)
 - [x] Fixture OPML files from at least three other podcast apps
 
 ### Tests
