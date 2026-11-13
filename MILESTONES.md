@@ -303,7 +303,7 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] CI and docs: CI green (2026-11-12, on `94d4736`); docs up to date
 - [x] Human review of the running app (2026-11-12)
 
-## M8 OPML
+## M8 OPML ✓
 
 **Done when:** a file from another app imports, and an export re-imports with no loss.
 
@@ -330,8 +330,8 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 - [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m8.md`)
 - [x] Accessibility and translation checks pass
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario
-- [ ] CI and docs: CI green; docs up to date
-- [x] Human review of the running app
+- [x] CI and docs: CI green (2026-11-13, on `d08163f`, after a re-run: the first run failed while updating the CI image's GNOME SDK, before Beacon was built); docs up to date
+- [x] Human review of the running app (2026-11-13)
 
 ## M9 Polish
 
