@@ -8,11 +8,8 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-11-12 | M8, `ui/content/sections.rs` (`RefreshBar::set_import`) | The thin bar filling during an import, over Shows with shows arriving, and its tooltip "Importing podcasts: 12 of 44 podcasts" | 1440×900 and 360×640, light and dark | Import a file of many feeds served slowly (a local server that sleeps a few seconds per feed); with local fixtures the import ends within a second |
-| 2026-11-12 | M8, `ui/content/build.rs` (import banner), `ui/dialogs/import.rs` | The banner at 360px (title and Show fit or wrap), and the list it opens with many long rows scrolling, Dismiss and Try Again | 1440×900 dark, 360×640 light (1440×900 light and 360×640 dark taken) | Import `tests/fixtures/opml/edge-cases.opml` with `{{BASE}}` pointing at a server serving three of its feeds, then Show |
-| 2026-11-12 | M8, `app/opml.rs` | Export Private Feed Addresses? at 360px: the body wraps, the buttons as libadwaita lays them out | 360×640 light and dark (1440×900 light taken) | Subscribe to a feed whose address has a query (`…/feed.xml?auth=x`), then main menu, Export Subscriptions |
-| 2026-11-12 | M8, `ui/add_page/build.rs` | A file dragged over the Add page draws the drop highlight, and dropping it imports | 1440×900 light, 360×640 dark | Drag an `.opml` file from Files onto the Add page; needs a real session, as the headless scripts cannot drag from another app |
-| 2026-11-12 | M8, `app/opml.rs` | The file choosers through the portal in the Flatpak: Import's title and filter (OPML Files), Export's suggested name `podcasts.opml` | 1440×900 light | Run the Flatpak; main menu, Import Subscriptions and Export Subscriptions |
+| 2026-11-12 | M8, `ui/add_page/build.rs` | Needs a person (left by the M8 pass, 2026-11-13). A file dragged over the Add page draws the drop highlight, and dropping it imports | 1440×900 light, 360×640 dark | Drag an `.opml` file from Files onto the Add page; needs a real session, as the headless scripts cannot drag from another app |
+| 2026-11-12 | M8, `app/opml.rs` | Needs a person (left by the M8 pass, 2026-11-13). The file choosers through the portal in the Flatpak: Import's title and filter (OPML Files), Export's suggested name `podcasts.opml` | 1440×900 light | Run the Flatpak; main menu, Import Subscriptions and Export Subscriptions |
 
 ## Manual accessibility checks
 

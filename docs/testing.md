@@ -14,7 +14,7 @@ Two rules drive everything else:
 
 ## Layout tests
 
-`ui/display_tests.rs` builds widgets on a real display and checks how they lay out: the narrowest window, rows, lists, the podcast header's fit, chapter ticks. Run them on a private display, `xvfb-run cargo test`: on a desktop session that is locked or idle the windows never lay out and the checks fail with zero sizes. `resize_cost` there is not a check but a timing probe, ignored by default: it lays real feeds out at every width and prints each frame's work (`BEACON_PROBE_FEEDS=dir xvfb-run cargo test -p beacon-gtk resize_cost -- --ignored --nocapture`, with `NAME.xml` and `NAME.xml.cover` in the folder).
+`ui/display_tests.rs` builds widgets on a real display and checks how they lay out: the narrowest window, rows, lists, the podcast header's fit, chapter ticks. Run them on a private display, `xvfb-run cargo test`: on a desktop session that is locked or idle the windows never lay out and the checks fail with zero sizes. Even on an active session, a window manager may refuse a test's resize (`resizing_leaves_the_details_pane_as_it_was` asks for a narrow window with `set_default_size`, which Xvfb, having none, grants and GNOME Shell does not), so that check fails there before and after M8 alike. `resize_cost` there is not a check but a timing probe, ignored by default: it lays real feeds out at every width and prints each frame's work (`BEACON_PROBE_FEEDS=dir xvfb-run cargo test -p beacon-gtk resize_cost -- --ignored --nocapture`, with `NAME.xml` and `NAME.xml.cover` in the folder).
 
 ## No UI automation
 
