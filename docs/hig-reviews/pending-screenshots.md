@@ -8,8 +8,6 @@ Visual checks that were deferred because their UI change was reviewed without th
 
 | Added | Change (commit or files) | What to check | Skipped views | How to reach the state |
 | --- | --- | --- | --- | --- |
-| 2026-11-13 | M8, `ui/dialogs/import.rs` (drop box) | Needs a person. A file dragged from Files over the Import dialog's drop box turns its dashed border and background to the accent colour, and dropping it lists its podcasts | 1440×900 light, 360×640 dark | Main menu, Import Subscriptions, then drag an `.opml` file from Files onto the box; the headless scripts cannot drag from another app |
-| 2026-11-13 | M8, `app/opml/` | Needs a person. The file choosers through the portal in the Flatpak: Choose File…'s title Import Subscriptions and filter OPML Files; Export…'s save dialog suggesting `podcasts.opml` | 1440×900 light | Run the Flatpak; main menu, Import Subscriptions, Choose File…; Export Subscriptions, Export… |
 
 ## Manual accessibility checks
 

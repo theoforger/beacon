@@ -327,11 +327,11 @@ A milestone is finished when its deliverables are done and its own **exit gate**
 
 ### Exit gate
 
-- [ ] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m8.md`)
+- [x] HIG: gate clean, full screenshot set taken, pending list empty (`docs/hig-reviews/m8.md`)
 - [x] Accessibility and translation checks pass
 - [x] Tests: unit tests for new logic, integration test for each feature's main scenario
 - [ ] CI and docs: CI green; docs up to date
-- [ ] Human review of the running app
+- [x] Human review of the running app
 
 ## M9 Polish
 
